@@ -1,0 +1,3 @@
+com\dsports\shared\domain\kernel\ValueObject.class
+com\dsports\shared\domain\kernel\BaseEntity.class
+com\dsports\shared\domain\kernel\DomainEvent.class
