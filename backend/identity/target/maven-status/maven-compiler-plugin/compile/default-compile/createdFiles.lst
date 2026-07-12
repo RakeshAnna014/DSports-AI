@@ -1,0 +1,12 @@
+com\dsports\identity\domain\model\Email.class
+com\dsports\identity\domain\model\UserRole.class
+com\dsports\identity\domain\model\UserId.class
+com\dsports\identity\domain\model\CustomerName.class
+com\dsports\identity\domain\exception\ErrorCode.class
+com\dsports\identity\domain\model\AuthenticationProvider.class
+com\dsports\identity\domain\model\PhoneNumber.class
+com\dsports\identity\domain\model\UserStatus.class
+com\dsports\identity\domain\event\UserRegisteredEvent.class
+com\dsports\identity\domain\model\User.class
+com\dsports\identity\domain\exception\IdentityDomainException.class
+com\dsports\identity\domain\model\UserProfileManagementService.class
