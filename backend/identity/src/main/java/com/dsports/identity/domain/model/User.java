@@ -16,6 +16,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+// Package-level access for reconstitute() to set private fields directly.
+// This is intentional — no reflection needed for Aggregate reconstruction.
+
 public final class User {
 
     private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
@@ -37,7 +40,7 @@ public final class User {
     private int failedLoginAttempts;
     private Instant lockedUntil;
     private Instant lastLoginAt;
-    private final Instant createdAt;
+    private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
     private final transient List<DomainEvent> domainEvents = new ArrayList<>();
@@ -98,6 +101,32 @@ public final class User {
                 Set.of(provider)
         );
         user.recordEvent(new UserRegisteredEvent(user.id, user.email, provider));
+        return user;
+    }
+
+    // Used ONLY by UserPersistenceMapper to rebuild an existing Aggregate from persistent storage.
+    // Skips factory rules (no event recording, no ID generation) because the Aggregate already exists.
+    public static User reconstitute(UserId id, Email email, String passwordHash,
+                                     CustomerName customerName, PhoneNumber phone,
+                                     UserStatus status, Set<UserRole> roles,
+                                     Set<AuthenticationProvider> authProviders,
+                                     int failedLoginAttempts, Instant lockedUntil,
+                                     Instant lastLoginAt, Instant createdAt,
+                                     Instant updatedAt, Instant deletedAt) {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(email, "email must not be null");
+        Objects.requireNonNull(customerName, "customerName must not be null");
+        Objects.requireNonNull(status, "status must not be null");
+        Objects.requireNonNull(roles, "roles must not be null");
+        Objects.requireNonNull(authProviders, "authProviders must not be null");
+        User user = new User(id, email, passwordHash, customerName, status, roles, authProviders);
+        user.phone = phone;
+        user.failedLoginAttempts = failedLoginAttempts;
+        user.lockedUntil = lockedUntil;
+        user.lastLoginAt = lastLoginAt;
+        user.createdAt = createdAt;
+        user.updatedAt = updatedAt;
+        user.deletedAt = deletedAt;
         return user;
     }
 
