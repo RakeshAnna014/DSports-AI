@@ -1,0 +1,14 @@
+package com.dsports.identity.domain.exception;
+
+public enum ErrorCode {
+
+    GENERIC,
+    INVALID_EMAIL,
+    INVALID_PHONE_NUMBER,
+    INVALID_CUSTOMER_NAME,
+    INVALID_STATUS_TRANSITION,
+    MISSING_ROLE,
+    DUPLICATE_ROLE,
+    OAUTH_PROVIDER_ALREADY_LINKED,
+    MAX_AUTH_PROVIDERS_EXCEEDED;
+}
