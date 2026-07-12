@@ -1,34 +1,24 @@
 # Maven
 target/
 
-# IntelliJ
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
 .idea/
-*.iml
-
-# VS Code
 .vscode/
-
-# Eclipse
-.project
-.classpath
-.settings/
-
-# Logs
-*.log
+*.iml
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+
 # Environment
 .env
 .env.*
-
-# Java
-*.class
-
-# Jar files
-*.jar
-
-# Temporary
-*.tmp
