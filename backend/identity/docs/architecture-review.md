@@ -154,6 +154,33 @@ The `pom.xml` includes `spring-boot-starter-webflux` and `spring-boot-starter-da
 | User Aggregate splitting | Currently cohesive; revisit if responsibilities grow |
 | Value Object → Java Records | Would break backward compatibility with existing serialization; defer to Sprint 2 |
 
+## Email Uniqueness Enforcement
+
+Email uniqueness is enforced at **two levels** to balance user experience with data integrity:
+
+### Level 1 — Application Layer (Pre-check)
+
+Applied in `RegisterUserUseCase` via `UserRepository.findByEmail()` before creating the User aggregate.
+
+**Purpose:** Provide immediate, user-friendly feedback during registration. The user sees a clear "Email already registered" message without waiting for a database constraint violation.
+
+**Limitation:** This check is subject to race conditions in concurrent registration scenarios (two requests with the same email arriving simultaneously). The application-layer check alone is insufficient for production safety.
+
+### Level 2 — Database (UNIQUE Constraint)
+
+A `UNIQUE` constraint on the `email` column in the `users` table will be added in the infrastructure layer.
+
+**Purpose:** Guarantee email uniqueness at the database level, protecting against concurrent registration race conditions. This is the system of record — if two registrations arrive simultaneously, only one will commit.
+
+**Why both are required:**
+
+| Layer | Strength | Weakness |
+|-------|----------|----------|
+| Application pre-check | Fast feedback, better UX | Race condition under concurrent writes |
+| Database UNIQUE constraint | Atomic, guaranteed enforcement | Returns a constraint violation error (not user-friendly) |
+
+The application-layer check prevents the common case (99.9% of registration attempts are not simultaneous). The database constraint acts as a safety net for the 0.1% edge case. Both together provide correctness + good UX.
+
 ## Future ADR Recommendations
 
 1. **ADR-002: Credential Aggregate** — Extract passwordHash into polymorphic credential model when adding OAuth or OTP authentication.
