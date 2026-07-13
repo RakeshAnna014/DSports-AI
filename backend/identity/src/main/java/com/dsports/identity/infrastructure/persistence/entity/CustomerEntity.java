@@ -7,8 +7,8 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Table("users")
-public class UserEntity {
+@Table("customers")
+public class CustomerEntity {
 
     @Id
     private UUID id;
@@ -28,11 +28,6 @@ public class UserEntity {
 
     private String status;
 
-    private String roles;
-
-    @Column("auth_providers")
-    private String authProviders;
-
     @Column("failed_login_attempts")
     private int failedLoginAttempts;
 
@@ -51,7 +46,7 @@ public class UserEntity {
     @Column("deleted_at")
     private Instant deletedAt;
 
-    public UserEntity() {
+    public CustomerEntity() {
     }
 
     public UUID getId() {
@@ -108,22 +103,6 @@ public class UserEntity {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getRoles() {
-        return roles;
-    }
-
-    public void setRoles(String roles) {
-        this.roles = roles;
-    }
-
-    public String getAuthProviders() {
-        return authProviders;
-    }
-
-    public void setAuthProviders(String authProviders) {
-        this.authProviders = authProviders;
     }
 
     public int getFailedLoginAttempts() {

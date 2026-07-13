@@ -8,27 +8,27 @@ import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.infrastructure.event.SpringEventPublisherAdapter;
 import com.dsports.identity.infrastructure.notification.NotificationGatewayStub;
 import com.dsports.identity.infrastructure.oauth.OAuthProviderGatewayStub;
-import com.dsports.identity.infrastructure.persistence.adapter.UserRepositoryAdapter;
-import com.dsports.identity.infrastructure.persistence.mapper.UserPersistenceMapper;
-import com.dsports.identity.infrastructure.persistence.repository.UserR2dbcRepository;
+import com.dsports.identity.infrastructure.persistence.mapper.CustomerEntityMapper;
+import com.dsports.identity.infrastructure.persistence.repository.UserR2dbcRepositoryAdapter;
 import com.dsports.identity.infrastructure.security.BCryptPasswordEncoderAdapter;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.r2dbc.core.DatabaseClient;
 
 @Configuration
 public class IdentityInfrastructureConfiguration {
 
     @Bean
-    public UserPersistenceMapper userPersistenceMapper() {
-        return new UserPersistenceMapper();
+    public CustomerEntityMapper customerEntityMapper() {
+        return new CustomerEntityMapper();
     }
 
     @Bean
-    public UserRepository userRepositoryAdapter(
-            UserR2dbcRepository r2dbcRepository,
-            UserPersistenceMapper mapper) {
-        return new UserRepositoryAdapter(r2dbcRepository, mapper);
+    public UserRepository userRepository(
+            DatabaseClient databaseClient,
+            CustomerEntityMapper mapper) {
+        return new UserR2dbcRepositoryAdapter(databaseClient, mapper);
     }
 
     @Bean
