@@ -8,17 +8,19 @@ import com.dsports.identity.domain.model.User;
 import com.dsports.identity.domain.model.UserId;
 import com.dsports.identity.domain.model.UserRole;
 import com.dsports.identity.domain.model.UserStatus;
-import com.dsports.identity.infrastructure.persistence.entity.UserEntity;
+import com.dsports.identity.infrastructure.persistence.entity.CustomerAuthProviderEntity;
+import com.dsports.identity.infrastructure.persistence.entity.CustomerEntity;
+import com.dsports.identity.infrastructure.persistence.entity.CustomerRoleEntity;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class UserPersistenceMapper {
+public class CustomerEntityMapper {
 
-    public UserEntity toEntity(User domain) {
-        UserEntity entity = new UserEntity();
+    public CustomerEntity toEntity(User domain) {
+        CustomerEntity entity = new CustomerEntity();
         entity.setId(domain.getId().value());
         entity.setEmail(domain.getEmail().value());
         entity.setPasswordHash(domain.getPasswordHash());
@@ -26,12 +28,6 @@ public class UserPersistenceMapper {
         entity.setLastName(domain.getCustomerName().lastName());
         domain.getPhone().ifPresent(phone -> entity.setPhone(phone.value()));
         entity.setStatus(domain.getStatus().name());
-        entity.setRoles(domain.getRoles().stream()
-                .map(Enum::name)
-                .collect(Collectors.joining(",")));
-        entity.setAuthProviders(domain.getAuthProviders().stream()
-                .map(Enum::name)
-                .collect(Collectors.joining(",")));
         entity.setFailedLoginAttempts(domain.getFailedLoginAttempts());
         domain.getLockedUntil().ifPresent(entity::setLockedUntil);
         domain.getLastLoginAt().ifPresent(entity::setLastLoginAt);
@@ -41,7 +37,9 @@ public class UserPersistenceMapper {
         return entity;
     }
 
-    public User toDomain(UserEntity entity) {
+    public User toDomain(CustomerEntity entity,
+                          Set<CustomerRoleEntity> roleEntities,
+                          Set<CustomerAuthProviderEntity> providerEntities) {
         return User.reconstitute(
                 UserId.fromUUID(entity.getId()),
                 Email.from(entity.getEmail()),
@@ -49,8 +47,8 @@ public class UserPersistenceMapper {
                 CustomerName.of(entity.getFirstName(), entity.getLastName()),
                 entity.getPhone() != null ? PhoneNumber.from(entity.getPhone()) : null,
                 UserStatus.valueOf(entity.getStatus()),
-                parseRoles(entity.getRoles()),
-                parseAuthProviders(entity.getAuthProviders()),
+                toRoles(roleEntities),
+                toAuthProviders(providerEntities),
                 entity.getFailedLoginAttempts(),
                 entity.getLockedUntil(),
                 entity.getLastLoginAt(),
@@ -60,21 +58,33 @@ public class UserPersistenceMapper {
         );
     }
 
-    private Set<UserRole> parseRoles(String roles) {
-        if (roles == null || roles.isBlank()) {
-            return Collections.emptySet();
-        }
-        return Arrays.stream(roles.split(","))
-                .map(UserRole::valueOf)
+    public Set<CustomerRoleEntity> toRoleEntities(UUID customerId, Set<UserRole> roles) {
+        return roles.stream()
+                .map(role -> new CustomerRoleEntity(customerId, role.name()))
                 .collect(Collectors.toSet());
     }
 
-    private Set<AuthenticationProvider> parseAuthProviders(String authProviders) {
-        if (authProviders == null || authProviders.isBlank()) {
+    public Set<CustomerAuthProviderEntity> toAuthProviderEntities(UUID customerId, Set<AuthenticationProvider> providers) {
+        return providers.stream()
+                .map(provider -> new CustomerAuthProviderEntity(customerId, provider.name()))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<UserRole> toRoles(Set<CustomerRoleEntity> roleEntities) {
+        if (roleEntities == null || roleEntities.isEmpty()) {
             return Collections.emptySet();
         }
-        return Arrays.stream(authProviders.split(","))
-                .map(AuthenticationProvider::valueOf)
+        return roleEntities.stream()
+                .map(e -> UserRole.valueOf(e.getRole()))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<AuthenticationProvider> toAuthProviders(Set<CustomerAuthProviderEntity> providerEntities) {
+        if (providerEntities == null || providerEntities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return providerEntities.stream()
+                .map(e -> AuthenticationProvider.valueOf(e.getProvider()))
                 .collect(Collectors.toSet());
     }
 }
