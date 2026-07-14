@@ -22,6 +22,9 @@ public final class RefreshToken {
     }
 
     public static RefreshToken create(UserId userId, String token, Instant expiresAt) {
+        if (expiresAt.isBefore(Instant.now())) {
+            throw new IllegalArgumentException("expiresAt must be in the future");
+        }
         return new RefreshToken(
                 RefreshTokenId.generate(),
                 userId,

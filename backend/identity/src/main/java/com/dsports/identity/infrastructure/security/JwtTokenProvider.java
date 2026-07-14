@@ -24,6 +24,9 @@ public class JwtTokenProvider implements TokenProvider {
     private final Duration refreshTokenExpiration;
 
     public JwtTokenProvider(String secret, Duration accessTokenExpiration, Duration refreshTokenExpiration) {
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 256 bits (32 characters)");
+        }
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
@@ -36,6 +39,7 @@ public class JwtTokenProvider implements TokenProvider {
                 .toList();
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(user.getId().value().toString())
                 .claim("email", user.getEmail().value())
                 .claim("roles", roles)

@@ -3,6 +3,7 @@ package com.dsports.identity.application.usecase;
 import com.dsports.identity.application.command.LoginUserCommand;
 import com.dsports.identity.application.port.PasswordEncoder;
 import com.dsports.identity.application.port.RefreshTokenRepository;
+import com.dsports.identity.application.port.TokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.result.AuthenticationFailureReason;
@@ -10,6 +11,7 @@ import com.dsports.identity.application.result.LoginResult;
 import com.dsports.identity.domain.model.Email;
 import com.dsports.identity.domain.model.RefreshToken;
 import com.dsports.identity.domain.model.User;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
@@ -19,63 +21,66 @@ public class LoginUseCase {
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenHasher tokenHasher;
 
     public LoginUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                        TokenProvider tokenProvider, RefreshTokenRepository refreshTokenRepository) {
+                        TokenProvider tokenProvider, RefreshTokenRepository refreshTokenRepository,
+                        TokenHasher tokenHasher) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.tokenHasher = tokenHasher;
     }
 
-    public LoginResult execute(LoginUserCommand command) {
+    public Mono<LoginResult> execute(LoginUserCommand command) {
         var email = Email.from(command.email());
 
-        var userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) {
-            return LoginResult.failure(AuthenticationFailureReason.USER_NOT_FOUND);
-        }
+        return userRepository.findByEmail(email)
+                .flatMap(user -> {
+                    if (user.getStatus().isDeleted()) {
+                        return Mono.just(LoginResult.failure(AuthenticationFailureReason.ACCOUNT_DELETED));
+                    }
 
-        var user = userOpt.get();
+                    if (user.getStatus().isDisabled()) {
+                        return Mono.just(LoginResult.failure(AuthenticationFailureReason.ACCOUNT_DISABLED));
+                    }
 
-        if (user.getStatus().isDeleted()) {
-            return LoginResult.failure(AuthenticationFailureReason.ACCOUNT_DELETED);
-        }
+                    if (user.isLocked()) {
+                        return userRepository.save(user)
+                                .thenReturn(LoginResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED));
+                    }
 
-        if (user.getStatus().isDisabled()) {
-            return LoginResult.failure(AuthenticationFailureReason.ACCOUNT_DISABLED);
-        }
+                    if (!user.canLogin()) {
+                        return Mono.just(LoginResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED));
+                    }
 
-        if (user.isLocked()) {
-            userRepository.save(user);
-            return LoginResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED);
-        }
+                    var passwordHash = user.getPasswordHash();
+                    if (passwordHash == null || !passwordEncoder.matches(command.password(), passwordHash)) {
+                        user.recordFailedLogin();
+                        return userRepository.save(user)
+                                .thenReturn(LoginResult.failure(AuthenticationFailureReason.INVALID_PASSWORD));
+                    }
 
-        if (!user.canLogin()) {
-            return LoginResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED);
-        }
+                    user.updateLastLogin();
+                    return userRepository.save(user)
+                            .then(Mono.defer(() -> {
+                                var accessToken = tokenProvider.generateAccessToken(user);
+                                var rawRefreshToken = tokenProvider.generateRefreshToken();
+                                var hashedToken = tokenHasher.hash(rawRefreshToken);
+                                var expiry = Instant.now().plus(tokenProvider.getRefreshTokenExpiration());
 
-        var passwordHash = user.getPasswordHash();
-        if (passwordHash == null || !passwordEncoder.matches(command.password(), passwordHash)) {
-            user.recordFailedLogin();
-            userRepository.save(user);
-            return LoginResult.failure(AuthenticationFailureReason.INVALID_PASSWORD);
-        }
+                                var refreshToken = RefreshToken.create(user.getId(), hashedToken, expiry);
+                                var roles = user.getRoles().stream()
+                                        .map(Enum::name)
+                                        .toList();
 
-        user.updateLastLogin();
-        userRepository.save(user);
-
-        var accessToken = tokenProvider.generateAccessToken(user);
-        var rawRefreshToken = tokenProvider.generateRefreshToken();
-        var expiry = Instant.now().plus(tokenProvider.getRefreshTokenExpiration());
-
-        var refreshToken = RefreshToken.create(user.getId(), rawRefreshToken, expiry);
-        refreshTokenRepository.save(refreshToken);
-
-        var roles = user.getRoles().stream()
-                .map(Enum::name)
-                .toList();
-
-        return LoginResult.success(user.getId().value(), user.getEmail().value(), roles, accessToken, rawRefreshToken);
+                                return refreshTokenRepository.save(refreshToken)
+                                        .thenReturn(LoginResult.success(
+                                                user.getId().value(), user.getEmail().value(),
+                                                roles, accessToken, rawRefreshToken));
+                            }));
+                })
+                .switchIfEmpty(Mono.just(LoginResult.failure(AuthenticationFailureReason.USER_NOT_FOUND)));
     }
 }

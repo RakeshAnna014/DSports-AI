@@ -5,6 +5,7 @@ import com.dsports.identity.application.port.NotificationGateway;
 import com.dsports.identity.application.port.OAuthProviderGateway;
 import com.dsports.identity.application.port.PasswordEncoder;
 import com.dsports.identity.application.port.RefreshTokenRepository;
+import com.dsports.identity.application.port.TokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.usecase.LoginUseCase;
@@ -19,6 +20,7 @@ import com.dsports.identity.infrastructure.persistence.repository.RefreshTokenR2
 import com.dsports.identity.infrastructure.persistence.repository.UserR2dbcRepositoryAdapter;
 import com.dsports.identity.infrastructure.security.BCryptPasswordEncoderAdapter;
 import com.dsports.identity.infrastructure.security.JwtTokenProvider;
+import com.dsports.identity.infrastructure.security.Sha256TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -71,6 +73,11 @@ public class IdentityInfrastructureConfiguration {
     }
 
     @Bean
+    public TokenHasher tokenHasher() {
+        return new Sha256TokenHasher();
+    }
+
+    @Bean
     public RefreshTokenRepository refreshTokenRepository(DatabaseClient databaseClient) {
         return new RefreshTokenR2dbcRepositoryAdapter(databaseClient);
     }
@@ -80,20 +87,22 @@ public class IdentityInfrastructureConfiguration {
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             TokenProvider tokenProvider,
-            RefreshTokenRepository refreshTokenRepository) {
-        return new LoginUseCase(userRepository, passwordEncoder, tokenProvider, refreshTokenRepository);
+            RefreshTokenRepository refreshTokenRepository,
+            TokenHasher tokenHasher) {
+        return new LoginUseCase(userRepository, passwordEncoder, tokenProvider, refreshTokenRepository, tokenHasher);
     }
 
     @Bean
     public RefreshTokenUseCase refreshTokenUseCase(
             RefreshTokenRepository refreshTokenRepository,
             UserRepository userRepository,
-            TokenProvider tokenProvider) {
-        return new RefreshTokenUseCase(refreshTokenRepository, userRepository, tokenProvider);
+            TokenProvider tokenProvider,
+            TokenHasher tokenHasher) {
+        return new RefreshTokenUseCase(refreshTokenRepository, userRepository, tokenProvider, tokenHasher);
     }
 
     @Bean
-    public LogoutUseCase logoutUseCase(RefreshTokenRepository refreshTokenRepository) {
-        return new LogoutUseCase(refreshTokenRepository);
+    public LogoutUseCase logoutUseCase(RefreshTokenRepository refreshTokenRepository, TokenHasher tokenHasher) {
+        return new LogoutUseCase(refreshTokenRepository, tokenHasher);
     }
 }

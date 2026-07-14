@@ -6,8 +6,7 @@ import com.dsports.identity.domain.model.RefreshTokenId;
 import com.dsports.identity.domain.model.UserId;
 import com.dsports.identity.infrastructure.persistence.entity.RefreshTokenEntity;
 import org.springframework.r2dbc.core.DatabaseClient;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepository {
 
@@ -18,20 +17,19 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
     }
 
     @Override
-    public Optional<RefreshToken> findByToken(String token) {
+    public Mono<RefreshToken> findByToken(String token) {
         return databaseClient.sql("""
                         SELECT * FROM refresh_tokens WHERE token = :token
                         """)
                 .bind("token", token)
                 .map((row, meta) -> mapEntity(row))
                 .one()
-                .blockOptional()
                 .map(this::toDomain);
     }
 
     @Override
-    public void save(RefreshToken refreshToken) {
-        databaseClient.sql("""
+    public Mono<Void> save(RefreshToken refreshToken) {
+        return databaseClient.sql("""
                         INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked)
                         VALUES (:id, :userId, :token, :expiresAt, :createdAt, :revoked)
                         ON CONFLICT (id) DO UPDATE SET
@@ -43,18 +41,16 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
                 .bind("expiresAt", refreshToken.getExpiresAt())
                 .bind("createdAt", refreshToken.getCreatedAt())
                 .bind("revoked", refreshToken.isRevoked())
-                .then()
-                .block();
+                .then();
     }
 
     @Override
-    public void revokeByUserId(UserId userId) {
-        databaseClient.sql("""
+    public Mono<Void> revokeByUserId(UserId userId) {
+        return databaseClient.sql("""
                         UPDATE refresh_tokens SET revoked = TRUE WHERE user_id = :userId
                         """)
                 .bind("userId", userId.value())
-                .then()
-                .block();
+                .then();
     }
 
     private RefreshTokenEntity mapEntity(io.r2dbc.spi.Row row) {

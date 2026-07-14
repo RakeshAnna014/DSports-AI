@@ -6,12 +6,16 @@ import com.dsports.identity.infrastructure.security.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.authorization.HttpStatusServerAccessDeniedHandler;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -30,6 +34,14 @@ public class SecurityConfig {
 
         var authFilter = new AuthenticationWebFilter(authManager);
         authFilter.setServerAuthenticationConverter(authConverter);
+        authFilter.setAuthenticationFailureHandler((exchange, exception) -> {
+            var response = exchange.getExchange().getResponse();
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            var buffer = response.bufferFactory()
+                    .wrap("{\"message\":\"Invalid or expired token\"}".getBytes());
+            return response.writeWith(Mono.just(buffer));
+        });
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)

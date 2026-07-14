@@ -2,11 +2,10 @@ package com.dsports.identity.application.port;
 
 import com.dsports.identity.domain.model.RefreshToken;
 import com.dsports.identity.domain.model.UserId;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 public interface RefreshTokenRepository {
-    Optional<RefreshToken> findByToken(String token);
-    void save(RefreshToken refreshToken);
-    void revokeByUserId(UserId userId);
+    Mono<RefreshToken> findByToken(String token);
+    Mono<Void> save(RefreshToken refreshToken);
+    Mono<Void> revokeByUserId(UserId userId);
 }

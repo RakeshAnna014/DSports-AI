@@ -90,4 +90,12 @@ class JwtTokenProviderTest {
         var claims = tokenProvider.validate(token);
         assertThat(claims.get("email", String.class)).isEqualTo("test@example.com");
     }
+
+    @Test
+    void shouldIncludeJtiClaim() {
+        var token = tokenProvider.generateAccessToken(testUser);
+
+        var claims = tokenProvider.validate(token);
+        assertThat(claims.getId()).isNotBlank();
+    }
 }

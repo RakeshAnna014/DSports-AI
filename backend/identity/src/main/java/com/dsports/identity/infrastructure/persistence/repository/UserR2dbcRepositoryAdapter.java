@@ -9,9 +9,9 @@ import com.dsports.identity.infrastructure.persistence.entity.CustomerEntity;
 import com.dsports.identity.infrastructure.persistence.entity.CustomerRoleEntity;
 import com.dsports.identity.infrastructure.persistence.mapper.CustomerEntityMapper;
 import org.springframework.r2dbc.core.DatabaseClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,64 +26,61 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public Optional<User> findByEmail(Email email) {
-        CustomerEntity entity = databaseClient.sql("""
+    public Mono<User> findByEmail(Email email) {
+        return databaseClient.sql("""
                         SELECT * FROM customers WHERE email = :email
                         """)
                 .bind("email", email.value())
                 .map((row, metadata) -> mapCustomer(row))
                 .one()
-                .blockOptional()
-                .orElse(null);
-
-        if (entity == null) {
-            return Optional.empty();
-        }
-
-        Set<CustomerRoleEntity> roles = loadRoles(entity.getId());
-        Set<CustomerAuthProviderEntity> providers = loadAuthProviders(entity.getId());
-        return Optional.of(mapper.toDomain(entity, roles, providers));
+                .flatMap(entity ->
+                    Mono.zip(
+                        loadRoles(entity.getId()).collectList(),
+                        loadAuthProviders(entity.getId()).collectList()
+                    ).map(tuple ->
+                        mapper.toDomain(entity, Set.copyOf(tuple.getT1()), Set.copyOf(tuple.getT2()))
+                    )
+                );
     }
 
     @Override
-    public Optional<User> findById(UserId id) {
-        CustomerEntity entity = databaseClient.sql("""
+    public Mono<User> findById(UserId id) {
+        return databaseClient.sql("""
                         SELECT * FROM customers WHERE id = :id
                         """)
                 .bind("id", id.value())
                 .map((row, metadata) -> mapCustomer(row))
                 .one()
-                .blockOptional()
-                .orElse(null);
-
-        if (entity == null) {
-            return Optional.empty();
-        }
-
-        Set<CustomerRoleEntity> roles = loadRoles(entity.getId());
-        Set<CustomerAuthProviderEntity> providers = loadAuthProviders(entity.getId());
-        return Optional.of(mapper.toDomain(entity, roles, providers));
+                .flatMap(entity ->
+                    Mono.zip(
+                        loadRoles(entity.getId()).collectList(),
+                        loadAuthProviders(entity.getId()).collectList()
+                    ).map(tuple ->
+                        mapper.toDomain(entity, Set.copyOf(tuple.getT1()), Set.copyOf(tuple.getT2()))
+                    )
+                );
     }
 
     @Override
-    public boolean existsByEmail(Email email) {
-        Integer count = databaseClient.sql("""
+    public Mono<Boolean> existsByEmail(Email email) {
+        return databaseClient.sql("""
                         SELECT COUNT(*) FROM customers WHERE email = :email
                         """)
                 .bind("email", email.value())
-                .map((row, metadata) -> row.get("count", Integer.class))
+                .map((row, metadata) -> {
+                    var count = row.get("count", Integer.class);
+                    return count != null && count > 0;
+                })
                 .one()
-                .blockOptional()
-                .orElse(0);
-        return count > 0;
+                .defaultIfEmpty(false);
     }
 
     @Override
-    public void save(User user) {
+    public Mono<Void> save(User user) {
         CustomerEntity entity = mapper.toEntity(user);
         UUID customerId = entity.getId();
 
-        databaseClient.sql("""
+        return databaseClient.sql("""
                         INSERT INTO customers (id, email, password_hash, first_name, last_name,
                             phone, status, failed_login_attempts, locked_until, last_login_at,
                             created_at, updated_at, deleted_at)
@@ -117,44 +114,38 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                 .bind("updatedAt", entity.getUpdatedAt())
                 .bind("deletedAt", entity.getDeletedAt())
                 .then()
-                .block();
-
-        replaceRoles(customerId, user.getRoles());
-        replaceAuthProviders(customerId, user.getAuthProviders());
+                .then(replaceRoles(customerId, user.getRoles()))
+                .then(replaceAuthProviders(customerId, user.getAuthProviders()));
     }
 
-    private void replaceRoles(UUID customerId, Set<com.dsports.identity.domain.model.UserRole> roles) {
-        databaseClient.sql("DELETE FROM customer_roles WHERE customer_id = :customerId")
+    private Mono<Void> replaceRoles(UUID customerId, Set<com.dsports.identity.domain.model.UserRole> roles) {
+        return databaseClient.sql("DELETE FROM customer_roles WHERE customer_id = :customerId")
                 .bind("customerId", customerId)
                 .then()
-                .block();
-
-        for (CustomerRoleEntity role : mapper.toRoleEntities(customerId, roles)) {
-            databaseClient.sql("INSERT INTO customer_roles (customer_id, role) VALUES (:customerId, :role)")
-                    .bind("customerId", role.getCustomerId())
-                    .bind("role", role.getRole())
-                    .then()
-                    .block();
-        }
+                .thenMany(Flux.fromIterable(mapper.toRoleEntities(customerId, roles)))
+                .flatMap(role -> databaseClient.sql(
+                            "INSERT INTO customer_roles (customer_id, role) VALUES (:customerId, :role)")
+                        .bind("customerId", role.getCustomerId())
+                        .bind("role", role.getRole())
+                        .then())
+                .then();
     }
 
-    private void replaceAuthProviders(UUID customerId, Set<com.dsports.identity.domain.model.AuthenticationProvider> providers) {
-        databaseClient.sql("DELETE FROM customer_auth_providers WHERE customer_id = :customerId")
+    private Mono<Void> replaceAuthProviders(UUID customerId, Set<com.dsports.identity.domain.model.AuthenticationProvider> providers) {
+        return databaseClient.sql("DELETE FROM customer_auth_providers WHERE customer_id = :customerId")
                 .bind("customerId", customerId)
                 .then()
-                .block();
-
-        for (CustomerAuthProviderEntity provider : mapper.toAuthProviderEntities(customerId, providers)) {
-            databaseClient.sql("INSERT INTO customer_auth_providers (customer_id, provider) VALUES (:customerId, :provider)")
-                    .bind("customerId", provider.getCustomerId())
-                    .bind("provider", provider.getProvider())
-                    .then()
-                    .block();
-        }
+                .thenMany(Flux.fromIterable(mapper.toAuthProviderEntities(customerId, providers)))
+                .flatMap(provider -> databaseClient.sql(
+                            "INSERT INTO customer_auth_providers (customer_id, provider) VALUES (:customerId, :provider)")
+                        .bind("customerId", provider.getCustomerId())
+                        .bind("provider", provider.getProvider())
+                        .then())
+                .then();
     }
 
-    private Set<CustomerRoleEntity> loadRoles(UUID customerId) {
-        return new HashSet<>(databaseClient.sql("""
+    private Flux<CustomerRoleEntity> loadRoles(UUID customerId) {
+        return databaseClient.sql("""
                         SELECT * FROM customer_roles WHERE customer_id = :customerId
                         """)
                 .bind("customerId", customerId)
@@ -164,14 +155,11 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                     e.setRole(row.get("role", String.class));
                     return e;
                 })
-                .all()
-                .collectList()
-                .blockOptional()
-                .orElse(java.util.Collections.emptyList()));
+                .all();
     }
 
-    private Set<CustomerAuthProviderEntity> loadAuthProviders(UUID customerId) {
-        return new HashSet<>(databaseClient.sql("""
+    private Flux<CustomerAuthProviderEntity> loadAuthProviders(UUID customerId) {
+        return databaseClient.sql("""
                         SELECT * FROM customer_auth_providers WHERE customer_id = :customerId
                         """)
                 .bind("customerId", customerId)
@@ -181,10 +169,7 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                     e.setProvider(row.get("provider", String.class));
                     return e;
                 })
-                .all()
-                .collectList()
-                .blockOptional()
-                .orElse(java.util.Collections.emptyList()));
+                .all();
     }
 
     private CustomerEntity mapCustomer(io.r2dbc.spi.Row row) {
