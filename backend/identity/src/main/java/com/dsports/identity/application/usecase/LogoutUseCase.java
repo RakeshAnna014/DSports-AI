@@ -2,21 +2,21 @@ package com.dsports.identity.application.usecase;
 
 import com.dsports.identity.application.command.LogoutCommand;
 import com.dsports.identity.application.port.RefreshTokenRepository;
-import com.dsports.identity.application.port.TokenHasher;
+import com.dsports.identity.application.port.RefreshTokenHasher;
 import reactor.core.publisher.Mono;
 
 public class LogoutUseCase {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final TokenHasher tokenHasher;
+    private final RefreshTokenHasher refreshTokenHasher;
 
-    public LogoutUseCase(RefreshTokenRepository refreshTokenRepository, TokenHasher tokenHasher) {
+    public LogoutUseCase(RefreshTokenRepository refreshTokenRepository, RefreshTokenHasher refreshTokenHasher) {
         this.refreshTokenRepository = refreshTokenRepository;
-        this.tokenHasher = tokenHasher;
+        this.refreshTokenHasher = refreshTokenHasher;
     }
 
     public Mono<Void> execute(LogoutCommand command) {
-        var hashedToken = tokenHasher.hash(command.refreshToken());
+        var hashedToken = refreshTokenHasher.hash(command.refreshToken());
 
         return refreshTokenRepository.findByToken(hashedToken)
                 .flatMap(token -> {

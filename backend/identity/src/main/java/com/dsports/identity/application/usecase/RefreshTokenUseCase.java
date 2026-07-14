@@ -2,7 +2,7 @@ package com.dsports.identity.application.usecase;
 
 import com.dsports.identity.application.command.RefreshTokenCommand;
 import com.dsports.identity.application.port.RefreshTokenRepository;
-import com.dsports.identity.application.port.TokenHasher;
+import com.dsports.identity.application.port.RefreshTokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.result.RefreshFailureReason;
@@ -17,20 +17,20 @@ public class RefreshTokenUseCase {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-    private final TokenHasher tokenHasher;
+    private final RefreshTokenHasher refreshTokenHasher;
 
     public RefreshTokenUseCase(RefreshTokenRepository refreshTokenRepository,
                                 UserRepository userRepository,
                                 TokenProvider tokenProvider,
-                                TokenHasher tokenHasher) {
+                                RefreshTokenHasher refreshTokenHasher) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.tokenProvider = tokenProvider;
-        this.tokenHasher = tokenHasher;
+        this.refreshTokenHasher = refreshTokenHasher;
     }
 
     public Mono<RefreshTokenResult> execute(RefreshTokenCommand command) {
-        var hashedToken = tokenHasher.hash(command.refreshToken());
+        var hashedToken = refreshTokenHasher.hash(command.refreshToken());
 
         return refreshTokenRepository.findByToken(hashedToken)
                 .flatMap(storedToken -> {
@@ -61,7 +61,7 @@ public class RefreshTokenUseCase {
 
                                 var newAccessToken = tokenProvider.generateAccessToken(user);
                                 var newRawRefreshToken = tokenProvider.generateRefreshToken();
-                                var newHashedToken = tokenHasher.hash(newRawRefreshToken);
+                                var newHashedToken = refreshTokenHasher.hash(newRawRefreshToken);
                                 var expiry = Instant.now().plus(tokenProvider.getRefreshTokenExpiration());
 
                                 var newRefreshToken = RefreshToken.create(

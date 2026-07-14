@@ -1,13 +1,13 @@
 package com.dsports.identity.infrastructure.security;
 
-import com.dsports.identity.application.port.TokenHasher;
+import com.dsports.identity.application.port.RefreshTokenHasher;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
-public class Sha256TokenHasher implements TokenHasher {
+public class Sha256RefreshTokenHasher implements RefreshTokenHasher {
 
     @Override
     public String hash(String rawToken) {

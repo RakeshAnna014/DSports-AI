@@ -213,17 +213,102 @@ Every access token includes a unique `jti` (JWT ID) claim — a random UUID. Thi
 550e8400-e29b-41d4-a716-446655440000-550e8400-e29b-41d4-a716-446655440001
 ```
 
-Stored as a **SHA-256 hash** in the `refresh_tokens` table with `id`, `user_id`, `token`, `expires_at`, `created_at`, `revoked`.
+Stored as a **SHA-256 hash** in the `refresh_tokens` table with `id`, `user_id`, `token`, `expires_at`, `created_at`, `revoked`, `device_name`, `user_agent`, `ip_address`, `last_used_at`.
+
+## Reactive Architecture
+
+Every layer in the authentication pipeline is fully reactive (non-blocking):
+
+- **Repository ports** return `Mono<T>` / `Flux<T>` — never `Optional<T>` or raw values
+- **Repository adapters** use Spring Data R2DBC `DatabaseClient` — no `.block()` or `.blockOptional()`
+- **Use cases** compose reactive pipelines with `flatMap()`, `then()`, `switchIfEmpty()`
+- **Controller** returns `Mono<ResponseEntity<T>>` — never blocks on request processing
+
+No blocking calls exist in the reactive flow. The event loop is never starved.
+
+## Cleanup Strategy
+
+A scheduled job (`ExpiredRefreshTokenCleanupJob`) runs daily at 3 AM:
+
+```java
+@Scheduled(cron = "0 0 3 * * ?")
+public void deleteExpiredTokens() {
+    refreshTokenRepository.deleteExpired(Instant.now())
+            .subscribe(count -> log.info("Deleted {} expired tokens", count));
+}
+```
+
+The job uses the repository's `deleteExpired(Instant now)` method, which issues:
+```sql
+DELETE FROM refresh_tokens WHERE expires_at < :now
+```
+
+This prevents the `refresh_tokens` table from growing unbounded.
+
+## Typed API Responses
+
+Controller responses use explicit DTO records instead of `Map.of()`:
+
+| Endpoint | Success DTO | Error DTO |
+|----------|------------|-----------|
+| `POST /api/auth/login` | `LoginResponse` (userId, email, roles, accessToken, refreshToken) | `ErrorResponse` |
+| `POST /api/auth/refresh` | `RefreshResponse` (accessToken, refreshToken) | `ErrorResponse` |
+| `POST /api/auth/logout` | `204 No Content` | `ErrorResponse` |
+
+## Typed Failure Reasons
+
+`RefreshTokenResult` uses `RefreshFailureReason` enum instead of string literals:
+
+```java
+public enum RefreshFailureReason {
+    TOKEN_NOT_FOUND,
+    TOKEN_REVOKED,
+    TOKEN_EXPIRED,
+    USER_NOT_FOUND,
+    USER_DISABLED,
+    USER_DELETED,
+    USER_LOCKED
+}
+```
+
+This provides type safety and prevents typos in failure comparisons.
+
+## Refresh Security (User Status Validation)
+
+Before issuing new tokens, `RefreshTokenUseCase` validates:
+1. Token is not revoked
+2. Token is not expired
+3. User exists
+4. User is not deleted → `RefreshFailureReason.USER_DELETED`
+5. User is not disabled → `RefreshFailureReason.USER_DISABLED`
+6. User can login (not locked) → `RefreshFailureReason.USER_LOCKED`
+
+If any validation fails, no new tokens are generated and an appropriate failure reason is returned.
+
+## Session Metadata
+
+Each refresh token stores optional session metadata:
+
+| Field | Source | Purpose |
+|-------|--------|---------|
+| `deviceName` | Client-provided in login request | Identify the device |
+| `userAgent` | Extracted from HTTP `User-Agent` header | Browser/OS identification |
+| `ipAddress` | Extracted from request remote address | Geo-location / audit |
+| `lastUsedAt` | Set at creation time | Track last usage |
+
+Metadata is captured during login and preserved during token rotation.
 
 ## Security Configuration
 
 ```yaml
 app:
   jwt:
-    secret: ${JWT_SECRET}          # HS256 key (min 256 bits)
+    secret: ${JWT_SECRET}          # HS256 key (min 256 bits) — NO DEFAULT
     access-token-expiration: 15m   # Short-lived
     refresh-token-expiration: 7d   # Long-lived
 ```
+
+**The JWT secret has no default value.** If `JWT_SECRET` environment variable is not set, the application fails at startup. This prevents accidental deployment with a weak default secret.
 
 Spring Security is configured to be fully stateless:
 - CSRF disabled (JWT is immune to CSRF)
@@ -270,22 +355,37 @@ identity/src/test/java/.../application/usecase/LogoutUseCaseTest.java         (N
 ### Review Comment Changes
 
 ```
-identity/src/main/java/.../application/port/TokenHasher.java                  (NEW, SHA-256 hashing port)
-identity/src/main/java/.../infrastructure/security/Sha256TokenHasher.java     (NEW, SHA-256 implementation)
-identity/src/main/java/.../application/port/RefreshTokenRepository.java        (MODIFIED, reactive Mono returns)
+identity/src/main/java/.../application/port/RefreshTokenHasher.java             (RENAMED from TokenHasher, SHA-256 hashing port)
+identity/src/main/java/.../infrastructure/security/Sha256RefreshTokenHasher.java (RENAMED from Sha256TokenHasher, SHA-256 implementation)
+identity/src/main/java/.../application/port/RefreshTokenRepository.java          (MODIFIED, reactive Mono returns + deleteExpired)
 identity/src/main/java/.../infrastructure/persistence/repository/RefreshTokenR2dbcRepositoryAdapter.java (MODIFIED, reactive, no .block())
-identity/src/main/java/.../application/usecase/LoginUseCase.java              (MODIFIED, reactive + token hashing)
-identity/src/main/java/.../application/usecase/RefreshTokenUseCase.java       (MODIFIED, reactive + token hashing)
-identity/src/main/java/.../application/usecase/LogoutUseCase.java             (MODIFIED, reactive + token hashing + ownership verification)
-identity/src/main/java/.../application/command/LogoutCommand.java              (MODIFIED, added userId field)
-identity/src/main/java/.../interfaces/AuthController.java                     (MODIFIED, reactive + authenticated user in logout)
-identity/src/main/java/.../infrastructure/security/JwtWebFilter.java          (MODIFIED, returns 401 on auth errors instead of silent continuation)
-identity/src/main/java/.../infrastructure/security/JwtTokenProvider.java      (MODIFIED, added jti claim)
-identity/src/main/java/.../infrastructure/config/IdentityInfrastructureConfiguration.java (MODIFIED, wired TokenHasher)
-identity/docs/pr8-summary.md                                                   (MODIFIED, this file)
+identity/src/main/java/.../application/usecase/LoginUseCase.java                (MODIFIED, reactive + token hashing + device metadata)
+identity/src/main/java/.../application/usecase/RefreshTokenUseCase.java         (MODIFIED, reactive + token hashing + user status checks)
+identity/src/main/java/.../application/usecase/LogoutUseCase.java               (MODIFIED, reactive + token hashing + ownership verification)
+identity/src/main/java/.../application/command/LogoutCommand.java                (MODIFIED, added userId field)
+identity/src/main/java/.../application/command/LoginUserCommand.java            (MODIFIED, added deviceName, userAgent, ipAddress)
+identity/src/main/java/.../interfaces/AuthController.java                       (MODIFIED, reactive + authenticated user in logout + typed DTOs)
+identity/src/main/java/.../interfaces/dto/LoginResponse.java                    (NEW, typed login response)
+identity/src/main/java/.../interfaces/dto/RefreshResponse.java                  (NEW, typed refresh response)
+identity/src/main/java/.../interfaces/dto/LogoutResponse.java                   (NEW, typed logout response)
+identity/src/main/java/.../interfaces/dto/ErrorResponse.java                    (NEW, typed error response)
+identity/src/main/java/.../application/result/RefreshFailureReason.java         (NEW, typed failure enum)
+identity/src/main/java/.../application/result/RefreshTokenResult.java           (MODIFIED, uses RefreshFailureReason enum)
+identity/src/main/java/.../domain/model/RefreshToken.java                       (MODIFIED, added session metadata fields)
+identity/src/main/java/.../infrastructure/persistence/entity/RefreshTokenEntity.java  (MODIFIED, added session metadata columns)
+identity/src/main/java/.../infrastructure/persistence/repository/ExpiredRefreshTokenCleanupJob.java (MODIFIED, uses repository port)
+identity/src/main/java/.../infrastructure/security/JwtWebFilter.java            (MODIFIED, returns 401 on auth errors)
+identity/src/main/java/.../infrastructure/security/JwtTokenProvider.java        (MODIFIED, added jti claim)
+identity/src/main/java/.../infrastructure/config/IdentityInfrastructureConfiguration.java (MODIFIED, wired RefreshTokenHasher)
+identity/src/main/resources/db/migration/V4__add_session_metadata.sql           (NEW)
+bootstrap/src/main/resources/application.yml                                    (MODIFIED, removed default JWT secret)
+identity/docs/pr8-summary.md                                                    (MODIFIED, this file)
 
-identity/src/test/java/.../infrastructure/security/JwtTokenProviderTest.java  (MODIFIED, +1 test for jti claim → 9 total)
-identity/src/test/java/.../application/usecase/LogoutUseCaseTest.java         (MODIFIED, reactive + ownership verification → 3 tests)
+identity/src/test/java/.../infrastructure/security/JwtTokenProviderTest.java    (MODIFIED, +2 tests for null/short secret → 11 total)
+identity/src/test/java/.../application/usecase/LoginUseCaseTest.java            (MODIFIED, +1 test for multi-device → 5 total)
+identity/src/test/java/.../application/usecase/RefreshTokenUseCaseTest.java     (MODIFIED, +3 tests for user status → 7 total)
+identity/src/test/java/.../application/usecase/LogoutUseCaseTest.java           (MODIFIED, reactive + ownership verification → 3 tests)
+identity/src/test/java/.../infrastructure/persistence/repository/ExpiredRefreshTokenCleanupJobTest.java (NEW)
 ```
 
 ## Future Extensions

@@ -98,4 +98,16 @@ class JwtTokenProviderTest {
         var claims = tokenProvider.validate(token);
         assertThat(claims.getId()).isNotBlank();
     }
+
+    @Test
+    void shouldRejectSecretShorterThan32Bytes() {
+        assertThatThrownBy(() -> new JwtTokenProvider("short-key", ACCESS_EXPIRY, REFRESH_EXPIRY))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldRejectNullSecret() {
+        assertThatThrownBy(() -> new JwtTokenProvider(null, ACCESS_EXPIRY, REFRESH_EXPIRY))
+                .isInstanceOf(Exception.class);
+    }
 }

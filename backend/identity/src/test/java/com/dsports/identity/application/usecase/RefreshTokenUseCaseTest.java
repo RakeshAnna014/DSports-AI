@@ -2,7 +2,7 @@ package com.dsports.identity.application.usecase;
 
 import com.dsports.identity.application.command.RefreshTokenCommand;
 import com.dsports.identity.application.port.RefreshTokenRepository;
-import com.dsports.identity.application.port.TokenHasher;
+import com.dsports.identity.application.port.RefreshTokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.result.RefreshFailureReason;
@@ -39,7 +39,7 @@ class RefreshTokenUseCaseTest {
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private UserRepository userRepository;
     @Mock private TokenProvider tokenProvider;
-    @Mock private TokenHasher tokenHasher;
+    @Mock private RefreshTokenHasher refreshTokenHasher;
 
     private RefreshTokenUseCase refreshTokenUseCase;
     private User activeUser;
@@ -50,7 +50,7 @@ class RefreshTokenUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        refreshTokenUseCase = new RefreshTokenUseCase(refreshTokenRepository, userRepository, tokenProvider, tokenHasher);
+        refreshTokenUseCase = new RefreshTokenUseCase(refreshTokenRepository, userRepository, tokenProvider, refreshTokenHasher);
         var email = Email.from("user@example.com");
         activeUser = User.reconstitute(
                 USER_ID, email, "hash",
@@ -64,8 +64,8 @@ class RefreshTokenUseCaseTest {
 
     @Test
     void shouldSucceedWithValidToken() {
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
-        when(tokenHasher.hash("new-refresh-token")).thenReturn("new-hashed-token");
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash("new-refresh-token")).thenReturn("new-hashed-token");
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
         when(userRepository.findById(USER_ID)).thenReturn(Mono.just(activeUser));
         when(tokenProvider.generateAccessToken(activeUser)).thenReturn("new-access-token");
@@ -88,7 +88,7 @@ class RefreshTokenUseCaseTest {
     @Test
     void shouldFailWithNonexistentToken() {
         when(refreshTokenRepository.findByToken("hashed-unknown")).thenReturn(Mono.empty());
-        when(tokenHasher.hash("unknown-token")).thenReturn("hashed-unknown");
+        when(refreshTokenHasher.hash("unknown-token")).thenReturn("hashed-unknown");
 
         var command = new RefreshTokenCommand("unknown-token");
         StepVerifier.create(refreshTokenUseCase.execute(command))
@@ -102,7 +102,7 @@ class RefreshTokenUseCaseTest {
     @Test
     void shouldFailWithRevokedToken() {
         validToken.revoke();
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
         when(refreshTokenRepository.revokeByUserId(any())).thenReturn(Mono.empty());
 
@@ -124,7 +124,7 @@ class RefreshTokenUseCaseTest {
                 Instant.now().minus(Duration.ofDays(8)),
                 false
         );
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(expiredToken));
 
         var command = new RefreshTokenCommand(RAW_TOKEN);
@@ -145,7 +145,7 @@ class RefreshTokenUseCaseTest {
                 0, null, null,
                 Instant.now(), Instant.now(), Instant.now()
         );
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
         when(userRepository.findById(USER_ID)).thenReturn(Mono.just(deletedUser));
 
@@ -169,7 +169,7 @@ class RefreshTokenUseCaseTest {
                 0, null, null,
                 Instant.now(), Instant.now(), null
         );
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
         when(userRepository.findById(USER_ID)).thenReturn(Mono.just(disabledUser));
 
@@ -193,7 +193,7 @@ class RefreshTokenUseCaseTest {
                 5, Instant.now().plus(Duration.ofHours(1)), null,
                 Instant.now(), Instant.now(), null
         );
-        when(tokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
+        when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
         when(userRepository.findById(USER_ID)).thenReturn(Mono.just(lockedUser));
 

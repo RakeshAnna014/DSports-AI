@@ -3,7 +3,7 @@ package com.dsports.identity.application.usecase;
 import com.dsports.identity.application.command.LoginUserCommand;
 import com.dsports.identity.application.port.PasswordEncoder;
 import com.dsports.identity.application.port.RefreshTokenRepository;
-import com.dsports.identity.application.port.TokenHasher;
+import com.dsports.identity.application.port.RefreshTokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.result.AuthenticationFailureReason;
@@ -33,14 +33,14 @@ class LoginUseCaseTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private TokenProvider tokenProvider;
     @Mock private RefreshTokenRepository refreshTokenRepository;
-    @Mock private TokenHasher tokenHasher;
+    @Mock private RefreshTokenHasher refreshTokenHasher;
 
     private LoginUseCase loginUseCase;
     private User activeUser;
 
     @BeforeEach
     void setUp() {
-        loginUseCase = new LoginUseCase(userRepository, passwordEncoder, tokenProvider, refreshTokenRepository, tokenHasher);
+        loginUseCase = new LoginUseCase(userRepository, passwordEncoder, tokenProvider, refreshTokenRepository, refreshTokenHasher);
         var email = Email.from("user@example.com");
         var userId = com.dsports.identity.domain.model.UserId.generate();
         activeUser = User.reconstitute(
@@ -62,7 +62,7 @@ class LoginUseCaseTest {
         when(tokenProvider.generateAccessToken(activeUser)).thenReturn("access-token");
         when(tokenProvider.generateRefreshToken()).thenReturn("refresh-token");
         when(tokenProvider.getRefreshTokenExpiration()).thenReturn(Duration.ofDays(7));
-        when(tokenHasher.hash(any())).thenReturn("hashed-token");
+        when(refreshTokenHasher.hash(any())).thenReturn("hashed-token");
         when(refreshTokenRepository.save(any())).thenReturn(Mono.empty());
 
         var command = new LoginUserCommand("user@example.com", "password", null, null, null);
@@ -114,7 +114,7 @@ class LoginUseCaseTest {
         when(tokenProvider.generateAccessToken(activeUser)).thenReturn("access-token-1");
         when(tokenProvider.generateRefreshToken()).thenReturn("refresh-token-1", "refresh-token-2");
         when(tokenProvider.getRefreshTokenExpiration()).thenReturn(Duration.ofDays(7));
-        when(tokenHasher.hash(any())).thenReturn("hashed-token-1", "hashed-token-2");
+        when(refreshTokenHasher.hash(any())).thenReturn("hashed-token-1", "hashed-token-2");
         when(refreshTokenRepository.save(any())).thenReturn(Mono.empty());
 
         var command1 = new LoginUserCommand("user@example.com", "password", "iPhone", null, null);
