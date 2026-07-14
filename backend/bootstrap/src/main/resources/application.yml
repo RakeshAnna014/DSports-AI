@@ -81,6 +81,12 @@ springdoc:
   cache:
     disabled: true
 
+app:
+  jwt:
+    secret: ${JWT_SECRET:dsports-ai-secret-key-minimum-256-bits-long-for-hs256-algorithm-2024}
+    access-token-expiration: 15m
+    refresh-token-expiration: 7d
+
 logging:
   pattern:
     level: "%5p [%X{correlationId}]"
