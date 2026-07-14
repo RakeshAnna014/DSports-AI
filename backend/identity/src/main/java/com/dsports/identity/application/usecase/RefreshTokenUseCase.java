@@ -51,7 +51,10 @@ public class RefreshTokenUseCase {
                                 var newHashedToken = tokenHasher.hash(newRawRefreshToken);
                                 var expiry = Instant.now().plus(tokenProvider.getRefreshTokenExpiration());
 
-                                var newRefreshToken = RefreshToken.create(user.getId(), newHashedToken, expiry);
+                                var newRefreshToken = RefreshToken.create(
+                                        user.getId(), newHashedToken, expiry,
+                                        storedToken.getDeviceName(), storedToken.getUserAgent(),
+                                        storedToken.getIpAddress());
 
                                 return refreshTokenRepository.save(storedToken)
                                         .then(refreshTokenRepository.save(newRefreshToken))

@@ -30,8 +30,10 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
     @Override
     public Mono<Void> save(RefreshToken refreshToken) {
         return databaseClient.sql("""
-                        INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked)
-                        VALUES (:id, :userId, :token, :expiresAt, :createdAt, :revoked)
+                        INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, revoked,
+                                                    device_name, user_agent, ip_address, last_used_at)
+                        VALUES (:id, :userId, :token, :expiresAt, :createdAt, :revoked,
+                                :deviceName, :userAgent, :ipAddress, :lastUsedAt)
                         ON CONFLICT (id) DO UPDATE SET
                             revoked = EXCLUDED.revoked
                         """)
@@ -41,6 +43,10 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
                 .bind("expiresAt", refreshToken.getExpiresAt())
                 .bind("createdAt", refreshToken.getCreatedAt())
                 .bind("revoked", refreshToken.isRevoked())
+                .bind("deviceName", refreshToken.getDeviceName())
+                .bind("userAgent", refreshToken.getUserAgent())
+                .bind("ipAddress", refreshToken.getIpAddress())
+                .bind("lastUsedAt", refreshToken.getLastUsedAt())
                 .then();
     }
 
@@ -61,6 +67,10 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
         entity.setExpiresAt(row.get("expires_at", java.time.Instant.class));
         entity.setCreatedAt(row.get("created_at", java.time.Instant.class));
         entity.setRevoked(row.get("revoked", Boolean.class));
+        entity.setDeviceName(row.get("device_name", String.class));
+        entity.setUserAgent(row.get("user_agent", String.class));
+        entity.setIpAddress(row.get("ip_address", String.class));
+        entity.setLastUsedAt(row.get("last_used_at", java.time.Instant.class));
         return entity;
     }
 
@@ -71,7 +81,11 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
                 entity.getToken(),
                 entity.getExpiresAt(),
                 entity.getCreatedAt(),
-                entity.isRevoked()
+                entity.isRevoked(),
+                entity.getDeviceName(),
+                entity.getUserAgent(),
+                entity.getIpAddress(),
+                entity.getLastUsedAt()
         );
     }
 }

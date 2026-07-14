@@ -70,7 +70,9 @@ public class LoginUseCase {
                                 var hashedToken = tokenHasher.hash(rawRefreshToken);
                                 var expiry = Instant.now().plus(tokenProvider.getRefreshTokenExpiration());
 
-                                var refreshToken = RefreshToken.create(user.getId(), hashedToken, expiry);
+                                var refreshToken = RefreshToken.create(
+                                        user.getId(), hashedToken, expiry,
+                                        command.deviceName(), command.userAgent(), command.ipAddress());
                                 var roles = user.getRoles().stream()
                                         .map(Enum::name)
                                         .toList();

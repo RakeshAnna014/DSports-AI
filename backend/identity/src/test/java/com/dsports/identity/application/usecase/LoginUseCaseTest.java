@@ -22,6 +22,7 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,7 +65,7 @@ class LoginUseCaseTest {
         when(tokenHasher.hash(any())).thenReturn("hashed-token");
         when(refreshTokenRepository.save(any())).thenReturn(Mono.empty());
 
-        var command = new LoginUserCommand("user@example.com", "password");
+        var command = new LoginUserCommand("user@example.com", "password", null, null, null);
         StepVerifier.create(loginUseCase.execute(command))
                 .assertNext(result -> {
                     assertThat(result.success()).isTrue();
@@ -83,7 +84,7 @@ class LoginUseCaseTest {
         when(passwordEncoder.matches("wrong", "hashedPassword")).thenReturn(false);
         when(userRepository.save(any())).thenReturn(Mono.empty());
 
-        var command = new LoginUserCommand("user@example.com", "wrong");
+        var command = new LoginUserCommand("user@example.com", "wrong", null, null, null);
         StepVerifier.create(loginUseCase.execute(command))
                 .assertNext(result -> {
                     assertThat(result.success()).isFalse();
@@ -96,13 +97,43 @@ class LoginUseCaseTest {
     void shouldFailForNonexistentUser() {
         when(userRepository.findByEmail(any())).thenReturn(Mono.empty());
 
-        var command = new LoginUserCommand("unknown@example.com", "password");
+        var command = new LoginUserCommand("unknown@example.com", "password", null, null, null);
         StepVerifier.create(loginUseCase.execute(command))
                 .assertNext(result -> {
                     assertThat(result.success()).isFalse();
                     assertThat(result.failureReason()).isEqualTo(AuthenticationFailureReason.USER_NOT_FOUND);
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void shouldAllowMultipleConcurrentSessions() {
+        when(userRepository.findByEmail(any())).thenReturn(Mono.just(activeUser));
+        when(userRepository.save(any())).thenReturn(Mono.empty());
+        when(passwordEncoder.matches("password", "hashedPassword")).thenReturn(true);
+        when(tokenProvider.generateAccessToken(activeUser)).thenReturn("access-token-1");
+        when(tokenProvider.generateRefreshToken()).thenReturn("refresh-token-1", "refresh-token-2");
+        when(tokenProvider.getRefreshTokenExpiration()).thenReturn(Duration.ofDays(7));
+        when(tokenHasher.hash(any())).thenReturn("hashed-token-1", "hashed-token-2");
+        when(refreshTokenRepository.save(any())).thenReturn(Mono.empty());
+
+        var command1 = new LoginUserCommand("user@example.com", "password", "iPhone", null, null);
+        StepVerifier.create(loginUseCase.execute(command1))
+                .assertNext(result -> {
+                    assertThat(result.success()).isTrue();
+                    assertThat(result.refreshToken()).isEqualTo("refresh-token-1");
+                })
+                .verifyComplete();
+
+        var command2 = new LoginUserCommand("user@example.com", "password", "Android", null, null);
+        StepVerifier.create(loginUseCase.execute(command2))
+                .assertNext(result -> {
+                    assertThat(result.success()).isTrue();
+                    assertThat(result.refreshToken()).isEqualTo("refresh-token-2");
+                })
+                .verifyComplete();
+
+        verify(refreshTokenRepository, times(2)).save(any());
     }
 
     @Test
@@ -116,7 +147,7 @@ class LoginUseCaseTest {
         when(userRepository.findByEmail(any())).thenReturn(Mono.just(activeUser));
         when(userRepository.save(any())).thenReturn(Mono.empty());
 
-        var command = new LoginUserCommand("user@example.com", "password");
+        var command = new LoginUserCommand("user@example.com", "password", null, null, null);
         StepVerifier.create(loginUseCase.execute(command))
                 .assertNext(result -> {
                     assertThat(result.success()).isFalse();

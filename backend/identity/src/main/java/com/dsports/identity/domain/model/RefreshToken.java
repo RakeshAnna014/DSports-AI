@@ -11,33 +11,60 @@ public final class RefreshToken {
     private final Instant expiresAt;
     private final Instant createdAt;
     private boolean revoked;
+    private String deviceName;
+    private String userAgent;
+    private String ipAddress;
+    private Instant lastUsedAt;
 
-    private RefreshToken(RefreshTokenId id, UserId userId, String token, Instant expiresAt, Instant createdAt, boolean revoked) {
+    private RefreshToken(RefreshTokenId id, UserId userId, String token, Instant expiresAt,
+                         Instant createdAt, boolean revoked,
+                         String deviceName, String userAgent, String ipAddress, Instant lastUsedAt) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.userId = Objects.requireNonNull(userId, "userId must not be null");
         this.token = Objects.requireNonNull(token, "token must not be null");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt must not be null");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
         this.revoked = revoked;
+        this.deviceName = deviceName;
+        this.userAgent = userAgent;
+        this.ipAddress = ipAddress;
+        this.lastUsedAt = Objects.requireNonNull(lastUsedAt, "lastUsedAt must not be null");
     }
 
     public static RefreshToken create(UserId userId, String token, Instant expiresAt) {
+        return create(userId, token, expiresAt, null, null, null);
+    }
+
+    public static RefreshToken create(UserId userId, String token, Instant expiresAt,
+                                       String deviceName, String userAgent, String ipAddress) {
         if (expiresAt.isBefore(Instant.now())) {
             throw new IllegalArgumentException("expiresAt must be in the future");
         }
+        var now = Instant.now();
         return new RefreshToken(
                 RefreshTokenId.generate(),
                 userId,
                 token,
                 expiresAt,
-                Instant.now(),
-                false
+                now,
+                false,
+                deviceName,
+                userAgent,
+                ipAddress,
+                now
         );
     }
 
     public static RefreshToken reconstitute(RefreshTokenId id, UserId userId, String token,
                                              Instant expiresAt, Instant createdAt, boolean revoked) {
-        return new RefreshToken(id, userId, token, expiresAt, createdAt, revoked);
+        return reconstitute(id, userId, token, expiresAt, createdAt, revoked, null, null, null, createdAt);
+    }
+
+    public static RefreshToken reconstitute(RefreshTokenId id, UserId userId, String token,
+                                             Instant expiresAt, Instant createdAt, boolean revoked,
+                                             String deviceName, String userAgent, String ipAddress, Instant lastUsedAt) {
+        return new RefreshToken(id, userId, token, expiresAt, createdAt, revoked,
+                deviceName, userAgent, ipAddress, lastUsedAt);
     }
 
     public void revoke() {
@@ -78,6 +105,22 @@ public final class RefreshToken {
 
     public boolean isRevoked() {
         return revoked;
+    }
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public Instant getLastUsedAt() {
+        return lastUsedAt;
     }
 
     @Override
