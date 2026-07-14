@@ -8,6 +8,8 @@ import com.dsports.identity.infrastructure.persistence.entity.RefreshTokenEntity
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+
 public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepository {
 
     private final DatabaseClient databaseClient;
@@ -48,6 +50,14 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
                 .bind("ipAddress", refreshToken.getIpAddress())
                 .bind("lastUsedAt", refreshToken.getLastUsedAt())
                 .then();
+    }
+
+    @Override
+    public Mono<Long> deleteExpired(Instant now) {
+        return databaseClient.sql("DELETE FROM refresh_tokens WHERE expires_at < :now")
+                .bind("now", now)
+                .fetch()
+                .rowsUpdated();
     }
 
     @Override

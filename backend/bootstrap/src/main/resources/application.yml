@@ -83,7 +83,7 @@ springdoc:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:dsports-ai-secret-key-minimum-256-bits-long-for-hs256-algorithm-2024}
+    secret: ${JWT_SECRET}
     access-token-expiration: 15m
     refresh-token-expiration: 7d
 

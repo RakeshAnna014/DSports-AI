@@ -5,6 +5,7 @@ import com.dsports.identity.application.port.RefreshTokenRepository;
 import com.dsports.identity.application.port.TokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
+import com.dsports.identity.application.result.RefreshFailureReason;
 import com.dsports.identity.application.result.RefreshTokenResult;
 import com.dsports.identity.domain.model.RefreshToken;
 import reactor.core.publisher.Mono;
@@ -35,15 +36,27 @@ public class RefreshTokenUseCase {
                 .flatMap(storedToken -> {
                     if (storedToken.isRevoked()) {
                         return revokeAllForUser(storedToken.getUserId())
-                                .thenReturn(RefreshTokenResult.failure("REFRESH_TOKEN_REVOKED"));
+                                .thenReturn(RefreshTokenResult.failure(RefreshFailureReason.TOKEN_REVOKED));
                     }
 
                     if (storedToken.isExpired()) {
-                        return Mono.just(RefreshTokenResult.failure("REFRESH_TOKEN_EXPIRED"));
+                        return Mono.just(RefreshTokenResult.failure(RefreshFailureReason.TOKEN_EXPIRED));
                     }
 
                     return userRepository.findById(storedToken.getUserId())
                             .flatMap(user -> {
+                                if (user.getStatus().isDeleted()) {
+                                    return Mono.just(RefreshTokenResult.failure(RefreshFailureReason.USER_DELETED));
+                                }
+
+                                if (user.getStatus().isDisabled()) {
+                                    return Mono.just(RefreshTokenResult.failure(RefreshFailureReason.USER_DISABLED));
+                                }
+
+                                if (!user.canLogin()) {
+                                    return Mono.just(RefreshTokenResult.failure(RefreshFailureReason.USER_LOCKED));
+                                }
+
                                 storedToken.revoke();
 
                                 var newAccessToken = tokenProvider.generateAccessToken(user);
@@ -60,9 +73,9 @@ public class RefreshTokenUseCase {
                                         .then(refreshTokenRepository.save(newRefreshToken))
                                         .thenReturn(RefreshTokenResult.success(newAccessToken, newRawRefreshToken));
                             })
-                            .switchIfEmpty(Mono.just(RefreshTokenResult.failure("USER_NOT_FOUND")));
+                            .switchIfEmpty(Mono.just(RefreshTokenResult.failure(RefreshFailureReason.USER_NOT_FOUND)));
                 })
-                .switchIfEmpty(Mono.just(RefreshTokenResult.failure("REFRESH_TOKEN_NOT_FOUND")));
+                .switchIfEmpty(Mono.just(RefreshTokenResult.failure(RefreshFailureReason.TOKEN_NOT_FOUND)));
     }
 
     private Mono<Void> revokeAllForUser(com.dsports.identity.domain.model.UserId userId) {

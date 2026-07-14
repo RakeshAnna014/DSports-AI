@@ -1,22 +1,31 @@
 package com.dsports.identity.infrastructure.persistence.repository;
 
-import org.springframework.r2dbc.core.DatabaseClient;
+import com.dsports.identity.application.port.RefreshTokenRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
 
 @Component
 public class ExpiredRefreshTokenCleanupJob {
 
-    private final DatabaseClient databaseClient;
+    private static final Logger log = LoggerFactory.getLogger(ExpiredRefreshTokenCleanupJob.class);
 
-    public ExpiredRefreshTokenCleanupJob(DatabaseClient databaseClient) {
-        this.databaseClient = databaseClient;
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    public ExpiredRefreshTokenCleanupJob(RefreshTokenRepository refreshTokenRepository) {
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Scheduled(cron = "0 0 3 * * ?")
     public void deleteExpiredTokens() {
-        databaseClient.sql("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
-                .then()
-                .subscribe();
+        refreshTokenRepository.deleteExpired(Instant.now())
+                .subscribe(count -> {
+                    if (count > 0) {
+                        log.info("Deleted {} expired refresh tokens", count);
+                    }
+                });
     }
 }

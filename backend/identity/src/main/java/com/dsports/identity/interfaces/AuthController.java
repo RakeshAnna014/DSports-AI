@@ -7,6 +7,9 @@ import com.dsports.identity.application.usecase.LoginUseCase;
 import com.dsports.identity.application.usecase.LogoutUseCase;
 import com.dsports.identity.application.usecase.RefreshTokenUseCase;
 import com.dsports.identity.domain.model.UserId;
+import com.dsports.identity.interfaces.dto.ErrorResponse;
+import com.dsports.identity.interfaces.dto.LoginResponse;
+import com.dsports.identity.interfaces.dto.RefreshResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -49,14 +50,11 @@ public class AuthController {
                 .map(result -> {
                     if (!result.success()) {
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(Map.of("message", "Invalid email or password"));
+                                .body(new ErrorResponse("Invalid email or password"));
                     }
-                    return ResponseEntity.ok(Map.of(
-                            "userId", result.userId(),
-                            "email", result.email(),
-                            "roles", result.roles(),
-                            "accessToken", result.accessToken(),
-                            "refreshToken", result.refreshToken()
+                    return ResponseEntity.ok(new LoginResponse(
+                            result.userId(), result.email(), result.roles(),
+                            result.accessToken(), result.refreshToken()
                     ));
                 });
     }
@@ -67,11 +65,10 @@ public class AuthController {
                 .map(result -> {
                     if (!result.success()) {
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(Map.of("message", "Invalid refresh token"));
+                                .body(new ErrorResponse("Invalid refresh token"));
                     }
-                    return ResponseEntity.ok(Map.of(
-                            "accessToken", result.accessToken(),
-                            "refreshToken", result.refreshToken()
+                    return ResponseEntity.ok(new RefreshResponse(
+                            result.accessToken(), result.refreshToken()
                     ));
                 });
     }
