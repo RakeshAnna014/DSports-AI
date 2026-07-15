@@ -18,6 +18,7 @@ import org.springframework.r2dbc.core.DatabaseClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,19 +67,21 @@ class UserRepositoryIntegrationTest {
                 "encoded-password"
         );
 
-        userRepository.save(user);
+        userRepository.save(user).block();
 
-        var found = userRepository.findByEmail(Email.from("test@example.com"));
-        assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(user.getId());
-        assertThat(found.get().getEmail().value()).isEqualTo("test@example.com");
-        assertThat(found.get().getCustomerName().firstName()).isEqualTo("John");
-        assertThat(found.get().getCustomerName().lastName()).isEqualTo("Doe");
-        assertThat(found.get().getStatus()).isEqualTo(UserStatus.REGISTERED);
-        assertThat(found.get().getPasswordHash()).isEqualTo("encoded-password");
-        assertThat(found.get().getRoles()).containsExactly(UserRole.CUSTOMER);
-        assertThat(found.get().getAuthProviders()).containsExactly(AuthenticationProvider.EMAIL);
-        assertThat(found.get().getFailedLoginAttempts()).isZero();
+        StepVerifier.create(userRepository.findByEmail(Email.from("test@example.com")))
+                .assertNext(found -> {
+                    assertThat(found.getId()).isEqualTo(user.getId());
+                    assertThat(found.getEmail().value()).isEqualTo("test@example.com");
+                    assertThat(found.getCustomerName().firstName()).isEqualTo("John");
+                    assertThat(found.getCustomerName().lastName()).isEqualTo("Doe");
+                    assertThat(found.getStatus()).isEqualTo(UserStatus.REGISTERED);
+                    assertThat(found.getPasswordHash()).isEqualTo("encoded-password");
+                    assertThat(found.getRoles()).containsExactly(UserRole.CUSTOMER);
+                    assertThat(found.getAuthProviders()).containsExactly(AuthenticationProvider.EMAIL);
+                    assertThat(found.getFailedLoginAttempts()).isZero();
+                })
+                .verifyComplete();
     }
 
     @Test
@@ -89,12 +92,14 @@ class UserRepositoryIntegrationTest {
                 "another-password"
         );
 
-        userRepository.save(user);
+        userRepository.save(user).block();
 
-        var found = userRepository.findById(user.getId());
-        assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(user.getId());
-        assertThat(found.get().getEmail().value()).isEqualTo("jane@example.com");
+        StepVerifier.create(userRepository.findById(user.getId()))
+                .assertNext(found -> {
+                    assertThat(found.getId()).isEqualTo(user.getId());
+                    assertThat(found.getEmail().value()).isEqualTo("jane@example.com");
+                })
+                .verifyComplete();
     }
 
     @Test
@@ -104,22 +109,25 @@ class UserRepositoryIntegrationTest {
                 CustomerName.of("Exists", "User"),
                 "password"
         );
-        userRepository.save(user);
+        userRepository.save(user).block();
 
-        boolean exists = userRepository.existsByEmail(Email.from("exists@example.com"));
-        assertThat(exists).isTrue();
+        StepVerifier.create(userRepository.existsByEmail(Email.from("exists@example.com")))
+                .assertNext(exists -> assertThat(exists).isTrue())
+                .verifyComplete();
     }
 
     @Test
     void existsByEmail_returnsFalse_whenEmailDoesNotExist() {
-        boolean exists = userRepository.existsByEmail(Email.from("nonexistent@example.com"));
-        assertThat(exists).isFalse();
+        StepVerifier.create(userRepository.existsByEmail(Email.from("nonexistent@example.com")))
+                .assertNext(exists -> assertThat(exists).isFalse())
+                .verifyComplete();
     }
 
     @Test
     void findByEmail_returnsEmpty_whenEmailDoesNotExist() {
-        var result = userRepository.findByEmail(Email.from("unknown@example.com"));
-        assertThat(result).isEmpty();
+        StepVerifier.create(userRepository.findByEmail(Email.from("unknown@example.com")))
+                .expectComplete()
+                .verify();
     }
 
     @Test
@@ -129,14 +137,14 @@ class UserRepositoryIntegrationTest {
                 CustomerName.of("Update", "Test"),
                 "original-hash"
         );
-        userRepository.save(user);
+        userRepository.save(user).block();
 
         user.updateLastLogin();
-        userRepository.save(user);
+        userRepository.save(user).block();
 
-        var found = userRepository.findByEmail(Email.from("update@example.com"));
-        assertThat(found).isPresent();
-        assertThat(found.get().getLastLoginAt()).isPresent();
+        StepVerifier.create(userRepository.findByEmail(Email.from("update@example.com")))
+                .assertNext(found -> assertThat(found.getLastLoginAt()).isPresent())
+                .verifyComplete();
     }
 
     @Test
@@ -146,9 +154,10 @@ class UserRepositoryIntegrationTest {
                 CustomerName.of("First", "User"),
                 "password"
         );
-        userRepository.save(user);
+        userRepository.save(user).block();
 
-        boolean exists = userRepository.existsByEmail(Email.from("duplicate@example.com"));
-        assertThat(exists).isTrue();
+        StepVerifier.create(userRepository.existsByEmail(Email.from("duplicate@example.com")))
+                .assertNext(exists -> assertThat(exists).isTrue())
+                .verifyComplete();
     }
 }

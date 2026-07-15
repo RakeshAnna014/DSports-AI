@@ -10,6 +10,7 @@ import com.dsports.identity.domain.exception.IdentityDomainException;
 import com.dsports.identity.domain.model.CustomerName;
 import com.dsports.identity.domain.model.Email;
 import com.dsports.identity.domain.model.User;
+import reactor.core.publisher.Mono;
 
 public class RegisterUserUseCase {
 
@@ -24,22 +25,23 @@ public class RegisterUserUseCase {
         this.eventPublisher = eventPublisher;
     }
 
-    public RegisterUserResult execute(RegisterUserCommand command) {
+    public Mono<RegisterUserResult> execute(RegisterUserCommand command) {
         Email email = Email.from(command.email());
         CustomerName customerName = CustomerName.of(command.firstName(), command.lastName());
 
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new IdentityDomainException(ErrorCode.DUPLICATE_EMAIL,
-                    "Email " + command.email() + " is already registered");
-        }
-
-        String encodedPassword = passwordEncoder.encode(command.password());
-        User user = User.register(email, customerName, encodedPassword);
-
-        userRepository.save(user);
-        eventPublisher.publishAll(user.getDomainEvents());
-        user.clearDomainEvents();
-
-        return new RegisterUserResult(user.getId().value(), user.getEmail().value());
+        return userRepository.findByEmail(email)
+                .<RegisterUserResult>flatMap(ignored ->
+                    Mono.error(new IdentityDomainException(ErrorCode.DUPLICATE_EMAIL,
+                            "Email " + command.email() + " is already registered")))
+                .switchIfEmpty(Mono.defer(() -> {
+                    String encodedPassword = passwordEncoder.encode(command.password());
+                    User user = User.register(email, customerName, encodedPassword);
+                    return userRepository.save(user)
+                            .then(Mono.fromRunnable(() -> {
+                                eventPublisher.publishAll(user.getDomainEvents());
+                                user.clearDomainEvents();
+                            }))
+                            .thenReturn(new RegisterUserResult(user.getId().value(), user.getEmail().value()));
+                }));
     }
 }

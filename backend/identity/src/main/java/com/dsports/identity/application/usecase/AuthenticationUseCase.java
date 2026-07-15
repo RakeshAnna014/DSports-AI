@@ -7,6 +7,7 @@ import com.dsports.identity.application.result.AuthenticationFailureReason;
 import com.dsports.identity.application.result.AuthenticationResult;
 import com.dsports.identity.domain.model.Email;
 import com.dsports.identity.domain.model.User;
+import reactor.core.publisher.Mono;
 
 public class AuthenticationUseCase {
 
@@ -18,38 +19,34 @@ public class AuthenticationUseCase {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public AuthenticationResult execute(LoginUserCommand command) {
+    public Mono<AuthenticationResult> execute(LoginUserCommand command) {
         Email email = Email.from(command.email());
 
-        var userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) {
-            return AuthenticationResult.failure(AuthenticationFailureReason.USER_NOT_FOUND);
-        }
+        return userRepository.findByEmail(email)
+                .flatMap(user -> {
+                    if (user.getStatus().isDeleted()) {
+                        return Mono.just(AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_DELETED));
+                    }
 
-        User user = userOpt.get();
+                    if (user.getStatus().isDisabled()) {
+                        return Mono.just(AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_DISABLED));
+                    }
 
-        if (user.getStatus().isDeleted()) {
-            return AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_DELETED);
-        }
+                    if (!user.canLogin()) {
+                        return Mono.just(AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED));
+                    }
 
-        if (user.getStatus().isDisabled()) {
-            return AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_DISABLED);
-        }
+                    String passwordHash = user.getPasswordHash();
+                    if (passwordHash == null || !passwordEncoder.matches(command.password(), passwordHash)) {
+                        user.recordFailedLogin();
+                        return userRepository.save(user)
+                                .thenReturn(AuthenticationResult.failure(AuthenticationFailureReason.INVALID_PASSWORD));
+                    }
 
-        if (!user.canLogin()) {
-            return AuthenticationResult.failure(AuthenticationFailureReason.ACCOUNT_LOCKED);
-        }
-
-        String passwordHash = user.getPasswordHash();
-        if (passwordHash == null || !passwordEncoder.matches(command.password(), passwordHash)) {
-            user.recordFailedLogin();
-            userRepository.save(user);
-            return AuthenticationResult.failure(AuthenticationFailureReason.INVALID_PASSWORD);
-        }
-
-        user.updateLastLogin();
-        userRepository.save(user);
-
-        return AuthenticationResult.success(user.getId().value(), user.getEmail().value());
+                    user.updateLastLogin();
+                    return userRepository.save(user)
+                            .thenReturn(AuthenticationResult.success(user.getId().value(), user.getEmail().value()));
+                })
+                .switchIfEmpty(Mono.just(AuthenticationResult.failure(AuthenticationFailureReason.USER_NOT_FOUND)));
     }
 }
