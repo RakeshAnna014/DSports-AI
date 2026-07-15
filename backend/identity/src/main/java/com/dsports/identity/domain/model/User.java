@@ -7,6 +7,7 @@ import com.dsports.shared.domain.kernel.DomainEvent;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,6 +35,8 @@ public final class User {
     private String passwordHash;
     private CustomerName customerName;
     private PhoneNumber phone;
+    private String profileImageUrl;
+    private DateOfBirth dateOfBirth;
     private UserStatus status;
     private final Set<UserRole> roles;
     private final Set<AuthenticationProvider> authProviders;
@@ -52,6 +55,8 @@ public final class User {
         this.passwordHash = passwordHash;
         this.customerName = Objects.requireNonNull(customerName, "customerName must not be null");
         this.phone = null;
+        this.profileImageUrl = null;
+        this.dateOfBirth = null;
         this.status = Objects.requireNonNull(status, "status must not be null");
         this.roles = new HashSet<>(Objects.requireNonNull(roles, "roles must not be null"));
         this.authProviders = new HashSet<>(Objects.requireNonNull(authProviders, "authProviders must not be null"));
@@ -108,6 +113,7 @@ public final class User {
     // Skips factory rules (no event recording, no ID generation) because the Aggregate already exists.
     public static User reconstitute(UserId id, Email email, String passwordHash,
                                      CustomerName customerName, PhoneNumber phone,
+                                     String profileImageUrl, DateOfBirth dateOfBirth,
                                      UserStatus status, Set<UserRole> roles,
                                      Set<AuthenticationProvider> authProviders,
                                      int failedLoginAttempts, Instant lockedUntil,
@@ -121,6 +127,8 @@ public final class User {
         Objects.requireNonNull(authProviders, "authProviders must not be null");
         User user = new User(id, email, passwordHash, customerName, status, roles, authProviders);
         user.phone = phone;
+        user.profileImageUrl = profileImageUrl;
+        user.dateOfBirth = dateOfBirth;
         user.failedLoginAttempts = failedLoginAttempts;
         user.lockedUntil = lockedUntil;
         user.lastLoginAt = lastLoginAt;
@@ -188,6 +196,18 @@ public final class User {
     void updatePhone(PhoneNumber newPhone) {
         Objects.requireNonNull(newPhone, "newPhone must not be null");
         this.phone = newPhone;
+        this.updatedAt = Instant.now();
+    }
+
+    // Package-private: called by UserProfileManagementService.
+    // Invariants enforced via validated VOs (CustomerName, PhoneNumber, DateOfBirth).
+    // Email and UserId are immutable — not accepted as parameters.
+    void updateProfile(CustomerName newName, PhoneNumber newPhone,
+                       String newProfileImageUrl, DateOfBirth newDateOfBirth) {
+        this.customerName = Objects.requireNonNull(newName, "newName must not be null");
+        this.phone = newPhone;
+        this.profileImageUrl = newProfileImageUrl;
+        this.dateOfBirth = newDateOfBirth;
         this.updatedAt = Instant.now();
     }
 
@@ -345,6 +365,14 @@ public final class User {
 
     public Optional<PhoneNumber> getPhone() {
         return Optional.ofNullable(phone);
+    }
+
+    public Optional<String> getProfileImageUrl() {
+        return Optional.ofNullable(profileImageUrl);
+    }
+
+    public Optional<DateOfBirth> getDateOfBirth() {
+        return Optional.ofNullable(dateOfBirth);
     }
 
     public UserStatus getStatus() {

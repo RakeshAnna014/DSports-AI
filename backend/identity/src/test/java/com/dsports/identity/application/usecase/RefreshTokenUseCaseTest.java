@@ -54,7 +54,7 @@ class RefreshTokenUseCaseTest {
         var email = Email.from("user@example.com");
         activeUser = User.reconstitute(
                 USER_ID, email, "hash",
-                CustomerName.of("John", "Doe"), null,
+                CustomerName.of("John", "Doe"), null, null, null,
                 UserStatus.ACTIVE, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
                 Instant.now(), Instant.now(), null
@@ -140,7 +140,7 @@ class RefreshTokenUseCaseTest {
     void shouldFailForDeletedUser() {
         var deletedUser = User.reconstitute(
                 USER_ID, Email.from("deleted@example.com"), "hash",
-                CustomerName.of("Deleted", "User"), null,
+                CustomerName.of("Deleted", "User"), null, null, null,
                 UserStatus.DELETED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
                 Instant.now(), Instant.now(), Instant.now()
@@ -164,7 +164,7 @@ class RefreshTokenUseCaseTest {
     void shouldFailForDisabledUser() {
         var disabledUser = User.reconstitute(
                 USER_ID, Email.from("disabled@example.com"), "hash",
-                CustomerName.of("Disabled", "User"), null,
+                CustomerName.of("Disabled", "User"), null, null, null,
                 UserStatus.DISABLED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
                 Instant.now(), Instant.now(), null
@@ -188,7 +188,7 @@ class RefreshTokenUseCaseTest {
     void shouldFailForLockedUser() {
         var lockedUser = User.reconstitute(
                 USER_ID, Email.from("locked@example.com"), "hash",
-                CustomerName.of("Locked", "User"), null,
+                CustomerName.of("Locked", "User"), null, null, null,
                 UserStatus.LOCKED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 5, Instant.now().plus(Duration.ofHours(1)), null,
                 Instant.now(), Instant.now(), null

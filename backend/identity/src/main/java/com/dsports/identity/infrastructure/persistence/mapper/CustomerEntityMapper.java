@@ -2,6 +2,7 @@ package com.dsports.identity.infrastructure.persistence.mapper;
 
 import com.dsports.identity.domain.model.AuthenticationProvider;
 import com.dsports.identity.domain.model.CustomerName;
+import com.dsports.identity.domain.model.DateOfBirth;
 import com.dsports.identity.domain.model.Email;
 import com.dsports.identity.domain.model.PhoneNumber;
 import com.dsports.identity.domain.model.User;
@@ -27,6 +28,8 @@ public class CustomerEntityMapper {
         entity.setFirstName(domain.getCustomerName().firstName());
         entity.setLastName(domain.getCustomerName().lastName());
         domain.getPhone().ifPresent(phone -> entity.setPhone(phone.value()));
+        domain.getProfileImageUrl().ifPresent(entity::setProfileImageUrl);
+        domain.getDateOfBirth().ifPresent(dob -> entity.setDateOfBirth(dob.value()));
         entity.setStatus(domain.getStatus().name());
         entity.setFailedLoginAttempts(domain.getFailedLoginAttempts());
         domain.getLockedUntil().ifPresent(entity::setLockedUntil);
@@ -46,6 +49,8 @@ public class CustomerEntityMapper {
                 entity.getPasswordHash(),
                 CustomerName.of(entity.getFirstName(), entity.getLastName()),
                 entity.getPhone() != null ? PhoneNumber.from(entity.getPhone()) : null,
+                entity.getProfileImageUrl(),
+                entity.getDateOfBirth() != null ? DateOfBirth.from(entity.getDateOfBirth()) : null,
                 UserStatus.valueOf(entity.getStatus()),
                 toRoles(roleEntities),
                 toAuthProviders(providerEntities),

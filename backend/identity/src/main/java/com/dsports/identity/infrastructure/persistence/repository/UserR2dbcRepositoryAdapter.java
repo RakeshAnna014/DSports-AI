@@ -82,10 +82,12 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
 
         return databaseClient.sql("""
                         INSERT INTO customers (id, email, password_hash, first_name, last_name,
-                            phone, status, failed_login_attempts, locked_until, last_login_at,
+                            phone, profile_image_url, date_of_birth,
+                            status, failed_login_attempts, locked_until, last_login_at,
                             created_at, updated_at, deleted_at)
                         VALUES (:id, :email, :passwordHash, :firstName, :lastName,
-                            :phone, :status, :failedLoginAttempts, :lockedUntil, :lastLoginAt,
+                            :phone, :profileImageUrl, :dateOfBirth,
+                            :status, :failedLoginAttempts, :lockedUntil, :lastLoginAt,
                             :createdAt, :updatedAt, :deletedAt)
                         ON CONFLICT (id) DO UPDATE SET
                             email = EXCLUDED.email,
@@ -93,6 +95,8 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                             first_name = EXCLUDED.first_name,
                             last_name = EXCLUDED.last_name,
                             phone = EXCLUDED.phone,
+                            profile_image_url = EXCLUDED.profile_image_url,
+                            date_of_birth = EXCLUDED.date_of_birth,
                             status = EXCLUDED.status,
                             failed_login_attempts = EXCLUDED.failed_login_attempts,
                             locked_until = EXCLUDED.locked_until,
@@ -106,6 +110,8 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                 .bind("firstName", entity.getFirstName())
                 .bind("lastName", entity.getLastName())
                 .bind("phone", entity.getPhone())
+                .bind("profileImageUrl", entity.getProfileImageUrl())
+                .bind("dateOfBirth", entity.getDateOfBirth())
                 .bind("status", entity.getStatus())
                 .bind("failedLoginAttempts", entity.getFailedLoginAttempts())
                 .bind("lockedUntil", entity.getLockedUntil())
@@ -180,6 +186,8 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
         e.setFirstName(row.get("first_name", String.class));
         e.setLastName(row.get("last_name", String.class));
         e.setPhone(row.get("phone", String.class));
+        e.setProfileImageUrl(row.get("profile_image_url", String.class));
+        e.setDateOfBirth(row.get("date_of_birth", java.time.LocalDate.class));
         e.setStatus(row.get("status", String.class));
         e.setFailedLoginAttempts(row.get("failed_login_attempts", Integer.class));
         e.setLockedUntil(row.get("locked_until", java.time.Instant.class));
