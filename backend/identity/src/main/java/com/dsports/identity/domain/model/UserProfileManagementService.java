@@ -18,7 +18,7 @@ public final class UserProfileManagementService {
     }
 
     public void updateProfile(User user, CustomerName newName, PhoneNumber newPhone,
-                              String newProfileImageUrl, DateOfBirth newDateOfBirth) {
+                              ProfileImageUrl newProfileImageUrl, DateOfBirth newDateOfBirth) {
         Objects.requireNonNull(user, "user must not be null");
         Objects.requireNonNull(newName, "newName must not be null");
         user.updateProfile(newName, newPhone, newProfileImageUrl, newDateOfBirth);

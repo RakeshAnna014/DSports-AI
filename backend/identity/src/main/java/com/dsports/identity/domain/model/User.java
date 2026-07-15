@@ -1,5 +1,6 @@
 package com.dsports.identity.domain.model;
 
+import com.dsports.identity.domain.event.UserProfileUpdatedEvent;
 import com.dsports.identity.domain.event.UserRegisteredEvent;
 import com.dsports.identity.domain.exception.ErrorCode;
 import com.dsports.identity.domain.exception.IdentityDomainException;
@@ -35,7 +36,7 @@ public final class User {
     private String passwordHash;
     private CustomerName customerName;
     private PhoneNumber phone;
-    private String profileImageUrl;
+    private ProfileImageUrl profileImageUrl;
     private DateOfBirth dateOfBirth;
     private UserStatus status;
     private final Set<UserRole> roles;
@@ -46,7 +47,9 @@ public final class User {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+    private int version;
     private final transient List<DomainEvent> domainEvents = new ArrayList<>();
+    private final List<Address> addresses = new ArrayList<>();
 
     private User(UserId id, Email email, String passwordHash, CustomerName customerName,
                  UserStatus status, Set<UserRole> roles, Set<AuthenticationProvider> authProviders) {
@@ -66,6 +69,7 @@ public final class User {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         this.deletedAt = null;
+        this.version = 0;
     }
 
     // ============ FACTORY METHODS ============
@@ -113,12 +117,13 @@ public final class User {
     // Skips factory rules (no event recording, no ID generation) because the Aggregate already exists.
     public static User reconstitute(UserId id, Email email, String passwordHash,
                                      CustomerName customerName, PhoneNumber phone,
-                                     String profileImageUrl, DateOfBirth dateOfBirth,
+                                     ProfileImageUrl profileImageUrl, DateOfBirth dateOfBirth,
                                      UserStatus status, Set<UserRole> roles,
                                      Set<AuthenticationProvider> authProviders,
                                      int failedLoginAttempts, Instant lockedUntil,
                                      Instant lastLoginAt, Instant createdAt,
-                                     Instant updatedAt, Instant deletedAt) {
+                                     Instant updatedAt, Instant deletedAt,
+                                     List<Address> addresses, int version) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(email, "email must not be null");
         Objects.requireNonNull(customerName, "customerName must not be null");
@@ -135,6 +140,8 @@ public final class User {
         user.createdAt = createdAt;
         user.updatedAt = updatedAt;
         user.deletedAt = deletedAt;
+        user.addresses.addAll(addresses);
+        user.version = version;
         return user;
     }
 
@@ -203,12 +210,14 @@ public final class User {
     // Invariants enforced via validated VOs (CustomerName, PhoneNumber, DateOfBirth).
     // Email and UserId are immutable — not accepted as parameters.
     void updateProfile(CustomerName newName, PhoneNumber newPhone,
-                       String newProfileImageUrl, DateOfBirth newDateOfBirth) {
+                       ProfileImageUrl newProfileImageUrl, DateOfBirth newDateOfBirth) {
         this.customerName = Objects.requireNonNull(newName, "newName must not be null");
         this.phone = newPhone;
         this.profileImageUrl = newProfileImageUrl;
         this.dateOfBirth = newDateOfBirth;
         this.updatedAt = Instant.now();
+        recordEvent(new UserProfileUpdatedEvent(this.id, Instant.now(),
+                Set.of("customerName", "phone", "profileImageUrl", "dateOfBirth")));
     }
 
     // Package-private: called by UserProfileManagementService.
@@ -219,6 +228,83 @@ public final class User {
         }
         this.passwordHash = newPasswordHash;
         this.updatedAt = Instant.now();
+    }
+
+    // ============ ADDRESS BEHAVIORS ============
+
+    public Address addAddress(AddressLine line1, AddressLine line2, String city,
+                               State state, Country country, PostalCode postalCode,
+                               AddressType type) {
+        var address = Address.create(type, line1, line2, city, state, country, postalCode);
+        if (addresses.size() >= 10) {
+            throw new IdentityDomainException(ErrorCode.MAX_ADDRESSES_EXCEEDED,
+                    "Cannot have more than 10 addresses");
+        }
+        if (type == AddressType.SHIPPING && !hasDefaultShippingAddress()) {
+            address.markDefault();
+        }
+        if (type == AddressType.BILLING && !hasDefaultBillingAddress()) {
+            address.markDefault();
+        }
+        addresses.add(address);
+        this.updatedAt = Instant.now();
+        return address;
+    }
+
+    public void updateAddress(AddressId addressId, AddressLine line1, AddressLine line2,
+                               String city, State state, Country country,
+                               PostalCode postalCode, AddressType type) {
+        var address = findAddress(addressId);
+        address.update(line1, line2, city, state, country, postalCode, type);
+        this.updatedAt = Instant.now();
+    }
+
+    public void removeAddress(AddressId addressId) {
+        var address = findAddress(addressId);
+        addresses.remove(address);
+        this.updatedAt = Instant.now();
+    }
+
+    public void setDefaultAddress(AddressId addressId) {
+        var target = findAddress(addressId);
+        for (var addr : addresses) {
+            if (addr.getType() == target.getType() && addr.isDefault()) {
+                addr.unmarkDefault();
+            }
+        }
+        target.markDefault();
+        this.updatedAt = Instant.now();
+    }
+
+    public List<Address> getAddresses() {
+        return Collections.unmodifiableList(new ArrayList<>(addresses));
+    }
+
+    public Optional<Address> getAddressById(AddressId addressId) {
+        return addresses.stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst();
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    private Address findAddress(AddressId addressId) {
+        return addresses.stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst()
+                .orElseThrow(() -> new IdentityDomainException(ErrorCode.ADDRESS_NOT_FOUND,
+                        "Address not found: " + addressId,
+                        Map.of("addressId", addressId.toString())));
+    }
+
+    private boolean hasDefaultShippingAddress() {
+        return addresses.stream().anyMatch(a -> a.getType() == AddressType.SHIPPING && a.isDefault());
+    }
+
+    private boolean hasDefaultBillingAddress() {
+        return addresses.stream().anyMatch(a -> a.getType() == AddressType.BILLING && a.isDefault());
     }
 
     // ============ ROLE BEHAVIORS ============
@@ -367,7 +453,7 @@ public final class User {
         return Optional.ofNullable(phone);
     }
 
-    public Optional<String> getProfileImageUrl() {
+    public Optional<ProfileImageUrl> getProfileImageUrl() {
         return Optional.ofNullable(profileImageUrl);
     }
 

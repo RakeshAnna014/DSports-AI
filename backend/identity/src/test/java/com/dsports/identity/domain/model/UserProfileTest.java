@@ -20,7 +20,8 @@ class UserProfileTest {
                 CustomerName.of("John", "Doe"), null, null, null,
                 UserStatus.ACTIVE, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                java.time.Instant.now(), java.time.Instant.now(), null
+                java.time.Instant.now(), java.time.Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
         profileService = new UserProfileManagementService();
     }
@@ -31,7 +32,7 @@ class UserProfileTest {
                 user,
                 CustomerName.of("Jane", "Smith"),
                 PhoneNumber.from("+919876543210"),
-                "https://example.com/avatar.jpg",
+                ProfileImageUrl.from("https://example.com/avatar.jpg"),
                 DateOfBirth.from(LocalDate.of(1990, 5, 15))
         );
 
@@ -40,7 +41,7 @@ class UserProfileTest {
         assertThat(user.getPhone()).isPresent();
         assertThat(user.getPhone().get().value()).isEqualTo("+919876543210");
         assertThat(user.getProfileImageUrl()).isPresent();
-        assertThat(user.getProfileImageUrl().get()).isEqualTo("https://example.com/avatar.jpg");
+        assertThat(user.getProfileImageUrl().get().value()).isEqualTo("https://example.com/avatar.jpg");
         assertThat(user.getDateOfBirth()).isPresent();
         assertThat(user.getDateOfBirth().get().value()).isEqualTo(LocalDate.of(1990, 5, 15));
     }
@@ -52,7 +53,8 @@ class UserProfileTest {
                 CustomerName.of("John", "Doe"), PhoneNumber.from("+919876543210"), null, null,
                 UserStatus.ACTIVE, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                java.time.Instant.now(), java.time.Instant.now(), null
+                java.time.Instant.now(), java.time.Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
 
         profileService.updateProfile(

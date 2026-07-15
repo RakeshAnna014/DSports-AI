@@ -42,7 +42,8 @@ class GetCustomerProfileUseCaseTest {
                 CustomerName.of("John", "Doe"), null, null, null,
                 UserStatus.ACTIVE, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                java.time.Instant.now(), java.time.Instant.now(), null
+                java.time.Instant.now(), java.time.Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
     }
 

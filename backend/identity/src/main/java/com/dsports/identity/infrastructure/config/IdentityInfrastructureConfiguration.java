@@ -8,11 +8,16 @@ import com.dsports.identity.application.port.RefreshTokenRepository;
 import com.dsports.identity.application.port.RefreshTokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
+import com.dsports.identity.application.usecase.CreateAddressUseCase;
+import com.dsports.identity.application.usecase.DeleteAddressUseCase;
+import com.dsports.identity.application.usecase.GetAddressesUseCase;
 import com.dsports.identity.application.usecase.GetCustomerProfileUseCase;
 import com.dsports.identity.application.usecase.LoginUseCase;
 import com.dsports.identity.application.usecase.LogoutUseCase;
 import com.dsports.identity.application.usecase.RefreshTokenUseCase;
 import com.dsports.identity.application.usecase.RegisterUserUseCase;
+import com.dsports.identity.application.usecase.SetDefaultAddressUseCase;
+import com.dsports.identity.application.usecase.UpdateAddressUseCase;
 import com.dsports.identity.application.usecase.UpdateCustomerProfileUseCase;
 import com.dsports.identity.domain.model.UserProfileManagementService;
 import com.dsports.identity.infrastructure.event.SpringEventPublisherAdapter;
@@ -20,6 +25,8 @@ import com.dsports.identity.infrastructure.notification.NotificationGatewayStub;
 import com.dsports.identity.infrastructure.oauth.OAuthProviderGatewayStub;
 import com.dsports.identity.infrastructure.persistence.mapper.CustomerEntityMapper;
 import com.dsports.identity.infrastructure.persistence.repository.RefreshTokenR2dbcRepositoryAdapter;
+import com.dsports.identity.infrastructure.persistence.repository.SpringR2dbcAddressRepository;
+import com.dsports.identity.infrastructure.persistence.repository.SpringR2dbcUserRepository;
 import com.dsports.identity.infrastructure.persistence.repository.UserR2dbcRepositoryAdapter;
 import com.dsports.identity.infrastructure.security.BCryptPasswordEncoderAdapter;
 import com.dsports.identity.infrastructure.security.JwtTokenProvider;
@@ -43,8 +50,12 @@ public class IdentityInfrastructureConfiguration {
     @Bean
     public UserRepository userRepository(
             DatabaseClient databaseClient,
-            CustomerEntityMapper mapper) {
-        return new UserR2dbcRepositoryAdapter(databaseClient, mapper);
+            CustomerEntityMapper mapper,
+            SpringR2dbcUserRepository springR2dbcUserRepository,
+            SpringR2dbcAddressRepository springR2dbcAddressRepository,
+            EventPublisher eventPublisher) {
+        return new UserR2dbcRepositoryAdapter(databaseClient, mapper,
+                springR2dbcUserRepository, springR2dbcAddressRepository, eventPublisher);
     }
 
     @Bean
@@ -124,5 +135,30 @@ public class IdentityInfrastructureConfiguration {
             UserRepository userRepository,
             UserProfileManagementService profileService) {
         return new UpdateCustomerProfileUseCase(userRepository, profileService);
+    }
+
+    @Bean
+    public GetAddressesUseCase getAddressesUseCase(UserRepository userRepository) {
+        return new GetAddressesUseCase(userRepository);
+    }
+
+    @Bean
+    public CreateAddressUseCase createAddressUseCase(UserRepository userRepository) {
+        return new CreateAddressUseCase(userRepository);
+    }
+
+    @Bean
+    public UpdateAddressUseCase updateAddressUseCase(UserRepository userRepository) {
+        return new UpdateAddressUseCase(userRepository);
+    }
+
+    @Bean
+    public DeleteAddressUseCase deleteAddressUseCase(UserRepository userRepository) {
+        return new DeleteAddressUseCase(userRepository);
+    }
+
+    @Bean
+    public SetDefaultAddressUseCase setDefaultAddressUseCase(UserRepository userRepository) {
+        return new SetDefaultAddressUseCase(userRepository);
     }
 }
