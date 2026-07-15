@@ -11,6 +11,9 @@ import com.dsports.identity.infrastructure.persistence.entity.CustomerAuthProvid
 import com.dsports.identity.infrastructure.persistence.entity.CustomerEntity;
 import com.dsports.identity.infrastructure.persistence.entity.CustomerRoleEntity;
 import com.dsports.identity.infrastructure.persistence.mapper.CustomerEntityMapper;
+import com.dsports.identity.domain.exception.ErrorCode;
+import com.dsports.identity.domain.exception.IdentityDomainException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -76,6 +79,10 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
         var customerId = entity.getId();
 
         return userRepository.save(entity)
+                .onErrorMap(OptimisticLockingFailureException.class, e ->
+                        new IdentityDomainException(ErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
+                                "User was modified by another request. Please retry.",
+                                java.util.Map.of("userId", customerId.toString())))
                 .flatMap(savedEntity ->
                         replaceRoles(customerId, user.getRoles())
                                 .then(replaceAuthProviders(customerId, user.getAuthProviders()))

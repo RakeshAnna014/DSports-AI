@@ -1,13 +1,11 @@
 package com.dsports.identity.application.result;
 
-import com.dsports.identity.domain.model.AddressType;
-
 import java.time.Instant;
 import java.util.UUID;
 
 public record AddressResult(
     UUID addressId,
-    AddressType type,
+    String type,
     String line1,
     String line2,
     String city,

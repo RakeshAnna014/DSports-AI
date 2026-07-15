@@ -15,4 +15,8 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
     CONSTRAINT fk_customer_addresses_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON customer_addresses(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_type ON customer_addresses(customer_id, type);
+CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_default ON customer_addresses(customer_id, is_default);
+
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 0;

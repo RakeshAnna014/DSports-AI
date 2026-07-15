@@ -26,7 +26,7 @@ public class SetDefaultAddressUseCase {
                                 var addr = user.getAddressById(command.addressId())
                                         .orElseThrow();
                                 return new AddressResult(
-                                        addr.getId().value(), addr.getType(),
+                                        addr.getId().value(), addr.getType().name(),
                                         addr.getLine1().value(),
                                         addr.getLine2() != null ? addr.getLine2().value() : null,
                                         addr.getCity(), addr.getState().value(),

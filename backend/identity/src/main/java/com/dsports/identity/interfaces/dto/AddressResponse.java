@@ -21,7 +21,7 @@ public record AddressResponse(
     public static AddressResponse from(AddressResult result) {
         return new AddressResponse(
             result.addressId(),
-            result.type().name(),
+            result.type(),
             result.line1(),
             result.line2(),
             result.city(),

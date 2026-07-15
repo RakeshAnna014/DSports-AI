@@ -41,7 +41,7 @@ public class CreateAddressUseCase {
                                 state, country, postalCode, command.type());
                         return userRepository.save(user)
                                 .thenReturn(new AddressResult(
-                                        address.getId().value(), address.getType(),
+                                        address.getId().value(), address.getType().name(),
                                         address.getLine1().value(),
                                         address.getLine2() != null ? address.getLine2().value() : null,
                                         address.getCity(), address.getState().value(),

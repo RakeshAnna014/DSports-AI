@@ -1,5 +1,9 @@
 package com.dsports.identity.domain.model;
 
+import com.dsports.identity.domain.event.AddressAddedEvent;
+import com.dsports.identity.domain.event.AddressRemovedEvent;
+import com.dsports.identity.domain.event.AddressUpdatedEvent;
+import com.dsports.identity.domain.event.DefaultAddressChangedEvent;
 import com.dsports.identity.domain.event.UserProfileUpdatedEvent;
 import com.dsports.identity.domain.event.UserRegisteredEvent;
 import com.dsports.identity.domain.exception.ErrorCode;
@@ -26,6 +30,7 @@ public final class User {
     private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
     private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
     private static final int MAX_AUTH_PROVIDERS = 5;
+    private static final int MAX_ADDRESSES = 10;
 
     private final UserId id;
     private Email email;
@@ -236,18 +241,19 @@ public final class User {
                                State state, Country country, PostalCode postalCode,
                                AddressType type) {
         var address = Address.create(type, line1, line2, city, state, country, postalCode);
-        if (addresses.size() >= 10) {
+        if (addresses.size() >= MAX_ADDRESSES) {
             throw new IdentityDomainException(ErrorCode.MAX_ADDRESSES_EXCEEDED,
-                    "Cannot have more than 10 addresses");
+                    "Cannot have more than " + MAX_ADDRESSES + " addresses");
         }
-        if (type == AddressType.SHIPPING && !hasDefaultShippingAddress()) {
+        if (type == AddressType.SHIPPING && !hasDefaultForType(AddressType.SHIPPING)) {
             address.markDefault();
         }
-        if (type == AddressType.BILLING && !hasDefaultBillingAddress()) {
+        if (type == AddressType.BILLING && !hasDefaultForType(AddressType.BILLING)) {
             address.markDefault();
         }
         addresses.add(address);
         this.updatedAt = Instant.now();
+        recordEvent(new AddressAddedEvent(this.id, address.getId(), type, Instant.now()));
         return address;
     }
 
@@ -255,14 +261,32 @@ public final class User {
                                String city, State state, Country country,
                                PostalCode postalCode, AddressType type) {
         var address = findAddress(addressId);
+        var oldType = address.getType();
+        var wasDefault = address.isDefault();
         address.update(line1, line2, city, state, country, postalCode, type);
+
+        if (oldType != type) {
+            if (wasDefault) {
+                address.unmarkDefault();
+                promoteDefaultForType(type);
+            }
+            ensureSingleDefaultForType(type);
+        }
+        ensureSingleDefaultForType(oldType);
         this.updatedAt = Instant.now();
+        recordEvent(new AddressUpdatedEvent(this.id, addressId, type, Instant.now()));
     }
 
     public void removeAddress(AddressId addressId) {
         var address = findAddress(addressId);
+        var wasDefault = address.isDefault();
+        var removedType = address.getType();
         addresses.remove(address);
+        if (wasDefault) {
+            promoteDefaultForType(removedType);
+        }
         this.updatedAt = Instant.now();
+        recordEvent(new AddressRemovedEvent(this.id, addressId, removedType, Instant.now()));
     }
 
     public void setDefaultAddress(AddressId addressId) {
@@ -274,6 +298,7 @@ public final class User {
         }
         target.markDefault();
         this.updatedAt = Instant.now();
+        recordEvent(new DefaultAddressChangedEvent(this.id, addressId, target.getType(), Instant.now()));
     }
 
     public List<Address> getAddresses() {
@@ -299,12 +324,27 @@ public final class User {
                         Map.of("addressId", addressId.toString())));
     }
 
-    private boolean hasDefaultShippingAddress() {
-        return addresses.stream().anyMatch(a -> a.getType() == AddressType.SHIPPING && a.isDefault());
+    private void ensureSingleDefaultForType(AddressType type) {
+        var defaults = addresses.stream()
+                .filter(a -> a.getType() == type && a.isDefault())
+                .toList();
+        if (defaults.size() > 1) {
+            defaults.stream().skip(1).forEach(Address::unmarkDefault);
+        }
     }
 
-    private boolean hasDefaultBillingAddress() {
-        return addresses.stream().anyMatch(a -> a.getType() == AddressType.BILLING && a.isDefault());
+    private void promoteDefaultForType(AddressType type) {
+        var candidate = addresses.stream()
+                .filter(a -> a.getType() == type && !a.isDefault())
+                .findFirst();
+        candidate.ifPresent(a -> {
+            a.markDefault();
+            recordEvent(new DefaultAddressChangedEvent(this.id, a.getId(), type, Instant.now()));
+        });
+    }
+
+    private boolean hasDefaultForType(AddressType type) {
+        return addresses.stream().anyMatch(a -> a.getType() == type && a.isDefault());
     }
 
     // ============ ROLE BEHAVIORS ============

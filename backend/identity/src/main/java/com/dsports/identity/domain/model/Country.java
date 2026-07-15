@@ -7,6 +7,12 @@ import com.dsports.shared.domain.kernel.ValueObject;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+/**
+ * ISO 3166-1 Alpha-2 country code (e.g. US, IN, GB).
+ * <p>
+ * Accepts only two-letter uppercase codes. Full country names are not supported.
+ * API consumers must send the alpha-2 code. Example: {@code "IN"} for India, {@code "US"} for United States.
+ */
 public final class Country implements ValueObject {
 
     private static final int MAX_LENGTH = 100;

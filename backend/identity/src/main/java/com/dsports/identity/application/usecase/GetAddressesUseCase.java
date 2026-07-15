@@ -25,7 +25,7 @@ public class GetAddressesUseCase {
                 .map(user -> {
                     var list = user.getAddresses().stream()
                             .map(a -> new AddressResult(
-                                    a.getId().value(), a.getType(),
+                                    a.getId().value(), a.getType().name(),
                                     a.getLine1().value(), a.getLine2() != null ? a.getLine2().value() : null,
                                     a.getCity(), a.getState().value(), a.getCountry().value(),
                                     a.getPostalCode().value(), a.isDefault(),
