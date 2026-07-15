@@ -8,10 +8,13 @@ import com.dsports.identity.application.port.RefreshTokenRepository;
 import com.dsports.identity.application.port.RefreshTokenHasher;
 import com.dsports.identity.application.port.TokenProvider;
 import com.dsports.identity.application.port.UserRepository;
+import com.dsports.identity.application.usecase.GetCustomerProfileUseCase;
 import com.dsports.identity.application.usecase.LoginUseCase;
 import com.dsports.identity.application.usecase.LogoutUseCase;
 import com.dsports.identity.application.usecase.RefreshTokenUseCase;
 import com.dsports.identity.application.usecase.RegisterUserUseCase;
+import com.dsports.identity.application.usecase.UpdateCustomerProfileUseCase;
+import com.dsports.identity.domain.model.UserProfileManagementService;
 import com.dsports.identity.infrastructure.event.SpringEventPublisherAdapter;
 import com.dsports.identity.infrastructure.notification.NotificationGatewayStub;
 import com.dsports.identity.infrastructure.oauth.OAuthProviderGatewayStub;
@@ -104,5 +107,22 @@ public class IdentityInfrastructureConfiguration {
     @Bean
     public LogoutUseCase logoutUseCase(RefreshTokenRepository refreshTokenRepository, RefreshTokenHasher refreshTokenHasher) {
         return new LogoutUseCase(refreshTokenRepository, refreshTokenHasher);
+    }
+
+    @Bean
+    public UserProfileManagementService userProfileManagementService() {
+        return new UserProfileManagementService();
+    }
+
+    @Bean
+    public GetCustomerProfileUseCase getCustomerProfileUseCase(UserRepository userRepository) {
+        return new GetCustomerProfileUseCase(userRepository);
+    }
+
+    @Bean
+    public UpdateCustomerProfileUseCase updateCustomerProfileUseCase(
+            UserRepository userRepository,
+            UserProfileManagementService profileService) {
+        return new UpdateCustomerProfileUseCase(userRepository, profileService);
     }
 }

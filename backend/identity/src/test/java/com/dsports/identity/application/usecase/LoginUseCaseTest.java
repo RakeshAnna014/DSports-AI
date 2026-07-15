@@ -45,7 +45,7 @@ class LoginUseCaseTest {
         var userId = com.dsports.identity.domain.model.UserId.generate();
         activeUser = User.reconstitute(
                 userId, email, "hashedPassword",
-                CustomerName.of("John", "Doe"), null,
+                CustomerName.of("John", "Doe"), null, null, null,
                 com.dsports.identity.domain.model.UserStatus.ACTIVE,
                 java.util.Set.of(com.dsports.identity.domain.model.UserRole.CUSTOMER),
                 java.util.Set.of(com.dsports.identity.domain.model.AuthenticationProvider.EMAIL),

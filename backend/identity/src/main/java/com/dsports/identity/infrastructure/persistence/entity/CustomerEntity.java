@@ -5,6 +5,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Table("customers")
@@ -25,6 +26,12 @@ public class CustomerEntity {
     private String lastName;
 
     private String phone;
+
+    @Column("profile_image_url")
+    private String profileImageUrl;
+
+    @Column("date_of_birth")
+    private LocalDate dateOfBirth;
 
     private String status;
 
@@ -95,6 +102,22 @@ public class CustomerEntity {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
     }
 
     public String getStatus() {
