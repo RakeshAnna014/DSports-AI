@@ -27,7 +27,7 @@ public class GetCustomerProfileUseCase {
                             user.getCustomerName().firstName(),
                             user.getCustomerName().lastName(),
                             user.getPhone().map(p -> p.value()).orElse(null),
-                            user.getProfileImageUrl().orElse(null),
+                            user.getProfileImageUrl().map(p -> p.value()).orElse(null),
                             user.getDateOfBirth().map(d -> d.value()).orElse(null),
                             roles
                     );

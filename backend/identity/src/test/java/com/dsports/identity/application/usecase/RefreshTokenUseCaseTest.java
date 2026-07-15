@@ -57,7 +57,8 @@ class RefreshTokenUseCaseTest {
                 CustomerName.of("John", "Doe"), null, null, null,
                 UserStatus.ACTIVE, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                Instant.now(), Instant.now(), null
+                Instant.now(), Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
         validToken = RefreshToken.create(USER_ID, HASHED_TOKEN, Instant.now().plus(Duration.ofDays(7)));
     }
@@ -143,7 +144,8 @@ class RefreshTokenUseCaseTest {
                 CustomerName.of("Deleted", "User"), null, null, null,
                 UserStatus.DELETED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                Instant.now(), Instant.now(), Instant.now()
+                Instant.now(), Instant.now(), Instant.now(),
+                java.util.Collections.emptyList(), 0
         );
         when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
@@ -167,7 +169,8 @@ class RefreshTokenUseCaseTest {
                 CustomerName.of("Disabled", "User"), null, null, null,
                 UserStatus.DISABLED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 0, null, null,
-                Instant.now(), Instant.now(), null
+                Instant.now(), Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
         when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));
@@ -191,7 +194,8 @@ class RefreshTokenUseCaseTest {
                 CustomerName.of("Locked", "User"), null, null, null,
                 UserStatus.LOCKED, Set.of(UserRole.CUSTOMER), Set.of(AuthenticationProvider.EMAIL),
                 5, Instant.now().plus(Duration.ofHours(1)), null,
-                Instant.now(), Instant.now(), null
+                Instant.now(), Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
         when(refreshTokenHasher.hash(RAW_TOKEN)).thenReturn(HASHED_TOKEN);
         when(refreshTokenRepository.findByToken(HASHED_TOKEN)).thenReturn(Mono.just(validToken));

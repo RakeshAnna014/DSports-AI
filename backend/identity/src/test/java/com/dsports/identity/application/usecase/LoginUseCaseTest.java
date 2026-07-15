@@ -50,7 +50,8 @@ class LoginUseCaseTest {
                 java.util.Set.of(com.dsports.identity.domain.model.UserRole.CUSTOMER),
                 java.util.Set.of(com.dsports.identity.domain.model.AuthenticationProvider.EMAIL),
                 0, null, null,
-                java.time.Instant.now(), java.time.Instant.now(), null
+                java.time.Instant.now(), java.time.Instant.now(), null,
+                java.util.Collections.emptyList(), 0
         );
     }
 

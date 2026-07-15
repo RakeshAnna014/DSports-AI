@@ -1,5 +1,10 @@
 package com.dsports.identity.domain.model;
 
+import com.dsports.identity.domain.event.AddressAddedEvent;
+import com.dsports.identity.domain.event.AddressRemovedEvent;
+import com.dsports.identity.domain.event.AddressUpdatedEvent;
+import com.dsports.identity.domain.event.DefaultAddressChangedEvent;
+import com.dsports.identity.domain.event.UserProfileUpdatedEvent;
 import com.dsports.identity.domain.event.UserRegisteredEvent;
 import com.dsports.identity.domain.exception.ErrorCode;
 import com.dsports.identity.domain.exception.IdentityDomainException;
@@ -25,6 +30,7 @@ public final class User {
     private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
     private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
     private static final int MAX_AUTH_PROVIDERS = 5;
+    private static final int MAX_ADDRESSES = 10;
 
     private final UserId id;
     private Email email;
@@ -35,7 +41,7 @@ public final class User {
     private String passwordHash;
     private CustomerName customerName;
     private PhoneNumber phone;
-    private String profileImageUrl;
+    private ProfileImageUrl profileImageUrl;
     private DateOfBirth dateOfBirth;
     private UserStatus status;
     private final Set<UserRole> roles;
@@ -46,7 +52,9 @@ public final class User {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+    private int version;
     private final transient List<DomainEvent> domainEvents = new ArrayList<>();
+    private final List<Address> addresses = new ArrayList<>();
 
     private User(UserId id, Email email, String passwordHash, CustomerName customerName,
                  UserStatus status, Set<UserRole> roles, Set<AuthenticationProvider> authProviders) {
@@ -66,6 +74,7 @@ public final class User {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         this.deletedAt = null;
+        this.version = 0;
     }
 
     // ============ FACTORY METHODS ============
@@ -113,12 +122,13 @@ public final class User {
     // Skips factory rules (no event recording, no ID generation) because the Aggregate already exists.
     public static User reconstitute(UserId id, Email email, String passwordHash,
                                      CustomerName customerName, PhoneNumber phone,
-                                     String profileImageUrl, DateOfBirth dateOfBirth,
+                                     ProfileImageUrl profileImageUrl, DateOfBirth dateOfBirth,
                                      UserStatus status, Set<UserRole> roles,
                                      Set<AuthenticationProvider> authProviders,
                                      int failedLoginAttempts, Instant lockedUntil,
                                      Instant lastLoginAt, Instant createdAt,
-                                     Instant updatedAt, Instant deletedAt) {
+                                     Instant updatedAt, Instant deletedAt,
+                                     List<Address> addresses, int version) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(email, "email must not be null");
         Objects.requireNonNull(customerName, "customerName must not be null");
@@ -135,6 +145,8 @@ public final class User {
         user.createdAt = createdAt;
         user.updatedAt = updatedAt;
         user.deletedAt = deletedAt;
+        user.addresses.addAll(addresses);
+        user.version = version;
         return user;
     }
 
@@ -203,12 +215,14 @@ public final class User {
     // Invariants enforced via validated VOs (CustomerName, PhoneNumber, DateOfBirth).
     // Email and UserId are immutable — not accepted as parameters.
     void updateProfile(CustomerName newName, PhoneNumber newPhone,
-                       String newProfileImageUrl, DateOfBirth newDateOfBirth) {
+                       ProfileImageUrl newProfileImageUrl, DateOfBirth newDateOfBirth) {
         this.customerName = Objects.requireNonNull(newName, "newName must not be null");
         this.phone = newPhone;
         this.profileImageUrl = newProfileImageUrl;
         this.dateOfBirth = newDateOfBirth;
         this.updatedAt = Instant.now();
+        recordEvent(new UserProfileUpdatedEvent(this.id, Instant.now(),
+                Set.of("customerName", "phone", "profileImageUrl", "dateOfBirth")));
     }
 
     // Package-private: called by UserProfileManagementService.
@@ -219,6 +233,118 @@ public final class User {
         }
         this.passwordHash = newPasswordHash;
         this.updatedAt = Instant.now();
+    }
+
+    // ============ ADDRESS BEHAVIORS ============
+
+    public Address addAddress(AddressLine line1, AddressLine line2, String city,
+                               State state, Country country, PostalCode postalCode,
+                               AddressType type) {
+        var address = Address.create(type, line1, line2, city, state, country, postalCode);
+        if (addresses.size() >= MAX_ADDRESSES) {
+            throw new IdentityDomainException(ErrorCode.MAX_ADDRESSES_EXCEEDED,
+                    "Cannot have more than " + MAX_ADDRESSES + " addresses");
+        }
+        if (type == AddressType.SHIPPING && !hasDefaultForType(AddressType.SHIPPING)) {
+            address.markDefault();
+        }
+        if (type == AddressType.BILLING && !hasDefaultForType(AddressType.BILLING)) {
+            address.markDefault();
+        }
+        addresses.add(address);
+        this.updatedAt = Instant.now();
+        recordEvent(new AddressAddedEvent(this.id, address.getId(), type, Instant.now()));
+        return address;
+    }
+
+    public void updateAddress(AddressId addressId, AddressLine line1, AddressLine line2,
+                               String city, State state, Country country,
+                               PostalCode postalCode, AddressType type) {
+        var address = findAddress(addressId);
+        var oldType = address.getType();
+        var wasDefault = address.isDefault();
+        address.update(line1, line2, city, state, country, postalCode, type);
+
+        if (oldType != type) {
+            if (wasDefault) {
+                address.unmarkDefault();
+                promoteDefaultForType(type);
+            }
+            ensureSingleDefaultForType(type);
+        }
+        ensureSingleDefaultForType(oldType);
+        this.updatedAt = Instant.now();
+        recordEvent(new AddressUpdatedEvent(this.id, addressId, type, Instant.now()));
+    }
+
+    public void removeAddress(AddressId addressId) {
+        var address = findAddress(addressId);
+        var wasDefault = address.isDefault();
+        var removedType = address.getType();
+        addresses.remove(address);
+        if (wasDefault) {
+            promoteDefaultForType(removedType);
+        }
+        this.updatedAt = Instant.now();
+        recordEvent(new AddressRemovedEvent(this.id, addressId, removedType, Instant.now()));
+    }
+
+    public void setDefaultAddress(AddressId addressId) {
+        var target = findAddress(addressId);
+        for (var addr : addresses) {
+            if (addr.getType() == target.getType() && addr.isDefault()) {
+                addr.unmarkDefault();
+            }
+        }
+        target.markDefault();
+        this.updatedAt = Instant.now();
+        recordEvent(new DefaultAddressChangedEvent(this.id, addressId, target.getType(), Instant.now()));
+    }
+
+    public List<Address> getAddresses() {
+        return Collections.unmodifiableList(new ArrayList<>(addresses));
+    }
+
+    public Optional<Address> getAddressById(AddressId addressId) {
+        return addresses.stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst();
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    private Address findAddress(AddressId addressId) {
+        return addresses.stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst()
+                .orElseThrow(() -> new IdentityDomainException(ErrorCode.ADDRESS_NOT_FOUND,
+                        "Address not found: " + addressId,
+                        Map.of("addressId", addressId.toString())));
+    }
+
+    private void ensureSingleDefaultForType(AddressType type) {
+        var defaults = addresses.stream()
+                .filter(a -> a.getType() == type && a.isDefault())
+                .toList();
+        if (defaults.size() > 1) {
+            defaults.stream().skip(1).forEach(Address::unmarkDefault);
+        }
+    }
+
+    private void promoteDefaultForType(AddressType type) {
+        var candidate = addresses.stream()
+                .filter(a -> a.getType() == type && !a.isDefault())
+                .findFirst();
+        candidate.ifPresent(a -> {
+            a.markDefault();
+            recordEvent(new DefaultAddressChangedEvent(this.id, a.getId(), type, Instant.now()));
+        });
+    }
+
+    private boolean hasDefaultForType(AddressType type) {
+        return addresses.stream().anyMatch(a -> a.getType() == type && a.isDefault());
     }
 
     // ============ ROLE BEHAVIORS ============
@@ -367,7 +493,7 @@ public final class User {
         return Optional.ofNullable(phone);
     }
 
-    public Optional<String> getProfileImageUrl() {
+    public Optional<ProfileImageUrl> getProfileImageUrl() {
         return Optional.ofNullable(profileImageUrl);
     }
 

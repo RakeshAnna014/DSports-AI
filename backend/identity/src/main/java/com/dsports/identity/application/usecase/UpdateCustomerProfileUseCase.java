@@ -8,6 +8,7 @@ import com.dsports.identity.domain.exception.IdentityDomainException;
 import com.dsports.identity.domain.model.CustomerName;
 import com.dsports.identity.domain.model.DateOfBirth;
 import com.dsports.identity.domain.model.PhoneNumber;
+import com.dsports.identity.domain.model.ProfileImageUrl;
 import com.dsports.identity.domain.model.UserProfileManagementService;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +34,9 @@ public class UpdateCustomerProfileUseCase {
             var newDob = command.dateOfBirth() != null
                     ? DateOfBirth.from(command.dateOfBirth())
                     : null;
-            var newProfileImageUrl = command.profileImageUrl();
+            var newProfileImageUrl = command.profileImageUrl() != null && !command.profileImageUrl().isBlank()
+                    ? ProfileImageUrl.from(command.profileImageUrl())
+                    : null;
 
             return userRepository.findById(command.userId())
                 .switchIfEmpty(Mono.error(
@@ -51,7 +54,7 @@ public class UpdateCustomerProfileUseCase {
                                         user.getCustomerName().firstName(),
                                         user.getCustomerName().lastName(),
                                         user.getPhone().map(p -> p.value()).orElse(null),
-                                        user.getProfileImageUrl().orElse(null),
+                                        user.getProfileImageUrl().map(p -> p.value()).orElse(null),
                                         user.getDateOfBirth().map(d -> d.value()).orElse(null),
                                         roles
                                 );

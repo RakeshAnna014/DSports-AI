@@ -1,6 +1,7 @@
 package com.dsports.identity.infrastructure.persistence.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -52,6 +53,10 @@ public class CustomerEntity {
 
     @Column("deleted_at")
     private Instant deletedAt;
+
+    @Version
+    @Column("version")
+    private int version;
 
     public CustomerEntity() {
     }
@@ -174,5 +179,13 @@ public class CustomerEntity {
 
     public void setDeletedAt(Instant deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
     }
 }
