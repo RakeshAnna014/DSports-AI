@@ -9,6 +9,7 @@ import com.dsports.catalog.domain.model.Sport;
 import com.dsports.catalog.domain.model.SportId;
 import com.dsports.catalog.domain.model.SportName;
 import com.dsports.catalog.infrastructure.persistence.mapper.CatalogEntityMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
@@ -79,6 +80,12 @@ public class SportR2dbcRepositoryAdapter implements SportRepository {
     }
 
     @Override
+    public Flux<Sport> findAll() {
+        return springRepository.findAll()
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Mono<Void> save(Sport sport) {
         var entity = mapper.toEntity(sport);
         return springRepository.save(entity)
@@ -86,9 +93,25 @@ public class SportR2dbcRepositoryAdapter implements SportRepository {
                         new CatalogDomainException(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
                                 "Sport was modified by another request. Please retry.",
                                 java.util.Map.of("sportId", entity.getId().toString())))
-                .then(Mono.fromRunnable(() -> {
-                    sport.getDomainEvents().forEach(eventPublisher::publish);
+                .onErrorMap(DataIntegrityViolationException.class, e -> {
+                    var msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+                    if (msg.contains("uq_sports_name")) {
+                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SPORT_NAME,
+                                "Sport with name '" + sport.getName().value() + "' already exists");
+                    }
+                    if (msg.contains("uq_sports_slug")) {
+                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
+                                "Sport with slug '" + sport.getSlug().value() + "' already exists");
+                    }
+                    return new CatalogDomainException(CatalogErrorCode.GENERIC,
+                            "Data integrity violation: " + e.getMessage());
+                })
+                .then(Mono.defer(() -> {
+                    var events = sport.getDomainEvents();
                     sport.clearDomainEvents();
+                    return Flux.fromIterable(events)
+                            .flatMap(event -> Mono.fromRunnable(() -> eventPublisher.publish(event)))
+                            .then();
                 }));
     }
 

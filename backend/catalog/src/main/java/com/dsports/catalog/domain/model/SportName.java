@@ -9,12 +9,14 @@ import java.util.Objects;
 public record SportName(String value) implements ValueObject {
 
     public SportName {
-        if (value == null || value.isBlank()) {
+        String trimmed = value != null ? value.trim() : null;
+        if (trimmed == null || trimmed.isBlank()) {
             throw new CatalogDomainException(CatalogErrorCode.INVALID_SPORT_NAME, "Sport name must not be blank");
         }
-        if (value.length() > 100) {
+        if (trimmed.length() > 100) {
             throw new CatalogDomainException(CatalogErrorCode.INVALID_SPORT_NAME, "Sport name must not exceed 100 characters");
         }
+        value = trimmed;
     }
 
     public static SportName from(String value) {

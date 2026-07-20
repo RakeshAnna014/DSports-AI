@@ -9,6 +9,9 @@ import com.dsports.catalog.application.command.CreateSportCommand;
 import com.dsports.catalog.application.command.UpdateBrandCommand;
 import com.dsports.catalog.application.command.UpdateCategoryCommand;
 import com.dsports.catalog.application.command.UpdateSportCommand;
+import com.dsports.catalog.application.port.BrandRepository;
+import com.dsports.catalog.application.port.CategoryRepository;
+import com.dsports.catalog.application.port.SportRepository;
 import com.dsports.catalog.application.result.BrandResult;
 import com.dsports.catalog.application.result.CategoryResult;
 import com.dsports.catalog.application.result.SportResult;
@@ -30,7 +33,8 @@ import com.dsports.catalog.domain.model.SportId;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -38,12 +42,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/api/admin/catalog", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminCatalogController {
 
     private final CreateSportUseCase createSportUseCase;
@@ -61,6 +67,10 @@ public class AdminCatalogController {
     private final ArchiveBrandUseCase archiveBrandUseCase;
     private final GetBrandUseCase getBrandUseCase;
 
+    private final SportRepository sportRepository;
+    private final CategoryRepository categoryRepository;
+    private final BrandRepository brandRepository;
+
     public AdminCatalogController(CreateSportUseCase createSportUseCase,
                                    UpdateSportUseCase updateSportUseCase,
                                    ArchiveSportUseCase archiveSportUseCase,
@@ -72,7 +82,10 @@ public class AdminCatalogController {
                                    CreateBrandUseCase createBrandUseCase,
                                    UpdateBrandUseCase updateBrandUseCase,
                                    ArchiveBrandUseCase archiveBrandUseCase,
-                                   GetBrandUseCase getBrandUseCase) {
+                                   GetBrandUseCase getBrandUseCase,
+                                   SportRepository sportRepository,
+                                   CategoryRepository categoryRepository,
+                                   BrandRepository brandRepository) {
         this.createSportUseCase = createSportUseCase;
         this.updateSportUseCase = updateSportUseCase;
         this.archiveSportUseCase = archiveSportUseCase;
@@ -85,6 +98,9 @@ public class AdminCatalogController {
         this.updateBrandUseCase = updateBrandUseCase;
         this.archiveBrandUseCase = archiveBrandUseCase;
         this.getBrandUseCase = getBrandUseCase;
+        this.sportRepository = sportRepository;
+        this.categoryRepository = categoryRepository;
+        this.brandRepository = brandRepository;
     }
 
     // ============ SPORTS ============
@@ -96,14 +112,24 @@ public class AdminCatalogController {
     }
 
     @PutMapping("/sports/{id}")
-    public Mono<SportResult> updateSport(@PathVariable UUID id, @Valid @RequestBody CreateSportCommand body) {
+    public Mono<SportResult> updateSport(@PathVariable UUID id, @Valid @RequestBody UpdateSportRequestBody body) {
         var command = new UpdateSportCommand(SportId.fromUUID(id), body.name(), body.slug(), body.description());
         return updateSportUseCase.execute(command);
     }
 
-    @DeleteMapping("/sports/{id}")
+    @PostMapping("/sports/{id}/archive")
     public Mono<SportResult> archiveSport(@PathVariable UUID id) {
         return archiveSportUseCase.execute(new ArchiveSportCommand(SportId.fromUUID(id)));
+    }
+
+    @GetMapping("/sports")
+    public Flux<SportResult> getAllSports() {
+        return sportRepository.findAll().map(CreateSportUseCase::toResult);
+    }
+
+    @GetMapping("/sports/{id}")
+    public Mono<SportResult> getSport(@PathVariable UUID id) {
+        return getSportUseCase.execute(SportId.fromUUID(id));
     }
 
     // ============ CATEGORIES ============
@@ -115,14 +141,24 @@ public class AdminCatalogController {
     }
 
     @PutMapping("/categories/{id}")
-    public Mono<CategoryResult> updateCategory(@PathVariable UUID id, @Valid @RequestBody CreateCategoryCommand body) {
+    public Mono<CategoryResult> updateCategory(@PathVariable UUID id, @Valid @RequestBody UpdateCategoryRequestBody body) {
         var command = new UpdateCategoryCommand(CategoryId.fromUUID(id), body.name(), body.slug(), body.description());
         return updateCategoryUseCase.execute(command);
     }
 
-    @DeleteMapping("/categories/{id}")
+    @PostMapping("/categories/{id}/archive")
     public Mono<CategoryResult> archiveCategory(@PathVariable UUID id) {
         return archiveCategoryUseCase.execute(new ArchiveCategoryCommand(CategoryId.fromUUID(id)));
+    }
+
+    @GetMapping("/categories")
+    public Flux<CategoryResult> getAllCategories() {
+        return categoryRepository.findAll().map(CreateCategoryUseCase::toResult);
+    }
+
+    @GetMapping("/categories/{id}")
+    public Mono<CategoryResult> getCategory(@PathVariable UUID id) {
+        return getCategoryUseCase.execute(CategoryId.fromUUID(id));
     }
 
     // ============ BRANDS ============
@@ -134,13 +170,23 @@ public class AdminCatalogController {
     }
 
     @PutMapping("/brands/{id}")
-    public Mono<BrandResult> updateBrand(@PathVariable UUID id, @Valid @RequestBody CreateBrandCommand body) {
+    public Mono<BrandResult> updateBrand(@PathVariable UUID id, @Valid @RequestBody UpdateBrandRequestBody body) {
         var command = new UpdateBrandCommand(BrandId.fromUUID(id), body.name(), body.slug(), body.description());
         return updateBrandUseCase.execute(command);
     }
 
-    @DeleteMapping("/brands/{id}")
+    @PostMapping("/brands/{id}/archive")
     public Mono<BrandResult> archiveBrand(@PathVariable UUID id) {
         return archiveBrandUseCase.execute(new ArchiveBrandCommand(BrandId.fromUUID(id)));
+    }
+
+    @GetMapping("/brands")
+    public Flux<BrandResult> getAllBrands() {
+        return brandRepository.findAll().map(CreateBrandUseCase::toResult);
+    }
+
+    @GetMapping("/brands/{id}")
+    public Mono<BrandResult> getBrand(@PathVariable UUID id) {
+        return getBrandUseCase.execute(BrandId.fromUUID(id));
     }
 }

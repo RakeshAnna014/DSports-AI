@@ -43,7 +43,12 @@ public class UpdateCategoryUseCase {
                                     return Mono.error(new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
                                             "Category with slug '" + command.slug() + "' already exists"));
                                 }
-                                category.update(newName, newSlug, command.description());
+                                try {
+                                    category.update(newName, newSlug, command.description());
+                                } catch (IllegalStateException e) {
+                                    return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                            "Cannot update an archived category"));
+                                }
                                 return categoryRepository.save(category)
                                         .thenReturn(CreateCategoryUseCase.toResult(category));
                             });

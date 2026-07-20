@@ -3,6 +3,9 @@ package com.dsports.catalog.interfaces;
 import com.dsports.catalog.application.command.CreateBrandCommand;
 import com.dsports.catalog.application.command.CreateCategoryCommand;
 import com.dsports.catalog.application.command.CreateSportCommand;
+import com.dsports.catalog.application.port.BrandRepository;
+import com.dsports.catalog.application.port.CategoryRepository;
+import com.dsports.catalog.application.port.SportRepository;
 import com.dsports.catalog.application.result.BrandResult;
 import com.dsports.catalog.application.result.CategoryResult;
 import com.dsports.catalog.application.result.SportResult;
@@ -47,6 +50,9 @@ class AdminCatalogControllerTest {
     @Mock private UpdateBrandUseCase updateBrandUseCase;
     @Mock private ArchiveBrandUseCase archiveBrandUseCase;
     @Mock private GetBrandUseCase getBrandUseCase;
+    @Mock private SportRepository sportRepository;
+    @Mock private CategoryRepository categoryRepository;
+    @Mock private BrandRepository brandRepository;
 
     @InjectMocks
     private AdminCatalogController controller;
@@ -68,7 +74,7 @@ class AdminCatalogControllerTest {
         var result = new SportResult(id, "Updated", "updated", null, "ACTIVE", Instant.now(), Instant.now());
         when(updateSportUseCase.execute(any())).thenReturn(Mono.just(result));
 
-        StepVerifier.create(controller.updateSport(id, new CreateSportCommand("Updated", "updated", null)))
+        StepVerifier.create(controller.updateSport(id, new UpdateSportRequestBody("Updated", "updated", null)))
                 .expectNextMatches(r -> r.name().equals("Updated"))
                 .verifyComplete();
     }

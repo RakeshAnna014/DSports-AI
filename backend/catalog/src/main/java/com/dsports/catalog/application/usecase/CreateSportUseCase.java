@@ -41,7 +41,7 @@ public class CreateSportUseCase {
                 });
     }
 
-    static SportResult toResult(Sport sport) {
+    public static SportResult toResult(Sport sport) {
         return new SportResult(
                 sport.getId().value(),
                 sport.getName().value(),

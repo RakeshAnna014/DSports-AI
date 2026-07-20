@@ -43,7 +43,12 @@ public class UpdateSportUseCase {
                                     return Mono.error(new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
                                             "Sport with slug '" + command.slug() + "' already exists"));
                                 }
-                                sport.update(newName, newSlug, command.description());
+                                try {
+                                    sport.update(newName, newSlug, command.description());
+                                } catch (IllegalStateException e) {
+                                    return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                            "Cannot update an archived sport"));
+                                }
                                 return sportRepository.save(sport)
                                         .thenReturn(CreateSportUseCase.toResult(sport));
                             });

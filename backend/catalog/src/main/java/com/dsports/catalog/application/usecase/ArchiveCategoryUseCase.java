@@ -20,7 +20,12 @@ public class ArchiveCategoryUseCase {
                 .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.CATEGORY_NOT_FOUND,
                         "Category not found: " + command.categoryId())))
                 .flatMap(category -> {
-                    category.archive();
+                    try {
+                        category.archive();
+                    } catch (IllegalStateException e) {
+                        return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                "Category is already archived"));
+                    }
                     return categoryRepository.save(category)
                             .thenReturn(CreateCategoryUseCase.toResult(category));
                 });

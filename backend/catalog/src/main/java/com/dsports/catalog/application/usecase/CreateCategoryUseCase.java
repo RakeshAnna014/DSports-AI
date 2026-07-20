@@ -41,7 +41,7 @@ public class CreateCategoryUseCase {
                 });
     }
 
-    static CategoryResult toResult(Category category) {
+    public static CategoryResult toResult(Category category) {
         return new CategoryResult(
                 category.getId().value(),
                 category.getName().value(),

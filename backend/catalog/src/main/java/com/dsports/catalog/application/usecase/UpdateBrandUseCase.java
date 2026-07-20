@@ -43,7 +43,12 @@ public class UpdateBrandUseCase {
                                     return Mono.error(new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
                                             "Brand with slug '" + command.slug() + "' already exists"));
                                 }
-                                brand.update(newName, newSlug, command.description());
+                                try {
+                                    brand.update(newName, newSlug, command.description());
+                                } catch (IllegalStateException e) {
+                                    return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                            "Cannot update an archived brand"));
+                                }
                                 return brandRepository.save(brand)
                                         .thenReturn(CreateBrandUseCase.toResult(brand));
                             });

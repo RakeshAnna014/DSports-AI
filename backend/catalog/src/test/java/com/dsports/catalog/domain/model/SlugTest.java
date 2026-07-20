@@ -32,4 +32,34 @@ class SlugTest {
         assertThat(slug1).isEqualTo(slug2);
         assertThat(slug1.hashCode()).isEqualTo(slug2.hashCode());
     }
+
+    @Test
+    void shouldNormalizeToLowercase() {
+        var slug = Slug.from("CRICKET-BAT");
+        assertThat(slug.value()).isEqualTo("cricket-bat");
+    }
+
+    @Test
+    void shouldNormalizeSpecialCharacters() {
+        var slug = Slug.from("Cricket Bat!!");
+        assertThat(slug.value()).isEqualTo("cricket-bat");
+    }
+
+    @Test
+    void shouldTrimWhitespace() {
+        var slug = Slug.from("  cricket-bat  ");
+        assertThat(slug.value()).isEqualTo("cricket-bat");
+    }
+
+    @Test
+    void shouldCollapseMultipleHyphens() {
+        var slug = Slug.from("cricket---bat");
+        assertThat(slug.value()).isEqualTo("cricket-bat");
+    }
+
+    @Test
+    void shouldRejectWhenOnlySpecialCharacters() {
+        assertThatThrownBy(() -> Slug.from("!!!"))
+                .isInstanceOf(CatalogDomainException.class);
+    }
 }

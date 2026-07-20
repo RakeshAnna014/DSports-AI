@@ -55,6 +55,7 @@ public class GlobalExceptionHandler {
         Map.entry(CatalogErrorCode.DUPLICATE_BRAND_NAME, HttpStatus.CONFLICT),
         Map.entry(CatalogErrorCode.DUPLICATE_SLUG, HttpStatus.CONFLICT),
         Map.entry(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.ARCHIVED_ENTITY, HttpStatus.CONFLICT),
         Map.entry(CatalogErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
         Map.entry(CatalogErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
         Map.entry(CatalogErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)

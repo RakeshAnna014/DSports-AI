@@ -10,6 +10,7 @@ import com.dsports.catalog.domain.model.CategoryName;
 import com.dsports.catalog.domain.model.Slug;
 import com.dsports.catalog.infrastructure.persistence.entity.CategoryEntity;
 import com.dsports.catalog.infrastructure.persistence.mapper.CatalogEntityMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
@@ -80,6 +81,12 @@ public class CategoryR2dbcRepositoryAdapter implements CategoryRepository {
     }
 
     @Override
+    public Flux<Category> findAll() {
+        return springRepository.findAll()
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Mono<Void> save(Category category) {
         var entity = mapper.toEntity(category);
         return springRepository.save(entity)
@@ -87,9 +94,25 @@ public class CategoryR2dbcRepositoryAdapter implements CategoryRepository {
                         new CatalogDomainException(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
                                 "Category was modified by another request. Please retry.",
                                 java.util.Map.of("categoryId", entity.getId().toString())))
-                .then(Mono.fromRunnable(() -> {
-                    category.getDomainEvents().forEach(eventPublisher::publish);
+                .onErrorMap(DataIntegrityViolationException.class, e -> {
+                    var msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+                    if (msg.contains("uq_categories_name")) {
+                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_CATEGORY_NAME,
+                                "Category with name '" + category.getName().value() + "' already exists");
+                    }
+                    if (msg.contains("uq_categories_slug")) {
+                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
+                                "Category with slug '" + category.getSlug().value() + "' already exists");
+                    }
+                    return new CatalogDomainException(CatalogErrorCode.GENERIC,
+                            "Data integrity violation: " + e.getMessage());
+                })
+                .then(Mono.defer(() -> {
+                    var events = category.getDomainEvents();
                     category.clearDomainEvents();
+                    return Flux.fromIterable(events)
+                            .flatMap(event -> Mono.fromRunnable(() -> eventPublisher.publish(event)))
+                            .then();
                 }));
     }
 

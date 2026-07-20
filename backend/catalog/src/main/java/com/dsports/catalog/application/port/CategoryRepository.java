@@ -13,5 +13,6 @@ public interface CategoryRepository {
     Mono<Boolean> existsByName(CategoryName name);
     Mono<Boolean> existsBySlug(Slug slug);
     Flux<Category> findAllActive();
+    Flux<Category> findAll();
     Mono<Void> save(Category category);
 }

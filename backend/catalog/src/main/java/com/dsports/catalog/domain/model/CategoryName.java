@@ -7,12 +7,14 @@ import com.dsports.shared.domain.kernel.ValueObject;
 public record CategoryName(String value) implements ValueObject {
 
     public CategoryName {
-        if (value == null || value.isBlank()) {
+        String trimmed = value != null ? value.trim() : null;
+        if (trimmed == null || trimmed.isBlank()) {
             throw new CatalogDomainException(CatalogErrorCode.INVALID_CATEGORY_NAME, "Category name must not be blank");
         }
-        if (value.length() > 100) {
+        if (trimmed.length() > 100) {
             throw new CatalogDomainException(CatalogErrorCode.INVALID_CATEGORY_NAME, "Category name must not exceed 100 characters");
         }
+        value = trimmed;
     }
 
     public static CategoryName from(String value) {

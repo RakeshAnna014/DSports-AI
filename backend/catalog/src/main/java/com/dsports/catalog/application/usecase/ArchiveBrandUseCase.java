@@ -20,7 +20,12 @@ public class ArchiveBrandUseCase {
                 .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.BRAND_NOT_FOUND,
                         "Brand not found: " + command.brandId())))
                 .flatMap(brand -> {
-                    brand.archive();
+                    try {
+                        brand.archive();
+                    } catch (IllegalStateException e) {
+                        return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                "Brand is already archived"));
+                    }
                     return brandRepository.save(brand)
                             .thenReturn(CreateBrandUseCase.toResult(brand));
                 });

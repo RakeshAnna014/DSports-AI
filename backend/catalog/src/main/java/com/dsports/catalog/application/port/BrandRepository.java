@@ -13,5 +13,6 @@ public interface BrandRepository {
     Mono<Boolean> existsByName(BrandName name);
     Mono<Boolean> existsBySlug(Slug slug);
     Flux<Brand> findAllActive();
+    Flux<Brand> findAll();
     Mono<Void> save(Brand brand);
 }

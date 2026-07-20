@@ -9,9 +9,13 @@ import java.util.Objects;
 public record Slug(String value) implements ValueObject {
 
     public Slug {
-        if (value == null || value.isBlank()) {
+        String normalized = value != null
+                ? value.trim().toLowerCase().replaceAll("[^a-z0-9-]", "-").replaceAll("-+", "-").replaceAll("^-|-$", "")
+                : null;
+        if (normalized == null || normalized.isBlank()) {
             throw new CatalogDomainException(CatalogErrorCode.INVALID_SLUG, "Slug must not be blank");
         }
+        value = normalized;
     }
 
     public static Slug from(String value) {

@@ -13,5 +13,6 @@ public interface SportRepository {
     Mono<Boolean> existsByName(SportName name);
     Mono<Boolean> existsBySlug(Slug slug);
     Flux<Sport> findAllActive();
+    Flux<Sport> findAll();
     Mono<Void> save(Sport sport);
 }

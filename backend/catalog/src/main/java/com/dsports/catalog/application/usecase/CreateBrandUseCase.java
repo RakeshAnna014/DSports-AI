@@ -41,7 +41,7 @@ public class CreateBrandUseCase {
                 });
     }
 
-    static BrandResult toResult(Brand brand) {
+    public static BrandResult toResult(Brand brand) {
         return new BrandResult(
                 brand.getId().value(),
                 brand.getName().value(),

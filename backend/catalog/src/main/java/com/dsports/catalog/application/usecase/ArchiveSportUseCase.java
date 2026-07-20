@@ -20,7 +20,12 @@ public class ArchiveSportUseCase {
                 .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.SPORT_NOT_FOUND,
                         "Sport not found: " + command.sportId())))
                 .flatMap(sport -> {
-                    sport.archive();
+                    try {
+                        sport.archive();
+                    } catch (IllegalStateException e) {
+                        return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
+                                "Sport is already archived"));
+                    }
                     return sportRepository.save(sport)
                             .thenReturn(CreateSportUseCase.toResult(sport));
                 });
