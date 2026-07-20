@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
@@ -54,6 +56,8 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/health").permitAll()
                         .pathMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
                         .pathMatchers("/api-docs/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                        .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION)
