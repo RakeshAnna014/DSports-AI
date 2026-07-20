@@ -3,6 +3,7 @@ package com.dsports.catalog.application.usecase;
 import com.dsports.catalog.application.command.RemoveProductImageCommand;
 import com.dsports.catalog.application.port.ProductRepository;
 import com.dsports.catalog.application.result.ProductResult;
+import com.dsports.catalog.application.result.ProductResultMapper;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import reactor.core.publisher.Mono;
@@ -28,7 +29,7 @@ public class RemoveImageUseCase {
                         return Mono.error(new CatalogDomainException(CatalogErrorCode.GENERIC, e.getMessage()));
                     }
                     return productRepository.save(product)
-                            .thenReturn(CreateProductUseCase.toResult(product));
+                            .thenReturn(ProductResultMapper.toResult(product));
                 });
     }
 }

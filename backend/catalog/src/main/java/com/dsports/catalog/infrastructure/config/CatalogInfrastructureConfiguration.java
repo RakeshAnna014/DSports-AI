@@ -14,6 +14,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 @Configuration
 public class CatalogInfrastructureConfiguration {
@@ -151,14 +153,43 @@ public class CatalogInfrastructureConfiguration {
             ProductEntityMapper mapper,
             SpringR2dbcProductRepository springRepository,
             SpringR2dbcProductImageRepository imageRepository,
-            EventPublisher catalogEventPublisher) {
+            EventPublisher catalogEventPublisher,
+            TransactionalOperator transactionalOperator) {
         return new ProductR2dbcRepositoryAdapter(databaseClient, mapper, springRepository,
-                imageRepository, catalogEventPublisher);
+                imageRepository, catalogEventPublisher, transactionalOperator);
     }
 
     @Bean
-    public CreateProductUseCase createProductUseCase(ProductRepository productRepository) {
-        return new CreateProductUseCase(productRepository);
+    public TransactionalOperator transactionalOperator(ReactiveTransactionManager reactiveTransactionManager) {
+        return TransactionalOperator.create(reactiveTransactionManager);
+    }
+
+    @Bean
+    public GetAllSportsUseCase getAllSportsUseCase(SportRepository sportRepository) {
+        return new GetAllSportsUseCase(sportRepository);
+    }
+
+    @Bean
+    public GetAllCategoriesUseCase getAllCategoriesUseCase(CategoryRepository categoryRepository) {
+        return new GetAllCategoriesUseCase(categoryRepository);
+    }
+
+    @Bean
+    public GetAllBrandsUseCase getAllBrandsUseCase(BrandRepository brandRepository) {
+        return new GetAllBrandsUseCase(brandRepository);
+    }
+
+    @Bean
+    public GetAllProductsUseCase getAllProductsUseCase(ProductRepository productRepository) {
+        return new GetAllProductsUseCase(productRepository);
+    }
+
+    @Bean
+    public CreateProductUseCase createProductUseCase(ProductRepository productRepository,
+                                                      BrandRepository brandRepository,
+                                                      CategoryRepository categoryRepository,
+                                                      SportRepository sportRepository) {
+        return new CreateProductUseCase(productRepository, brandRepository, categoryRepository, sportRepository);
     }
 
     @Bean

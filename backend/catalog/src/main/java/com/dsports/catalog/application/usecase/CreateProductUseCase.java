@@ -1,23 +1,32 @@
 package com.dsports.catalog.application.usecase;
 
 import com.dsports.catalog.application.command.CreateProductCommand;
+import com.dsports.catalog.application.port.BrandRepository;
+import com.dsports.catalog.application.port.CategoryRepository;
 import com.dsports.catalog.application.port.ProductRepository;
-import com.dsports.catalog.application.result.ProductImageResult;
+import com.dsports.catalog.application.port.SportRepository;
 import com.dsports.catalog.application.result.ProductResult;
+import com.dsports.catalog.application.result.ProductResultMapper;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.catalog.domain.model.*;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-
 public class CreateProductUseCase {
 
     private final ProductRepository productRepository;
+    private final BrandRepository brandRepository;
+    private final CategoryRepository categoryRepository;
+    private final SportRepository sportRepository;
 
-    public CreateProductUseCase(ProductRepository productRepository) {
+    public CreateProductUseCase(ProductRepository productRepository,
+                                BrandRepository brandRepository,
+                                CategoryRepository categoryRepository,
+                                SportRepository sportRepository) {
         this.productRepository = productRepository;
+        this.brandRepository = brandRepository;
+        this.categoryRepository = categoryRepository;
+        this.sportRepository = sportRepository;
     }
 
     public Mono<ProductResult> execute(CreateProductCommand command) {
@@ -35,7 +44,8 @@ public class CreateProductUseCase {
                 ? Dimensions.from(command.length(), command.width(), command.height(), command.dimensionUnit())
                 : null;
 
-        return productRepository.existsBySku(sku)
+        return validateReferences(brandId, categoryId, sportId, command)
+                .then(productRepository.existsBySku(sku))
                 .flatMap(skuExists -> {
                     if (skuExists) {
                         return Mono.error(new CatalogDomainException(CatalogErrorCode.DUPLICATE_SKU,
@@ -51,33 +61,21 @@ public class CreateProductUseCase {
                     var product = Product.create(sku, name, slug, description,
                             brandId, categoryId, sportId, weight, dimensions);
                     return productRepository.save(product)
-                            .thenReturn(toResult(product));
+                            .thenReturn(ProductResultMapper.toResult(product));
                 });
     }
 
-    public static ProductResult toResult(Product product) {
-        return new ProductResult(
-                product.getId().value(),
-                product.getSku().value(),
-                product.getName().value(),
-                product.getSlug().value(),
-                product.getDescription() != null ? product.getDescription().value() : null,
-                product.getBrandId().value(),
-                product.getCategoryId().value(),
-                product.getSportId().value(),
-                product.getWeight() != null ? product.getWeight().value() : null,
-                product.getWeight() != null ? product.getWeight().unit() : null,
-                product.getDimensions() != null ? product.getDimensions().length() : null,
-                product.getDimensions() != null ? product.getDimensions().width() : null,
-                product.getDimensions() != null ? product.getDimensions().height() : null,
-                product.getDimensions() != null ? product.getDimensions().unit() : null,
-                product.getStatus().name(),
-                product.getImages().stream()
-                        .map(img -> new ProductImageResult(img.getId().value(), img.getUrl().value(),
-                                img.getDisplayOrder(), img.isPrimary()))
-                        .toList(),
-                product.getCreatedAt(),
-                product.getUpdatedAt()
-        );
+    private Mono<Void> validateReferences(BrandId brandId, CategoryId categoryId, SportId sportId,
+                                           CreateProductCommand command) {
+        return brandRepository.findById(brandId)
+                .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.BRAND_NOT_FOUND,
+                        "Brand not found: " + command.brandId())))
+                .flatMap(ignored -> categoryRepository.findById(categoryId))
+                .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.CATEGORY_NOT_FOUND,
+                        "Category not found: " + command.categoryId())))
+                .flatMap(ignored -> sportRepository.findById(sportId))
+                .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.SPORT_NOT_FOUND,
+                        "Sport not found: " + command.sportId())))
+                .then();
     }
 }

@@ -1,10 +1,6 @@
 package com.dsports.catalog.interfaces;
 
 import com.dsports.catalog.application.command.*;
-import com.dsports.catalog.application.port.BrandRepository;
-import com.dsports.catalog.application.port.CategoryRepository;
-import com.dsports.catalog.application.port.ProductRepository;
-import com.dsports.catalog.application.port.SportRepository;
 import com.dsports.catalog.application.result.BrandResult;
 import com.dsports.catalog.application.result.CategoryResult;
 import com.dsports.catalog.application.result.ProductResult;
@@ -41,10 +37,10 @@ public class AdminCatalogController {
     private final ArchiveBrandUseCase archiveBrandUseCase;
     private final GetBrandUseCase getBrandUseCase;
 
-    private final SportRepository sportRepository;
-    private final CategoryRepository categoryRepository;
-    private final BrandRepository brandRepository;
-    private final ProductRepository productRepository;
+    private final GetAllSportsUseCase getAllSportsUseCase;
+    private final GetAllCategoriesUseCase getAllCategoriesUseCase;
+    private final GetAllBrandsUseCase getAllBrandsUseCase;
+    private final GetAllProductsUseCase getAllProductsUseCase;
 
     private final CreateProductUseCase createProductUseCase;
     private final UpdateProductUseCase updateProductUseCase;
@@ -66,10 +62,10 @@ public class AdminCatalogController {
                                    UpdateBrandUseCase updateBrandUseCase,
                                    ArchiveBrandUseCase archiveBrandUseCase,
                                    GetBrandUseCase getBrandUseCase,
-                                   SportRepository sportRepository,
-                                   CategoryRepository categoryRepository,
-                                   BrandRepository brandRepository,
-                                   ProductRepository productRepository,
+                                   GetAllSportsUseCase getAllSportsUseCase,
+                                   GetAllCategoriesUseCase getAllCategoriesUseCase,
+                                   GetAllBrandsUseCase getAllBrandsUseCase,
+                                   GetAllProductsUseCase getAllProductsUseCase,
                                    CreateProductUseCase createProductUseCase,
                                    UpdateProductUseCase updateProductUseCase,
                                    ArchiveProductUseCase archiveProductUseCase,
@@ -89,10 +85,10 @@ public class AdminCatalogController {
         this.updateBrandUseCase = updateBrandUseCase;
         this.archiveBrandUseCase = archiveBrandUseCase;
         this.getBrandUseCase = getBrandUseCase;
-        this.sportRepository = sportRepository;
-        this.categoryRepository = categoryRepository;
-        this.brandRepository = brandRepository;
-        this.productRepository = productRepository;
+        this.getAllSportsUseCase = getAllSportsUseCase;
+        this.getAllCategoriesUseCase = getAllCategoriesUseCase;
+        this.getAllBrandsUseCase = getAllBrandsUseCase;
+        this.getAllProductsUseCase = getAllProductsUseCase;
         this.createProductUseCase = createProductUseCase;
         this.updateProductUseCase = updateProductUseCase;
         this.archiveProductUseCase = archiveProductUseCase;
@@ -123,7 +119,7 @@ public class AdminCatalogController {
 
     @GetMapping("/sports")
     public Flux<SportResult> getAllSports() {
-        return sportRepository.findAll().map(CreateSportUseCase::toResult);
+        return getAllSportsUseCase.execute();
     }
 
     @GetMapping("/sports/{id}")
@@ -152,7 +148,7 @@ public class AdminCatalogController {
 
     @GetMapping("/categories")
     public Flux<CategoryResult> getAllCategories() {
-        return categoryRepository.findAll().map(CreateCategoryUseCase::toResult);
+        return getAllCategoriesUseCase.execute();
     }
 
     @GetMapping("/categories/{id}")
@@ -181,7 +177,7 @@ public class AdminCatalogController {
 
     @GetMapping("/brands")
     public Flux<BrandResult> getAllBrands() {
-        return brandRepository.findAll().map(CreateBrandUseCase::toResult);
+        return getAllBrandsUseCase.execute();
     }
 
     @GetMapping("/brands/{id}")
@@ -212,7 +208,7 @@ public class AdminCatalogController {
 
     @GetMapping("/products")
     public Flux<ProductResult> getAllProducts() {
-        return productRepository.findAll().map(CreateProductUseCase::toResult);
+        return getAllProductsUseCase.execute();
     }
 
     @GetMapping("/products/{id}")

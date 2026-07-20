@@ -28,7 +28,7 @@ public final class ProductImage {
         this.url = Objects.requireNonNull(url, "url must not be null");
     }
 
-    public void setPrimary(boolean primary) {
+    void setPrimary(boolean primary) {
         this.primary = primary;
     }
 

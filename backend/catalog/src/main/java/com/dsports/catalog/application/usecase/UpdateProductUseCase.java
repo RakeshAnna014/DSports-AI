@@ -3,6 +3,7 @@ package com.dsports.catalog.application.usecase;
 import com.dsports.catalog.application.command.UpdateProductCommand;
 import com.dsports.catalog.application.port.ProductRepository;
 import com.dsports.catalog.application.result.ProductResult;
+import com.dsports.catalog.application.result.ProductResultMapper;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.catalog.domain.model.*;
@@ -61,7 +62,7 @@ public class UpdateProductUseCase {
                                             "Cannot update an archived product"));
                                 }
                                 return productRepository.save(product)
-                                        .thenReturn(CreateProductUseCase.toResult(product));
+                                        .thenReturn(ProductResultMapper.toResult(product));
                             });
                 });
     }

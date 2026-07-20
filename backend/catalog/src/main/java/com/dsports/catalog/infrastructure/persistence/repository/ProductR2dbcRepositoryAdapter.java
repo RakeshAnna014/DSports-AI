@@ -12,28 +12,38 @@ import com.dsports.catalog.infrastructure.persistence.mapper.ProductEntityMapper
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ProductR2dbcRepositoryAdapter implements ProductRepository {
+
+    private static final int BATCH_SIZE = 100;
 
     private final DatabaseClient databaseClient;
     private final ProductEntityMapper mapper;
     private final SpringR2dbcProductRepository springRepository;
     private final SpringR2dbcProductImageRepository imageRepository;
     private final EventPublisher eventPublisher;
+    private final TransactionalOperator rxtx;
 
     public ProductR2dbcRepositoryAdapter(DatabaseClient databaseClient, ProductEntityMapper mapper,
                                           SpringR2dbcProductRepository springRepository,
                                           SpringR2dbcProductImageRepository imageRepository,
-                                          EventPublisher eventPublisher) {
+                                          EventPublisher eventPublisher,
+                                          TransactionalOperator rxtx) {
         this.databaseClient = databaseClient;
         this.mapper = mapper;
         this.springRepository = springRepository;
         this.imageRepository = imageRepository;
         this.eventPublisher = eventPublisher;
+        this.rxtx = rxtx;
     }
 
     @Override
@@ -90,8 +100,8 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
     @Override
     public Flux<Product> findAll() {
         return springRepository.findAll()
-                .flatMap(entity -> loadImages(entity)
-                        .map(images -> mapper.toDomain(entity, images)));
+                .collectList()
+                .flatMapMany(this::loadImagesBatch);
     }
 
     @Override
@@ -137,58 +147,106 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
                 .bind("offset", (long) filter.page() * filter.size())
                 .map((row, metadata) -> mapEntity(row))
                 .all()
-                .flatMap(entity -> loadImages(entity)
-                        .map(images -> mapper.toDomain(entity, images)));
+                .collectList()
+                .flatMapMany(this::loadImagesBatch);
     }
 
     @Override
     public Mono<Void> save(Product product) {
         var entity = mapper.toEntity(product);
-        return springRepository.save(entity)
-                .onErrorMap(OptimisticLockingFailureException.class, e ->
-                        new CatalogDomainException(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
-                                "Product was modified by another request. Please retry.",
-                                java.util.Map.of("productId", entity.getId().toString())))
-                .onErrorMap(DataIntegrityViolationException.class, e -> {
-                    var msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-                    if (msg.contains("uq_products_sku")) {
-                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SKU,
-                                "Product with SKU '" + product.getSku().value() + "' already exists");
-                    }
-                    if (msg.contains("uq_products_slug")) {
-                        return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
-                                "Product with slug '" + product.getSlug().value() + "' already exists");
-                    }
-                    return new CatalogDomainException(CatalogErrorCode.GENERIC,
-                            "Data integrity violation: " + e.getMessage());
-                })
-                .flatMap(savedEntity -> saveImages(savedEntity.getId(), product.getImages())
-                        .thenReturn(savedEntity))
-                .then(Mono.defer(() -> {
-                    var events = product.getDomainEvents();
-                    product.clearDomainEvents();
-                    return Flux.fromIterable(events)
-                            .flatMap(event -> Mono.fromRunnable(() -> eventPublisher.publish(event)))
-                            .then();
-                }));
+        var imageEntities = product.getImages().stream()
+                .map(img -> mapper.toImageEntity(img, entity.getId()))
+                .collect(Collectors.toList());
+
+        return rxtx.execute(reactiveTransaction ->
+            springRepository.save(entity)
+                    .onErrorMap(OptimisticLockingFailureException.class, e ->
+                            new CatalogDomainException(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
+                                    "Product was modified by another request. Please retry.",
+                                    Map.of("productId", entity.getId().toString())))
+                    .onErrorMap(DataIntegrityViolationException.class, e -> {
+                        var msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+                        if (msg.contains("uq_products_sku")) {
+                            return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SKU,
+                                    "Product with SKU '" + product.getSku().value() + "' already exists");
+                        }
+                        if (msg.contains("uq_products_slug")) {
+                            return new CatalogDomainException(CatalogErrorCode.DUPLICATE_SLUG,
+                                    "Product with slug '" + product.getSlug().value() + "' already exists");
+                        }
+                        return new CatalogDomainException(CatalogErrorCode.GENERIC,
+                                "Data integrity violation: " + e.getMessage());
+                    })
+                    .flatMap(savedEntity -> replaceImages(savedEntity.getId(), imageEntities)
+                            .thenReturn(savedEntity))
+                    .then(Mono.defer(() -> {
+                        var events = product.getDomainEvents();
+                        product.clearDomainEvents();
+                        return Flux.fromIterable(events)
+                                .flatMap(event -> Mono.fromRunnable(() -> eventPublisher.publish(event))
+                                        .subscribeOn(Schedulers.boundedElastic()))
+                                .then();
+                    }))
+        ).then();
     }
 
-    private Mono<Void> saveImages(UUID productId, java.util.List<ProductImage> images) {
+    private Mono<Void> replaceImages(UUID productId, List<ProductImageEntity> imageEntities) {
         return databaseClient.sql("DELETE FROM product_images WHERE product_id = :productId")
                 .bind("productId", productId)
                 .then()
-                .thenMany(Flux.fromIterable(images))
-                .flatMap(image -> {
-                    var imageEntity = mapper.toImageEntity(image, productId);
-                    return imageRepository.save(imageEntity);
-                })
+                .thenMany(Flux.fromIterable(imageEntities))
+                .flatMap(imageRepository::save)
                 .then();
     }
 
-    private Mono<java.util.List<ProductImage>> loadImages(ProductEntity entity) {
+    private Mono<List<ProductImage>> loadImages(ProductEntity entity) {
         return imageRepository.findByProductIdOrderByDisplayOrder(entity.getId())
                 .map(mapper::toImageDomain)
                 .collectList();
+    }
+
+    private Flux<Product> loadImagesBatch(List<ProductEntity> entities) {
+        if (entities.isEmpty()) {
+            return Flux.empty();
+        }
+        var productIds = entities.stream()
+                .map(ProductEntity::getId)
+                .collect(Collectors.toList());
+
+        return batchLoadImagesByProductIds(productIds)
+                .flatMapMany(imageMap -> Flux.fromIterable(entities)
+                        .map(entity -> {
+                            var images = imageMap.getOrDefault(entity.getId(), List.of());
+                            return mapper.toDomain(entity, images);
+                        }));
+    }
+
+    private Mono<Map<UUID, List<ProductImage>>> batchLoadImagesByProductIds(List<UUID> productIds) {
+        if (productIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+
+        return Flux.fromIterable(productIds)
+                .buffer(BATCH_SIZE)
+                .flatMap(batch -> databaseClient.sql(
+                        "SELECT * FROM product_images WHERE product_id IN (:productIds) ORDER BY display_order")
+                        .bind("productIds", batch)
+                        .map((row, metadata) -> {
+                            var entity = new ProductImageEntity();
+                            entity.setId(row.get("id", UUID.class));
+                            entity.setProductId(row.get("product_id", UUID.class));
+                            entity.setUrl(row.get("url", String.class));
+                            entity.setDisplayOrder(row.get("display_order", Integer.class));
+                            entity.setPrimary(row.get("is_primary", Boolean.class));
+                            return entity;
+                        })
+                        .all())
+                .collectList()
+                .map(entities -> entities.stream()
+                        .collect(Collectors.groupingBy(
+                                ProductImageEntity::getProductId,
+                                Collectors.mapping(mapper::toImageDomain, Collectors.toList())
+                        )));
     }
 
     private String sanitizeSortColumn(String sortBy) {
@@ -199,7 +257,7 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
             case "created_at" -> "created_at";
             case "updated_at" -> "updated_at";
             case "status" -> "status";
-            default -> "created_at";
+            default -> throw new IllegalArgumentException("Invalid sort column: " + sortBy);
         };
     }
 

@@ -65,12 +65,11 @@ public class PublicCatalogController {
             @RequestParam(required = false) UUID brandId,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) UUID sportId,
-            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "created_at") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        var filter = new ProductFilter(brandId, categoryId, sportId, status, page, size, sortBy, sortDir);
+        var filter = new ProductFilter(brandId, categoryId, sportId, "ACTIVE", page, size, sortBy, sortDir);
         return getProductsUseCase.execute(filter);
     }
 
