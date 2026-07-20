@@ -1,47 +1,21 @@
 package com.dsports.catalog.interfaces;
 
-import com.dsports.catalog.application.command.ArchiveBrandCommand;
-import com.dsports.catalog.application.command.ArchiveCategoryCommand;
-import com.dsports.catalog.application.command.ArchiveSportCommand;
-import com.dsports.catalog.application.command.CreateBrandCommand;
-import com.dsports.catalog.application.command.CreateCategoryCommand;
-import com.dsports.catalog.application.command.CreateSportCommand;
-import com.dsports.catalog.application.command.UpdateBrandCommand;
-import com.dsports.catalog.application.command.UpdateCategoryCommand;
-import com.dsports.catalog.application.command.UpdateSportCommand;
+import com.dsports.catalog.application.command.*;
 import com.dsports.catalog.application.port.BrandRepository;
 import com.dsports.catalog.application.port.CategoryRepository;
+import com.dsports.catalog.application.port.ProductRepository;
 import com.dsports.catalog.application.port.SportRepository;
 import com.dsports.catalog.application.result.BrandResult;
 import com.dsports.catalog.application.result.CategoryResult;
+import com.dsports.catalog.application.result.ProductResult;
 import com.dsports.catalog.application.result.SportResult;
-import com.dsports.catalog.application.usecase.ArchiveBrandUseCase;
-import com.dsports.catalog.application.usecase.ArchiveCategoryUseCase;
-import com.dsports.catalog.application.usecase.ArchiveSportUseCase;
-import com.dsports.catalog.application.usecase.CreateBrandUseCase;
-import com.dsports.catalog.application.usecase.CreateCategoryUseCase;
-import com.dsports.catalog.application.usecase.CreateSportUseCase;
-import com.dsports.catalog.application.usecase.GetBrandUseCase;
-import com.dsports.catalog.application.usecase.GetCategoryUseCase;
-import com.dsports.catalog.application.usecase.GetSportUseCase;
-import com.dsports.catalog.application.usecase.UpdateBrandUseCase;
-import com.dsports.catalog.application.usecase.UpdateCategoryUseCase;
-import com.dsports.catalog.application.usecase.UpdateSportUseCase;
-import com.dsports.catalog.domain.model.BrandId;
-import com.dsports.catalog.domain.model.CategoryId;
-import com.dsports.catalog.domain.model.SportId;
+import com.dsports.catalog.application.usecase.*;
+import com.dsports.catalog.domain.model.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -70,6 +44,15 @@ public class AdminCatalogController {
     private final SportRepository sportRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
+    private final ProductRepository productRepository;
+
+    private final CreateProductUseCase createProductUseCase;
+    private final UpdateProductUseCase updateProductUseCase;
+    private final ArchiveProductUseCase archiveProductUseCase;
+    private final GetProductUseCase getProductUseCase;
+    private final AddImageUseCase addImageUseCase;
+    private final RemoveImageUseCase removeImageUseCase;
+    private final ChangePrimaryImageUseCase changePrimaryImageUseCase;
 
     public AdminCatalogController(CreateSportUseCase createSportUseCase,
                                    UpdateSportUseCase updateSportUseCase,
@@ -85,7 +68,15 @@ public class AdminCatalogController {
                                    GetBrandUseCase getBrandUseCase,
                                    SportRepository sportRepository,
                                    CategoryRepository categoryRepository,
-                                   BrandRepository brandRepository) {
+                                   BrandRepository brandRepository,
+                                   ProductRepository productRepository,
+                                   CreateProductUseCase createProductUseCase,
+                                   UpdateProductUseCase updateProductUseCase,
+                                   ArchiveProductUseCase archiveProductUseCase,
+                                   GetProductUseCase getProductUseCase,
+                                   AddImageUseCase addImageUseCase,
+                                   RemoveImageUseCase removeImageUseCase,
+                                   ChangePrimaryImageUseCase changePrimaryImageUseCase) {
         this.createSportUseCase = createSportUseCase;
         this.updateSportUseCase = updateSportUseCase;
         this.archiveSportUseCase = archiveSportUseCase;
@@ -101,6 +92,14 @@ public class AdminCatalogController {
         this.sportRepository = sportRepository;
         this.categoryRepository = categoryRepository;
         this.brandRepository = brandRepository;
+        this.productRepository = productRepository;
+        this.createProductUseCase = createProductUseCase;
+        this.updateProductUseCase = updateProductUseCase;
+        this.archiveProductUseCase = archiveProductUseCase;
+        this.getProductUseCase = getProductUseCase;
+        this.addImageUseCase = addImageUseCase;
+        this.removeImageUseCase = removeImageUseCase;
+        this.changePrimaryImageUseCase = changePrimaryImageUseCase;
     }
 
     // ============ SPORTS ============
@@ -188,5 +187,55 @@ public class AdminCatalogController {
     @GetMapping("/brands/{id}")
     public Mono<BrandResult> getBrand(@PathVariable UUID id) {
         return getBrandUseCase.execute(BrandId.fromUUID(id));
+    }
+
+    // ============ PRODUCTS ============
+
+    @PostMapping("/products")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ProductResult> createProduct(@Valid @RequestBody CreateProductCommand command) {
+        return createProductUseCase.execute(command);
+    }
+
+    @PutMapping("/products/{id}")
+    public Mono<ProductResult> updateProduct(@PathVariable UUID id, @Valid @RequestBody UpdateProductRequestBody body) {
+        var command = new UpdateProductCommand(ProductId.fromUUID(id), body.sku(), body.name(), body.slug(),
+                body.description(), body.brandId(), body.categoryId(), body.sportId(),
+                body.weight(), body.weightUnit(), body.length(), body.width(), body.height(), body.dimensionUnit());
+        return updateProductUseCase.execute(command);
+    }
+
+    @PatchMapping("/products/{id}/archive")
+    public Mono<ProductResult> archiveProduct(@PathVariable UUID id) {
+        return archiveProductUseCase.execute(new ArchiveProductCommand(ProductId.fromUUID(id)));
+    }
+
+    @GetMapping("/products")
+    public Flux<ProductResult> getAllProducts() {
+        return productRepository.findAll().map(CreateProductUseCase::toResult);
+    }
+
+    @GetMapping("/products/{id}")
+    public Mono<ProductResult> getProduct(@PathVariable UUID id) {
+        return getProductUseCase.execute(ProductId.fromUUID(id));
+    }
+
+    @PostMapping("/products/{id}/images")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ProductResult> addProductImage(@PathVariable UUID id, @Valid @RequestBody AddProductImageRequest request) {
+        var command = new AddProductImageCommand(ProductId.fromUUID(id), request.url(), request.displayOrder(), request.primary());
+        return addImageUseCase.execute(command);
+    }
+
+    @DeleteMapping("/products/{id}/images/{imageId}")
+    public Mono<ProductResult> removeProductImage(@PathVariable UUID id, @PathVariable UUID imageId) {
+        var command = new RemoveProductImageCommand(ProductId.fromUUID(id), ProductImageId.fromUUID(imageId));
+        return removeImageUseCase.execute(command);
+    }
+
+    @PutMapping("/products/{id}/images/{imageId}/primary")
+    public Mono<ProductResult> changePrimaryImage(@PathVariable UUID id, @PathVariable UUID imageId) {
+        var command = new ChangePrimaryImageCommand(ProductId.fromUUID(id), ProductImageId.fromUUID(imageId));
+        return changePrimaryImageUseCase.execute(command);
     }
 }
