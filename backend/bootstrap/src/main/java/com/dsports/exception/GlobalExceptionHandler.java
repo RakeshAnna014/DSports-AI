@@ -4,6 +4,8 @@ import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
 import com.dsports.identity.domain.exception.IdentityDomainException;
+import com.dsports.inventory.domain.exception.InventoryDomainException;
+import com.dsports.inventory.domain.exception.InventoryErrorCode;
 import com.dsports.shared.api.ApiError;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -42,6 +44,23 @@ public class GlobalExceptionHandler {
         Map.entry(ErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     );
 
+    private static final Map<InventoryErrorCode, HttpStatus> INVENTORY_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(InventoryErrorCode.INVENTORY_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(InventoryErrorCode.DUPLICATE_INVENTORY, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.INVALID_QUANTITY, HttpStatus.BAD_REQUEST),
+        Map.entry(InventoryErrorCode.INVALID_RESERVED_QUANTITY, HttpStatus.BAD_REQUEST),
+        Map.entry(InventoryErrorCode.INVALID_REORDER_LEVEL, HttpStatus.BAD_REQUEST),
+        Map.entry(InventoryErrorCode.INSUFFICIENT_STOCK, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.RESERVATION_EXCEEDS_AVAILABLE, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.STOCK_OUT_EXCEEDS_AVAILABLE, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.CANNOT_RESERVE_UNAVAILABLE_STOCK, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.CANNOT_STOCK_OUT_RESERVED_QUANTITY, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(InventoryErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(InventoryErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(InventoryErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
     private static final Map<CatalogErrorCode, HttpStatus> CATALOG_ERROR_STATUS_MAP = Map.ofEntries(
         Map.entry(CatalogErrorCode.INVALID_SPORT_NAME, HttpStatus.BAD_REQUEST),
         Map.entry(CatalogErrorCode.INVALID_CATEGORY_NAME, HttpStatus.BAD_REQUEST),
@@ -69,6 +88,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IdentityDomainException.class)
     public Mono<ApiError> handleIdentityDomainException(IdentityDomainException ex, ServerWebExchange exchange) {
         var status = ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    @ExceptionHandler(InventoryDomainException.class)
+    public Mono<ApiError> handleInventoryDomainException(InventoryDomainException ex, ServerWebExchange exchange) {
+        var status = INVENTORY_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);
