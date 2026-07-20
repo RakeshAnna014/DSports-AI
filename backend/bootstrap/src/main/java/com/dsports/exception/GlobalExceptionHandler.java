@@ -1,5 +1,7 @@
 package com.dsports.exception;
 
+import com.dsports.catalog.domain.exception.CatalogDomainException;
+import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
 import com.dsports.identity.domain.exception.IdentityDomainException;
 import com.dsports.shared.api.ApiError;
@@ -40,9 +42,35 @@ public class GlobalExceptionHandler {
         Map.entry(ErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     );
 
+    private static final Map<CatalogErrorCode, HttpStatus> CATALOG_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(CatalogErrorCode.INVALID_SPORT_NAME, HttpStatus.BAD_REQUEST),
+        Map.entry(CatalogErrorCode.INVALID_CATEGORY_NAME, HttpStatus.BAD_REQUEST),
+        Map.entry(CatalogErrorCode.INVALID_BRAND_NAME, HttpStatus.BAD_REQUEST),
+        Map.entry(CatalogErrorCode.INVALID_SLUG, HttpStatus.BAD_REQUEST),
+        Map.entry(CatalogErrorCode.SPORT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CatalogErrorCode.CATEGORY_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CatalogErrorCode.BRAND_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CatalogErrorCode.DUPLICATE_SPORT_NAME, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.DUPLICATE_CATEGORY_NAME, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.DUPLICATE_BRAND_NAME, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.DUPLICATE_SLUG, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CatalogErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(CatalogErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(CatalogErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
     @ExceptionHandler(IdentityDomainException.class)
     public Mono<ApiError> handleIdentityDomainException(IdentityDomainException ex, ServerWebExchange exchange) {
         var status = ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    @ExceptionHandler(CatalogDomainException.class)
+    public Mono<ApiError> handleCatalogDomainException(CatalogDomainException ex, ServerWebExchange exchange) {
+        var status = CATALOG_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);
