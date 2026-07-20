@@ -37,6 +37,10 @@
         </dependency>
         <dependency>
             <groupId>com.dsports</groupId>
+            <artifactId>dsports-pricing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
             <artifactId>dsports-cart</artifactId>
         </dependency>
         <dependency>

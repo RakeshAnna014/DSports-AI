@@ -6,6 +6,8 @@ import com.dsports.identity.domain.exception.ErrorCode;
 import com.dsports.identity.domain.exception.IdentityDomainException;
 import com.dsports.inventory.domain.exception.InventoryDomainException;
 import com.dsports.inventory.domain.exception.InventoryErrorCode;
+import com.dsports.pricing.domain.exception.PricingDomainException;
+import com.dsports.pricing.domain.exception.PricingErrorCode;
 import com.dsports.shared.api.ApiError;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -61,6 +63,22 @@ public class GlobalExceptionHandler {
         Map.entry(InventoryErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     );
 
+    private static final Map<PricingErrorCode, HttpStatus> PRICING_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(PricingErrorCode.PRICE_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(PricingErrorCode.DUPLICATE_ACTIVE_PRICE, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.INVALID_PRICE, HttpStatus.BAD_REQUEST),
+        Map.entry(PricingErrorCode.INVALID_CURRENCY, HttpStatus.BAD_REQUEST),
+        Map.entry(PricingErrorCode.INVALID_EFFECTIVE_DATE, HttpStatus.BAD_REQUEST),
+        Map.entry(PricingErrorCode.CANNOT_MODIFY_ARCHIVED, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.CANNOT_SCHEDULE_NON_DRAFT, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.CANNOT_ACTIVATE_ARCHIVED, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.OVERLAPPING_ACTIVE_PRICE, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(PricingErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(PricingErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(PricingErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
     private static final Map<CatalogErrorCode, HttpStatus> CATALOG_ERROR_STATUS_MAP = Map.ofEntries(
         Map.entry(CatalogErrorCode.INVALID_SPORT_NAME, HttpStatus.BAD_REQUEST),
         Map.entry(CatalogErrorCode.INVALID_CATEGORY_NAME, HttpStatus.BAD_REQUEST),
@@ -96,6 +114,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InventoryDomainException.class)
     public Mono<ApiError> handleInventoryDomainException(InventoryDomainException ex, ServerWebExchange exchange) {
         var status = INVENTORY_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    @ExceptionHandler(PricingDomainException.class)
+    public Mono<ApiError> handlePricingDomainException(PricingDomainException ex, ServerWebExchange exchange) {
+        var status = PRICING_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);
