@@ -25,6 +25,7 @@
         <module>identity</module>
         <module>catalog</module>
         <module>inventory</module>
+        <module>pricing</module>
         <module>cart</module>
         <module>order</module>
         <module>payment</module>
@@ -69,6 +70,11 @@
             <dependency>
                 <groupId>com.dsports</groupId>
                 <artifactId>dsports-inventory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
+                <artifactId>dsports-pricing</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
