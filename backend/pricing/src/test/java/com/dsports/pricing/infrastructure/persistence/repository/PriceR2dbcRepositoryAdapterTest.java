@@ -11,6 +11,9 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.FluentQuery;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -95,11 +98,36 @@ class PriceR2dbcRepositoryAdapterTest {
             }
 
             @Override
+            public <S extends PriceEntity> Flux<S> saveAll(Iterable<S> entities) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Flux<S> saveAll(org.reactivestreams.Publisher<S> entityStream) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public Mono<PriceEntity> findById(UUID id) {
                 return databaseClient.sql("SELECT * FROM prices WHERE id = $1")
                         .bind("$1", id)
                         .map((row, metadata) -> mapRow(row))
                         .one();
+            }
+
+            @Override
+            public Mono<PriceEntity> findById(org.reactivestreams.Publisher<UUID> id) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Mono<Boolean> existsById(UUID id) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Mono<Boolean> existsById(org.reactivestreams.Publisher<UUID> id) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -110,10 +138,92 @@ class PriceR2dbcRepositoryAdapterTest {
             }
 
             @Override
+            public Flux<PriceEntity> findAllById(Iterable<UUID> ids) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Flux<PriceEntity> findAllById(org.reactivestreams.Publisher<UUID> idStream) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Mono<Long> count() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public Mono<Void> deleteById(UUID id) {
                 return databaseClient.sql("DELETE FROM prices WHERE id = $1")
                         .bind("$1", id)
                         .then();
+            }
+
+            @Override
+            public Mono<Void> deleteById(org.reactivestreams.Publisher<UUID> id) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Mono<Void> delete(PriceEntity entity) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Mono<Void> deleteAll(Iterable<? extends PriceEntity> entities) {
+                return databaseClient.sql("DELETE FROM prices").then();
+            }
+
+            @Override
+            public Mono<Void> deleteAll(org.reactivestreams.Publisher<? extends PriceEntity> entities) {
+                return databaseClient.sql("DELETE FROM prices").then();
+            }
+
+            @Override
+            public Mono<Void> deleteAll() {
+                return databaseClient.sql("DELETE FROM prices").then();
+            }
+
+            @Override
+            public Mono<Void> deleteAllById(Iterable<? extends UUID> ids) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Flux<PriceEntity> findAll(Sort sort) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Mono<S> findOne(Example<S> example) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Flux<S> findAll(Example<S> example) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Flux<S> findAll(Example<S> example, Sort sort) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Mono<Long> count(Example<S> example) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity> Mono<Boolean> exists(Example<S> example) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <S extends PriceEntity, R, P extends org.reactivestreams.Publisher<R>> P findBy(
+                    Example<S> example,
+                    java.util.function.Function<FluentQuery.ReactiveFluentQuery<S>, P> queryFunction) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -145,7 +255,8 @@ class PriceR2dbcRepositoryAdapterTest {
                         .bind("$2", currency)
                         .bind("$3", excludeId)
                         .fetch()
-                        .rowsUpdated();
+                        .rowsUpdated()
+                        .map(Long::intValue);
             }
         };
 
