@@ -46,7 +46,10 @@ public class AdminPriceController {
     }
 
     @PutMapping("/{id}")
-    public Mono<PriceResult> updatePrice(@PathVariable UUID id, @Valid @RequestBody UpdatePriceCommand command) {
+    public Mono<PriceResult> updatePrice(@PathVariable UUID id,
+                                          @Valid @RequestBody UpdatePriceRequestBody body) {
+        var command = new UpdatePriceCommand(id, body.mrp(), body.sellingPrice(),
+                body.effectiveFrom(), body.effectiveTo());
         return updatePriceUseCase.execute(command);
     }
 
@@ -55,17 +58,21 @@ public class AdminPriceController {
         return getPriceUseCase.execute(PriceId.fromUUID(id));
     }
 
-    @PatchMapping("/{id}/activate")
+    @PostMapping("/{id}/activate")
+    @ResponseStatus(HttpStatus.OK)
     public Mono<PriceResult> activatePrice(@PathVariable UUID id) {
         return activatePriceUseCase.execute(new ActivatePriceCommand(id));
     }
 
-    @PatchMapping("/{id}/schedule")
-    public Mono<PriceResult> schedulePrice(@PathVariable UUID id, @Valid @RequestBody SchedulePriceCommand command) {
+    @PostMapping("/{id}/schedule")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<PriceResult> schedulePrice(@PathVariable UUID id,
+                                            @Valid @RequestBody SchedulePriceCommand command) {
         return schedulePriceUseCase.execute(command);
     }
 
-    @PatchMapping("/{id}/archive")
+    @PostMapping("/{id}/archive")
+    @ResponseStatus(HttpStatus.OK)
     public Mono<PriceResult> archivePrice(@PathVariable UUID id) {
         return archivePriceUseCase.execute(new ArchivePriceCommand(id));
     }

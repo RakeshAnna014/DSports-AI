@@ -16,6 +16,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authorization.HttpStatusServerAccessDeniedHandler;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -36,6 +37,7 @@ public class SecurityConfig {
 
         var authFilter = new AuthenticationWebFilter(authManager);
         authFilter.setServerAuthenticationConverter(authConverter);
+        authFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/api/**"));
         authFilter.setAuthenticationFailureHandler((exchange, exception) -> {
             var response = exchange.getExchange().getResponse();
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -52,11 +54,13 @@ public class SecurityConfig {
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/favicon.ico").permitAll()
                         .pathMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .pathMatchers("/actuator/health").permitAll()
                         .pathMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
                         .pathMatchers("/api-docs/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/prices/**").permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyExchange().authenticated()
                 )
