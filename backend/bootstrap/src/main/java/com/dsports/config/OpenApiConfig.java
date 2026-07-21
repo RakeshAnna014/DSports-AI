@@ -2,7 +2,6 @@ package com.dsports.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -61,7 +60,7 @@ public class OpenApiConfig {
                     .type(SecurityScheme.Type.HTTP)
                     .scheme("bearer")
                     .bearerFormat("JWT")
-                    .description("JWT Bearer token obtained from /api/v1/auth/login"))
+                    .description("JWT Bearer token obtained from /api/auth/login"))
                 .addParameters("correlationId", new HeaderParameter()
                     .name("X-Correlation-Id")
                     .description("Unique request identifier for tracing")
@@ -80,13 +79,13 @@ public class OpenApiConfig {
                 .addResponses("500", new ApiResponse()
                     .description("Internal server error")))
             .tags(List.of(
-                new Tag().name("Authentication").description("Login, registration, token refresh"),
-                new Tag().name("Products").description("Product catalog, search, categories"),
-                new Tag().name("Cart").description("Shopping cart management"),
-                new Tag().name("Orders").description("Order placement and history"),
-                new Tag().name("Payments").description("Payment processing"),
-                new Tag().name("Admin").description("Administrative operations"),
-                new Tag().name("Franchise").description("Franchise store management"),
+                new Tag().name("Authentication").description("Login, token refresh, logout"),
+                new Tag().name("Customer Profile").description("Customer profile management"),
+                new Tag().name("Addresses").description("Customer address management"),
+                new Tag().name("Catalog").description("Product catalog, search, categories, brands"),
+                new Tag().name("Inventory").description("Inventory availability lookup"),
+                new Tag().name("Pricing").description("Price lookup"),
+                new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
             ));
     }
@@ -101,38 +100,57 @@ public class OpenApiConfig {
     }
 
     @Bean
-    public GroupedOpenApi publicApi() {
+    public GroupedOpenApi authenticationApi() {
         return GroupedOpenApi.builder()
-            .group("public")
-            .displayName("Public APIs")
-            .pathsToMatch("/api/v1/public/**", "/api/v1/products/**", "/api/v1/categories/**")
-            .build();
-    }
-
-    @Bean
-    public GroupedOpenApi authApi() {
-        return GroupedOpenApi.builder()
-            .group("auth")
+            .group("authentication")
             .displayName("Authentication")
-            .pathsToMatch("/api/v1/auth/**")
+            .pathsToMatch("/api/auth/**")
             .build();
     }
 
     @Bean
-    public GroupedOpenApi cartApi() {
+    public GroupedOpenApi customerProfileApi() {
         return GroupedOpenApi.builder()
-            .group("cart")
-            .displayName("Cart")
-            .pathsToMatch("/api/v1/cart/**")
+            .group("customer-profile")
+            .displayName("Customer Profile")
+            .pathsToMatch("/api/customers/**")
+            .pathsToExclude("/api/customers/me/addresses/**")
             .build();
     }
 
     @Bean
-    public GroupedOpenApi orderApi() {
+    public GroupedOpenApi addressesApi() {
         return GroupedOpenApi.builder()
-            .group("orders")
-            .displayName("Orders")
-            .pathsToMatch("/api/v1/orders/**")
+            .group("addresses")
+            .displayName("Addresses")
+            .pathsToMatch("/api/customers/me/addresses/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi catalogApi() {
+        return GroupedOpenApi.builder()
+            .group("catalog")
+            .displayName("Catalog")
+            .pathsToMatch("/api/catalog/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi inventoryApi() {
+        return GroupedOpenApi.builder()
+            .group("inventory")
+            .displayName("Inventory")
+            .pathsToMatch("/api/inventory/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi pricingApi() {
+        return GroupedOpenApi.builder()
+            .group("pricing")
+            .displayName("Pricing")
+            .pathsToMatch("/api/prices/**")
             .build();
     }
 
@@ -141,16 +159,7 @@ public class OpenApiConfig {
         return GroupedOpenApi.builder()
             .group("admin")
             .displayName("Admin")
-            .pathsToMatch("/api/v1/admin/**")
-            .build();
-    }
-
-    @Bean
-    public GroupedOpenApi franchiseApi() {
-        return GroupedOpenApi.builder()
-            .group("franchise")
-            .displayName("Franchise")
-            .pathsToMatch("/api/v1/franchise/**")
+            .pathsToMatch("/api/admin/**")
             .build();
     }
 

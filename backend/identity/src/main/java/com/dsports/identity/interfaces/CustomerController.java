@@ -6,6 +6,13 @@ import com.dsports.identity.application.usecase.UpdateCustomerProfileUseCase;
 import com.dsports.identity.domain.model.UserId;
 import com.dsports.identity.interfaces.dto.CustomerProfileResponse;
 import com.dsports.identity.interfaces.dto.UpdateCustomerProfileRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,6 +25,8 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/customers")
+@Tag(name = "Customer Profile")
+@SecurityRequirement(name = "bearer-jwt")
 public class CustomerController {
 
     private final GetCustomerProfileUseCase getCustomerProfileUseCase;
@@ -30,6 +39,12 @@ public class CustomerController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get customer profile", description = "Retrieve the authenticated customer's profile information")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Profile retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CustomerProfileResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public Mono<ResponseEntity<CustomerProfileResponse>> getProfile(Authentication authentication) {
         var userId = UserId.fromString(authentication.getPrincipal().toString());
         return getCustomerProfileUseCase.execute(userId)
@@ -37,6 +52,13 @@ public class CustomerController {
     }
 
     @PutMapping("/me")
+    @Operation(summary = "Update customer profile", description = "Update the authenticated customer's profile information")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Profile updated successfully",
+            content = @Content(schema = @Schema(implementation = CustomerProfileResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public Mono<ResponseEntity<CustomerProfileResponse>> updateProfile(
             @Valid @RequestBody UpdateCustomerProfileRequest request,
             Authentication authentication) {
