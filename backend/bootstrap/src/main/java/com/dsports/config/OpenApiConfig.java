@@ -85,6 +85,7 @@ public class OpenApiConfig {
                 new Tag().name("Catalog").description("Product catalog, search, categories, brands"),
                 new Tag().name("Inventory").description("Inventory availability lookup"),
                 new Tag().name("Pricing").description("Price lookup"),
+                new Tag().name("Shopping Cart").description("Shopping cart management"),
                 new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
             ));
@@ -169,6 +170,15 @@ public class OpenApiConfig {
             .group("admin")
             .displayName("Admin")
             .pathsToMatch("/api/admin/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi cartApi() {
+        return GroupedOpenApi.builder()
+            .group("shopping-cart")
+            .displayName("Shopping Cart")
+            .pathsToMatch("/api/v1/cart/**")
             .build();
     }
 

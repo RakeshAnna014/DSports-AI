@@ -35,9 +35,38 @@ export interface ProductDetail {
 export interface ProductImage {
   id: string;
   url: string;
-  altText: string | null;
-  isPrimary: boolean;
-  sortOrder: number;
+  displayOrder: number;
+  primary: boolean;
+}
+
+export interface Price {
+  id: string;
+  productId: string;
+  mrp: number;
+  sellingPrice: number;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  status: string;
+}
+
+export interface InventoryRecord {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  availableQuantity: number;
+  reservedQuantity: number;
+  status: string;
+}
+
+export interface ProductsQuery {
+  brandId?: string;
+  categoryId?: string;
+  sportId?: string;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: string;
 }
 
 export interface Sport {

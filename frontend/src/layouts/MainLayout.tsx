@@ -24,15 +24,24 @@ import {
 } from '@mui/material';
 import { Outlet, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 
 const MainLayout = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, hydrate } = useAuthStore();
+  const totalCartItems = useCartStore((s) => s.totalItems);
+  const refreshCart = useCartStore((s) => s.refreshCart);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshCart();
+    }
+  }, [isAuthenticated, refreshCart]);
 
   const handleLogout = async () => {
     setAnchorEl(null);
@@ -70,7 +79,7 @@ const MainLayout = () => {
 
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <IconButton color="inherit" aria-label="cart" onClick={() => navigate('/cart')}>
-              <Badge badgeContent={0} color="secondary">
+              <Badge badgeContent={totalCartItems} color="secondary">
                 <ShoppingCartOutlined />
               </Badge>
             </IconButton>

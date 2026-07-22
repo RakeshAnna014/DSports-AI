@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .pathMatchers("/api-docs/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/prices/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyExchange().authenticated()
                 )
