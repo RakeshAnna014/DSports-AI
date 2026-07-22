@@ -1,5 +1,7 @@
 package com.dsports.exception;
 
+import com.dsports.cart.domain.exception.CartDomainException;
+import com.dsports.cart.domain.exception.CartErrorCode;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
@@ -103,6 +105,27 @@ public class GlobalExceptionHandler {
         Map.entry(CatalogErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     );
 
+    private static final Map<CartErrorCode, HttpStatus> CART_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(CartErrorCode.CART_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CartErrorCode.CART_NOT_ACTIVE, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.DUPLICATE_ACTIVE_CART, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.ITEM_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CartErrorCode.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CartErrorCode.PRODUCT_NOT_ACTIVE, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.INSUFFICIENT_STOCK, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.PRICE_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CartErrorCode.INVALID_QUANTITY, HttpStatus.BAD_REQUEST),
+        Map.entry(CartErrorCode.MAX_QUANTITY_EXCEEDED, HttpStatus.BAD_REQUEST),
+        Map.entry(CartErrorCode.MAX_ITEMS_EXCEEDED, HttpStatus.BAD_REQUEST),
+        Map.entry(CartErrorCode.INVALID_PRICE, HttpStatus.BAD_REQUEST),
+        Map.entry(CartErrorCode.INVALID_USER, HttpStatus.UNAUTHORIZED),
+        Map.entry(CartErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CartErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(CartErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(CartErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
     @ExceptionHandler(IdentityDomainException.class)
     public Mono<ApiError> handleIdentityDomainException(IdentityDomainException ex, ServerWebExchange exchange) {
         var status = ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -130,6 +153,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CatalogDomainException.class)
     public Mono<ApiError> handleCatalogDomainException(CatalogDomainException ex, ServerWebExchange exchange) {
         var status = CATALOG_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    @ExceptionHandler(CartDomainException.class)
+    public Mono<ApiError> handleCartDomainException(CartDomainException ex, ServerWebExchange exchange) {
+        var status = CART_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);

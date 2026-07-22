@@ -30,11 +30,18 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, hydrate } = useAuthStore();
   const totalCartItems = useCartStore((s) => s.totalItems);
+  const refreshCart = useCartStore((s) => s.refreshCart);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshCart();
+    }
+  }, [isAuthenticated, refreshCart]);
 
   const handleLogout = async () => {
     setAnchorEl(null);
