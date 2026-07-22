@@ -12,10 +12,10 @@ public class JwtAuthenticationConverter implements ServerAuthenticationConverter
 
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
-        return Mono.justOrEmpty(exchange)
-                .map(e -> e.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
-                .filter(header -> header != null && header.startsWith(BEARER_PREFIX))
+        var authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        return Mono.justOrEmpty(authHeader)
+                .filter(header -> header.startsWith(BEARER_PREFIX))
                 .map(header -> header.substring(BEARER_PREFIX.length()))
-                .map(token -> new JwtAuthenticationToken(token));
+                .map(JwtAuthenticationToken::new);
     }
 }

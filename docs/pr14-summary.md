@@ -77,40 +77,40 @@ The `uq_price_product_currency_active` partial unique index (`WHERE status = 'AC
 - **Commands**: `CreatePriceCommand`, `UpdatePriceCommand`, `ActivatePriceCommand`, `SchedulePriceCommand`, `ArchivePriceCommand`
 - **Results**: `PriceResult`, `PriceSummaryResult`
 - **Ports**: `PriceRepository`, `EventPublisher`
-- **Use Cases**: `CreatePrice`, `UpdatePrice`, `GetPrice`, `GetPrices`, `ActivatePrice`, `SchedulePrice`, `ArchivePrice`
+- **Use Cases**: `CreatePriceUseCase`, `UpdatePriceUseCase`, `ActivatePriceUseCase`, `SchedulePriceUseCase`, `ArchivePriceUseCase`, `GetPriceUseCase`, `GetPricesUseCase`
 - **Mapper**: `PriceResultMapper`
 
 ### Infrastructure Layer
 
-- **Flyway**: `V14__create_prices_table.sql`
-- **R2DBC**: `SpringR2dbcPriceRepository` (Spring Data R2DBC with custom deactivate query)
+- **Flyway**: `V14__create_prices_table.sql` — with partial unique index, CHECK constraints, and column-level constraints
+- **R2DBC**: `SpringR2dbcPriceRepository` (Spring Data R2DBC with custom `deactivateActivePrices` update query)
 - **Adapter**: `PriceR2dbcRepositoryAdapter` (TransactionalOperator + async events + optimistic locking)
 - **Mapper**: `PriceEntityMapper`
 - **Events**: `PricingSpringEventPublisherAdapter`
-- **Config**: `PricingInfrastructureConfiguration` (wires all 7 use cases)
+- **Config**: `PricingInfrastructureConfiguration` (wires all 7 use cases + repository + event publisher)
 
 ### Interfaces Layer
 
-**Public** (read-only):
-- `GET /api/prices/{productId}` — All prices for a product
-- `GET /api/prices` — All prices (paginated)
+**Public** (read-only, no auth required via SecurityConfig):
+- `GET /api/prices` — All prices (optional `?productId=` filter for product-specific prices)
+- `GET /api/prices/{id}` — Single price by ID
 
-**Admin** (requires `ROLE_ADMIN`):
-- `POST /api/admin/prices` — Create price
+**Admin** (requires `ROLE_ADMIN` via `@PreAuthorize`):
+- `POST /api/admin/prices` — Create price (DRAFT)
 - `PUT /api/admin/prices/{id}` — Update price
 - `GET /api/admin/prices/{id}` — Get price by ID
-- `PATCH /api/admin/prices/{id}/activate` — Activate price
-- `PATCH /api/admin/prices/{id}/schedule` — Schedule price
-- `PATCH /api/admin/prices/{id}/archive` — Archive price
+- `POST /api/admin/prices/{id}/activate` — Activate price
+- `POST /api/admin/prices/{id}/schedule` — Schedule price
+- `POST /api/admin/prices/{id}/archive` — Archive price
 
 ## Business Rules Enforced
 
 | Rule | Enforcement |
 |------|-------------|
-| MRP >= 0 | `Money` value object validation |
-| Selling Price >= 0 | `Money` value object validation |
-| Selling Price <= MRP | Guard in `Price.create()` and `Price.updatePrice()` |
-| Currency is 3-letter ISO | `Currency` value object with supported set |
+| MRP >= 0 | `Money` value object + DB CHECK constraint |
+| Selling Price >= 0 | `Money` value object + DB CHECK constraint |
+| Selling Price <= MRP | Guard in `Price.create()` and `Price.updatePrice()` + DB CHECK constraint |
+| Currency is 3-letter ISO | `Currency` value object with supported set + DB CHECK constraint |
 | Currency is mandatory | Constructor null check |
 | Only one ACTIVE per product+currency | Partial unique index `uq_price_product_currency_active` |
 | Cannot modify archived prices | Guard in `updatePrice()`, `schedule()`, `activate()` |
@@ -118,13 +118,49 @@ The `uq_price_product_currency_active` partial unique index (`WHERE status = 'AC
 | Cannot activate archived | Guard in `activate()` |
 | effectiveTo > effectiveFrom | `EffectiveDate` value object validation |
 | No physical delete | No DELETE endpoint; archive only |
-| Optimistic locking | `@Version` on `PriceEntity` |
+| Optimistic locking | `@Version` on `PriceEntity`, HTTP 409 on conflict |
+| Concurrent update handling | Application event publishing via `Schedulers.boundedElastic()` |
+
+## Event Publishing
+
+Domain events are published asynchronously via `ApplicationEventPublisher` after the database transaction commits:
+
+1. Aggregate records events during command execution
+2. Repository adapter saves the entity within a reactive transaction
+3. After successful save, events are published via `Mono.fromRunnable(() -> eventPublisher.publish(event)).subscribeOn(Schedulers.boundedElastic())`
+4. Events are cleared from the aggregate after publishing
+
+## Security
+
+- Public price GET endpoints are added to `SecurityConfig.permitAll()` — matching the existing catalog pattern
+- Admin price endpoints use `@PreAuthorize("hasRole('ADMIN')")` at class level — matching the existing admin pattern
+- Auth filter uses `requiresAuthenticationMatcher` for `/api/**` only
 
 ## Testing
 
-- **PriceTest**: 17 aggregate tests covering all status transitions, validation, and edge cases
-- **CreatePriceUseCaseTest**: 4 use case tests covering happy path, duplicate rejection, and validation
-- **Total**: 21 tests, all passing
+### Unit Tests
+
+| Test Class | Tests | Coverage |
+|-----------|-------|----------|
+| `PriceTest` | 17 | Domain aggregate: create, validate, update, activate, schedule, archive, edge cases |
+| `CreatePriceUseCaseTest` | 4 | Create price: happy path, duplicate rejection, selling > MRP, invalid currency |
+| `UpdatePriceUseCaseTest` | 3 | Update price: happy path, not found, selling > MRP |
+| `ActivatePriceUseCaseTest` | 3 | Activate: draft, not found, archived rejection |
+| `SchedulePriceUseCaseTest` | 3 | Schedule: draft, not found, non-draft rejection |
+| `ArchivePriceUseCaseTest` | 3 | Archive: active, draft, not found |
+| `GetPriceUseCaseTest` | 2 | Get single price: found, not found |
+| `GetPricesUseCaseTest` | 3 | List all: with results, by product, empty |
+| `PublicPriceControllerTest` | 3 | Controller: all prices, by product, by ID |
+| `AdminPriceControllerTest` | 6 | Controller: create, update, get, activate, schedule, archive |
+
+### Integration Tests
+
+| Test Class | Tests | Coverage |
+|-----------|-------|----------|
+| `PriceMigrationTest` | 9 | Flyway migration: table existence, constraints, unique index |
+| `PriceR2dbcRepositoryAdapterTest` | 7 | Repository: CRUD, product queries, deactivate, optimistic locking |
+
+**Total**: 63 tests
 
 ## Self-Review
 
@@ -141,7 +177,7 @@ The `uq_price_product_currency_active` partial unique index (`WHERE status = 'AC
 
 1. **No scheduled price auto-activation**: The module creates SCHEDULED prices but has no background job (e.g., Spring `@Scheduled` or a separate scheduler) to activate them when `effective_from` is reached. A future enhancement should add a scheduled task that queries `SELECT * FROM prices WHERE status = 'SCHEDULED' AND effective_from <= NOW()` and activates them.
 
-2. **Price history querying**: The repository only returns prices ordered by `created_at DESC`. For a complete price history feature, add support for filtering by currency, status, effective date range, and pagination.
+2. **No external product existence validation**: The module accepts any `ProductId` UUID without validating that the product exists in the Catalog context. A future cross-context integration should subscribe to `ProductCreatedEvent`/`ProductArchivedEvent` or use a saga for consistency.
 
 ### 🟢 LOW
 
