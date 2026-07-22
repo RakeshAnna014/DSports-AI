@@ -1,6 +1,9 @@
 import { Box, Typography, Button, Container } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   return (
     <Container maxWidth="md">
       <Box
@@ -22,10 +25,10 @@ const HomePage = () => {
           Premium cricket equipment and apparel for players, teams, and franchises.
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="contained" size="large">
+          <Button variant="contained" size="large" onClick={() => navigate('/products')}>
             Shop Now
           </Button>
-          <Button variant="outlined" size="large">
+          <Button variant="outlined" size="large" onClick={() => navigate('/products')}>
             Learn More
           </Button>
         </Box>

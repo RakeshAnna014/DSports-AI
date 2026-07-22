@@ -406,7 +406,7 @@ This aligns well with DDD — aggregates are loaded explicitly, and you only fet
 ```
 Client                   Backend                    Database
   │                         │                         │
-  │  POST /api/v1/auth      │                         │
+  │  POST /api/auth         │                         │
   │  /login {email,pass}    │                         │
   │ ──────────────────────► │──► validate user        │
   │                         │◄── user + roles         │
@@ -415,7 +415,8 @@ Client                   Backend                    Database
   │                         │    (access + refresh)   │
   │ ◄────────────────────── │                         │
   │                                                    │
-  │  GET /api/v1/products   │                         │
+  │  GET /api/catalog       │                         │
+  │  /products              │                         │
   │  (JWT in header)        │                         │
   │ ──────────────────────► │──► validate JWT         │
   │                         │    (stateless, no DB)   │

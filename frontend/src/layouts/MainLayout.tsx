@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -7,28 +8,56 @@ import {
   Button,
   IconButton,
   Badge,
+  Avatar,
+  Menu,
+  MenuItem,
+  Divider,
+  ListItemIcon,
 } from '@mui/material';
-import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined';
-import { Outlet, Link as RouterLink } from 'react-router-dom';
+import {
+  ShoppingCartOutlined,
+  PersonOutline,
+  Logout,
+} from '@mui/icons-material';
+import {
+  Link as MuiLink,
+} from '@mui/material';
+import { Outlet, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
 
 const MainLayout = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout, hydrate } = useAuthStore();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  const handleLogout = async () => {
+    setAnchorEl(null);
+    await logout();
+    navigate('/');
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="sticky" color="inherit">
         <Toolbar>
-          <Typography
-            variant="h6"
+          <MuiLink
             component={RouterLink}
             to="/"
+            variant="h6"
             sx={{
               fontWeight: 700,
               color: 'primary.main',
               textDecoration: 'none',
               mr: 4,
+              cursor: 'pointer',
             }}
           >
             DSports-AI
-          </Typography>
+          </MuiLink>
 
           <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
             <Button color="inherit" component={RouterLink} to="/">
@@ -40,14 +69,57 @@ const MainLayout = () => {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <IconButton color="inherit" aria-label="cart">
+            <IconButton color="inherit" aria-label="cart" onClick={() => navigate('/cart')}>
               <Badge badgeContent={0} color="secondary">
                 <ShoppingCartOutlined />
               </Badge>
             </IconButton>
-            <Button variant="contained" color="primary" size="small">
-              Sign In
-            </Button>
+
+            {isAuthenticated && user ? (
+              <>
+                <IconButton
+                  onClick={(e) => setAnchorEl(e.currentTarget)}
+                  size="small"
+                  sx={{ ml: 1 }}
+                >
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                    <PersonOutline />
+                  </Avatar>
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={() => setAnchorEl(null)}
+                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                >
+                  <MenuItem disabled>
+                    <Typography variant="body2" color="text.secondary">
+                      {user.email}
+                    </Typography>
+                  </MenuItem>
+                  <Divider />
+                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>
+                    <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
+                    Profile
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>
+                    <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
+                    Sign Out
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                component={RouterLink}
+                to="/login"
+              >
+                Sign In
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </AppBar>

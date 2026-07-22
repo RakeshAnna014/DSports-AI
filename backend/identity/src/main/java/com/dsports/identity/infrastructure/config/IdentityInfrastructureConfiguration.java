@@ -121,6 +121,14 @@ public class IdentityInfrastructureConfiguration {
     }
 
     @Bean
+    public RegisterUserUseCase registerUserUseCase(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            EventPublisher eventPublisher) {
+        return new RegisterUserUseCase(userRepository, passwordEncoder, eventPublisher);
+    }
+
+    @Bean
     public UserProfileManagementService userProfileManagementService() {
         return new UserProfileManagementService();
     }

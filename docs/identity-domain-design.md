@@ -1187,11 +1187,24 @@ https://api.dsports.com/api/v1/
 
 ### 9.3 Authentication Endpoints
 
-#### POST /api/v1/auth/register
+All endpoints live under `/api/auth/` (no version prefix).  
+**Base URL:** `http://localhost:8080/api/auth`
 
-Register a new user with email and password.
+Authentication endpoints are **public** (no JWT required):
+- `POST /register` — `permitAll()`
+- `POST /login` — `permitAll()`
+- `POST /refresh` — `permitAll()`
+- `POST /logout` — **authenticated** (requires JWT)
 
-**Request:**
+**Controller:** `AuthController` at `backend/identity/.../interfaces/AuthController.java`
+
+---
+
+#### POST /api/auth/register
+
+Create a new customer account.
+
+**Request Body (`RegisterRequest`):**
 ```json
 {
   "email": "john.doe@example.com",
@@ -1201,50 +1214,28 @@ Register a new user with email and password.
 }
 ```
 
-**Success Response (201):**
+**Success Response — `201 Created`:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "john.doe@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "status": "REGISTERED",
-    "message": "Registration successful. Please check your email to verify your account."
-  }
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "john.doe@example.com"
 }
 ```
 
 **Error Responses:**
 
-| HTTP Status | Error Code | Condition |
-|-------------|------------|-----------|
-| 409 | AUTH_EMAIL_ALREADY_EXISTS | Email already registered |
-| 422 | AUTH_WEAK_PASSWORD | Password fails policy |
-| 422 | VALIDATION_INVALID_EMAIL | Invalid email format |
-| 422 | VALIDATION_REQUIRED | Missing required field |
-
-```json
-{
-  "status": "error",
-  "errors": [
-    {
-      "code": "AUTH_EMAIL_ALREADY_EXISTS",
-      "field": "email",
-      "message": "An account with this email already exists"
-    }
-  ]
-}
-```
+| Status | Condition |
+|--------|-----------|
+| 400 | Validation failure (invalid email, missing fields, weak password) |
+| 409 | `DUPLICATE_EMAIL` — Email already registered |
 
 ---
 
-#### POST /api/v1/auth/login
+#### POST /api/auth/login
 
-Login with email and password.
+Authenticate with email and password. Returns JWT access + refresh tokens.
 
-**Request:**
+**Request Body (`LoginUserCommand`):**
 ```json
 {
   "email": "john.doe@example.com",
@@ -1252,237 +1243,80 @@ Login with email and password.
 }
 ```
 
-**Success Response (200):**
+**Success Response — `200 OK`:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
-    "expiresIn": 900,
-    "tokenType": "Bearer",
-    "user": {
-      "userId": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "john.doe@example.com",
-      "firstName": "John",
-      "lastName": "Doe",
-      "roles": ["CUSTOMER"]
-    }
-  }
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "john.doe@example.com",
+  "roles": ["CUSTOMER"],
+  "accessToken": "eyJhbGciOiJSUzI1NiIs...",
+  "refreshToken": "dGhpcyBpcyBhIHJlZnJl..."
 }
 ```
 
 **Error Responses:**
 
-| HTTP Status | Error Code | Condition |
-|-------------|------------|-----------|
-| 401 | AUTH_INVALID_CREDENTIALS | Wrong email or password |
-| 403 | AUTH_ACCOUNT_LOCKED | Account locked due to failed attempts |
-| 403 | AUTH_ACCOUNT_DISABLED | Account disabled by admin |
-| 403 | AUTH_EMAIL_NOT_VERIFIED | Email not yet verified |
-| 429 | AUTH_RATE_LIMITED | Too many attempts |
-
-```json
-{
-  "status": "error",
-  "errors": [
-    {
-      "code": "AUTH_ACCOUNT_LOCKED",
-      "field": null,
-      "message": "Account is temporarily locked due to multiple failed login attempts. Please try again later."
-    }
-  ]
-}
-```
+| Status | Condition |
+|--------|-----------|
+| 401 | Invalid email or password |
 
 ---
 
-#### POST /api/v1/auth/login/google
+#### POST /api/auth/refresh
 
-Login or register using Google OAuth.
+Exchange a valid refresh token for a new token pair.
 
-**Request:**
-```json
-{
-  "code": "4/0AX4XfWiS5a...",
-  "redirectUri": "https://dsports.com/auth/callback"
-}
-```
-
-**Success Response (200) — Returning User:**
-```json
-{
-  "status": "success",
-  "data": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
-    "expiresIn": 900,
-    "tokenType": "Bearer",
-    "isNewUser": false,
-    "user": {
-      "userId": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "john.doe@gmail.com",
-      "firstName": "John",
-      "lastName": "Doe",
-      "avatarUrl": "https://lh3.googleusercontent.com/...",
-      "roles": ["CUSTOMER"]
-    }
-  }
-}
-```
-
-**Success Response (201) — New User:**
-```json
-{
-  "status": "success",
-  "data": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
-    "expiresIn": 900,
-    "tokenType": "Bearer",
-    "isNewUser": true,
-    "user": {
-      "userId": "660e8400-e29b-41d4-a716-446655440001",
-      "email": "jane.doe@gmail.com",
-      "firstName": "Jane",
-      "lastName": "Doe",
-      "avatarUrl": "https://lh3.googleusercontent.com/...",
-      "roles": ["CUSTOMER"]
-    }
-  }
-}
-```
-
-**Error Responses:**
-
-| HTTP Status | Error Code | Condition |
-|-------------|------------|-----------|
-| 409 | AUTH_ACCOUNT_EXISTS | Email exists without Google link (see 6.3 Account Linking) |
-| 401 | AUTH_INVALID_OAUTH_TOKEN | Invalid or expired OAuth code |
-
-**Special Response — Account Linking Required (409):**
-```json
-{
-  "status": "error",
-  "errors": [
-    {
-      "code": "AUTH_ACCOUNT_EXISTS",
-      "field": null,
-      "message": "An account with this email already exists using email login. Would you like to link your Google account?",
-      "linkingToken": "temp_abc123"
-    }
-  ]
-}
-```
-
----
-
-#### POST /api/v1/auth/link-account
-
-Link an OAuth provider to an existing email account.
-
-**Request:**
-```json
-{
-  "linkingToken": "temp_abc123",
-  "password": "ExistingPassword123!"
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "status": "success",
-  "data": {
-    "message": "Accounts linked successfully. You can now log in with either method.",
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJl..."
-  }
-}
-```
-
----
-
-#### POST /api/v1/auth/refresh
-
-Refresh an expired access token.
-
-**Request:**
+**Request Body (`RefreshTokenCommand`):**
 ```json
 {
   "refreshToken": "dGhpcyBpcyBhIHJlZnJl..."
 }
 ```
 
-**Success Response (200):**
+**Success Response — `200 OK`:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",
-    "refreshToken": "cm90YXRlZCByZWZyZXNo...",
-    "expiresIn": 900,
-    "tokenType": "Bearer"
-  }
+  "accessToken": "eyJhbGciOiJSUzI1NiIs...",
+  "refreshToken": "cm90YXRlZCByZWZyZXNo..."
 }
 ```
 
 **Error Responses:**
 
-| HTTP Status | Error Code | Condition |
-|-------------|------------|-----------|
-| 401 | AUTH_INVALID_TOKEN | Token not found or malformed |
-| 401 | AUTH_EXPIRED_TOKEN | Token expired and cannot be refreshed (re-login required) |
-| 401 | AUTH_TOKEN_REVOKED | Token was revoked (possible security issue) |
+| Status | Condition |
+|--------|-----------|
+| 401 | Invalid or expired refresh token |
 
 ---
 
-#### POST /api/v1/auth/forgot-password
+#### POST /api/auth/logout
 
-Request a password reset email.
+Invalidate the refresh token (requires JWT in `Authorization` header).
 
-**Request:**
+**Request Body (`LogoutCommand`):**
 ```json
 {
-  "email": "john.doe@example.com"
+  "refreshToken": "dGhpcyBpcyBhIHJlZnJl..."
 }
 ```
 
-**Success Response (200):** (Always returns success — prevents email enumeration)
-```json
-{
-  "status": "success",
-  "data": {
-    "message": "If an account with this email exists, a password reset link has been sent."
-  }
-}
-```
-
----
-
-#### POST /api/v1/auth/reset-password
-
-Reset password using token from email.
-
-**Request:**
-```json
-{
-  "token": "reset_token_from_email",
-  "newPassword": "NewSecurePass456!"
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "status": "success",
-  "data": {
-    "message": "Password reset successful. Please log in with your new password."
-  }
-}
-```
+**Success Response — `204 No Content`** (no body)
 
 **Error Responses:**
+
+| Status | Condition |
+|--------|-----------|
+| 401 | Missing/invalid JWT |
+
+---
+
+#### Not Yet Implemented
+
+The following endpoints are planned for future sprints:
+- `POST /api/auth/login/google` — Google OAuth
+- `POST /api/auth/link-account` — OAuth account linking
+- `POST /api/auth/forgot-password` — Password reset request
+- `POST /api/auth/reset-password` — Password reset with token
 
 | HTTP Status | Error Code | Condition |
 |-------------|------------|-----------|

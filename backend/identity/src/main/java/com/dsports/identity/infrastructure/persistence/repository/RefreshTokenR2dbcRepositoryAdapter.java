@@ -45,10 +45,10 @@ public class RefreshTokenR2dbcRepositoryAdapter implements RefreshTokenRepositor
                 .bind("expiresAt", refreshToken.getExpiresAt())
                 .bind("createdAt", refreshToken.getCreatedAt())
                 .bind("revoked", refreshToken.isRevoked())
-                .bind("deviceName", refreshToken.getDeviceName())
-                .bind("userAgent", refreshToken.getUserAgent())
-                .bind("ipAddress", refreshToken.getIpAddress())
-                .bind("lastUsedAt", refreshToken.getLastUsedAt())
+                .bind("deviceName", refreshToken.getDeviceName() != null ? refreshToken.getDeviceName() : "")
+                .bind("userAgent", refreshToken.getUserAgent() != null ? refreshToken.getUserAgent() : "")
+                .bind("ipAddress", refreshToken.getIpAddress() != null ? refreshToken.getIpAddress() : "")
+                .bind("lastUsedAt", refreshToken.getLastUsedAt() != null ? refreshToken.getLastUsedAt() : Instant.now())
                 .then();
     }
 

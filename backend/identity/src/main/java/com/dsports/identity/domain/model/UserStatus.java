@@ -16,7 +16,7 @@ public enum UserStatus {
     DELETED;
 
     private static final Set<UserStatus> ACTIVE_STATES = EnumSet.of(REGISTERED, PENDING_VERIFICATION, ACTIVE);
-    private static final Set<UserStatus> LOGIN_ALLOWED = EnumSet.of(PENDING_VERIFICATION, ACTIVE);
+    private static final Set<UserStatus> LOGIN_ALLOWED = EnumSet.of(REGISTERED, PENDING_VERIFICATION, ACTIVE);
     private static final Set<UserStatus> CAN_BE_DELETED = EnumSet.of(REGISTERED, PENDING_VERIFICATION, ACTIVE, LOCKED, DISABLED);
 
     public boolean canTransitionTo(UserStatus target) {

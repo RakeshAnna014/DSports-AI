@@ -79,7 +79,7 @@ public class OpenApiConfig {
                 .addResponses("500", new ApiResponse()
                     .description("Internal server error")))
             .tags(List.of(
-                new Tag().name("Authentication").description("Login, token refresh, logout"),
+                new Tag().name("Authentication").description("Registration, login, token refresh, logout"),
                 new Tag().name("Customer Profile").description("Customer profile management"),
                 new Tag().name("Addresses").description("Customer address management"),
                 new Tag().name("Catalog").description("Product catalog, search, categories, brands"),
@@ -88,6 +88,15 @@ public class OpenApiConfig {
                 new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
             ));
+    }
+
+    @Bean
+    public GroupedOpenApi allApi() {
+        return GroupedOpenApi.builder()
+            .group("all")
+            .displayName("All APIs")
+            .pathsToMatch("/api/**")
+            .build();
     }
 
     @Bean
