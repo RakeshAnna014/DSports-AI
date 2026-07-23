@@ -137,7 +137,7 @@ const CartPage = () => {
                 variant="contained"
                 size="large"
                 fullWidth
-                onClick={() => alert('Checkout not implemented yet')}
+                onClick={() => navigate('/checkout')}
               >
                 Proceed to Checkout
               </Button>

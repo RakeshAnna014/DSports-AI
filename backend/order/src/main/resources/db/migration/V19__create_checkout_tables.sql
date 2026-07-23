@@ -7,7 +7,6 @@ CREATE TABLE checkouts (
     delivery_method_code VARCHAR(30),
     delivery_method_name VARCHAR(100),
     delivery_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     total_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
