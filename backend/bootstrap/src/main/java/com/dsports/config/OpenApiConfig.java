@@ -86,6 +86,7 @@ public class OpenApiConfig {
                 new Tag().name("Inventory").description("Inventory availability lookup"),
                 new Tag().name("Pricing").description("Price lookup"),
                 new Tag().name("Shopping Cart").description("Shopping cart management"),
+                new Tag().name("Checkout").description("Checkout and payment preparation"),
                 new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
             ));
@@ -179,6 +180,15 @@ public class OpenApiConfig {
             .group("shopping-cart")
             .displayName("Shopping Cart")
             .pathsToMatch("/api/v1/cart/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi checkoutApi() {
+        return GroupedOpenApi.builder()
+            .group("checkout")
+            .displayName("Checkout")
+            .pathsToMatch("/api/v1/checkout/**")
             .build();
     }
 

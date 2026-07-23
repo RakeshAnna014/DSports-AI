@@ -7,6 +7,7 @@ import ProductsPage from '@/features/products/ProductsPage';
 import ProductDetailPage from '@/features/products/ProductDetailPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import CartPage from '@/features/cart/CartPage';
+import CheckoutPage from '@/features/checkout/CheckoutPage';
 import NotFoundPage from '@/features/not-found/NotFoundPage';
 
 const router = createBrowserRouter([
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: '/products/:id', element: <ProductDetailPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/cart', element: <CartPage /> },
+      { path: '/checkout', element: <CheckoutPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

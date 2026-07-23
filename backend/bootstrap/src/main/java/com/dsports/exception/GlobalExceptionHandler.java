@@ -2,6 +2,8 @@ package com.dsports.exception;
 
 import com.dsports.cart.domain.exception.CartDomainException;
 import com.dsports.cart.domain.exception.CartErrorCode;
+import com.dsports.order.domain.checkout.exception.CheckoutDomainException;
+import com.dsports.order.domain.checkout.exception.CheckoutErrorCode;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
@@ -158,9 +160,33 @@ public class GlobalExceptionHandler {
         return Mono.just(apiError);
     }
 
+    private static final Map<CheckoutErrorCode, HttpStatus> CHECKOUT_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(CheckoutErrorCode.CHECKOUT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CheckoutErrorCode.CART_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CheckoutErrorCode.CART_EMPTY, HttpStatus.BAD_REQUEST),
+        Map.entry(CheckoutErrorCode.CHECKOUT_EMPTY, HttpStatus.BAD_REQUEST),
+        Map.entry(CheckoutErrorCode.CHECKOUT_EXPIRED, HttpStatus.GONE),
+        Map.entry(CheckoutErrorCode.CHECKOUT_ALREADY_TERMINAL, HttpStatus.CONFLICT),
+        Map.entry(CheckoutErrorCode.CHECKOUT_NOT_OWNED_BY_CUSTOMER, HttpStatus.FORBIDDEN),
+        Map.entry(CheckoutErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(CheckoutErrorCode.ITEM_OUT_OF_STOCK, HttpStatus.CONFLICT),
+        Map.entry(CheckoutErrorCode.PRODUCT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CheckoutErrorCode.PRICE_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CheckoutErrorCode.MISSING_SHIPPING_ADDRESS, HttpStatus.BAD_REQUEST),
+        Map.entry(CheckoutErrorCode.MISSING_DELIVERY_METHOD, HttpStatus.BAD_REQUEST)
+    );
+
     @ExceptionHandler(CartDomainException.class)
     public Mono<ApiError> handleCartDomainException(CartDomainException ex, ServerWebExchange exchange) {
         var status = CART_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.INTERNAL_SERVER_ERROR);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    @ExceptionHandler(CheckoutDomainException.class)
+    public Mono<ApiError> handleCheckoutDomainException(CheckoutDomainException ex, ServerWebExchange exchange) {
+        var status = CHECKOUT_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);
