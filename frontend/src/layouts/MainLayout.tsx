@@ -17,6 +17,7 @@ import {
 import {
   ShoppingCartOutlined,
   PersonOutline,
+  ReceiptLongOutlined,
   Logout,
 } from '@mui/icons-material';
 import {
@@ -108,6 +109,10 @@ const MainLayout = () => {
                     </Typography>
                   </MenuItem>
                   <Divider />
+                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/orders'); }}>
+                    <ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>
+                    My Orders
+                  </MenuItem>
                   <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>
                     <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
                     Profile

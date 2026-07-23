@@ -4,6 +4,8 @@ import com.dsports.cart.domain.exception.CartDomainException;
 import com.dsports.cart.domain.exception.CartErrorCode;
 import com.dsports.order.domain.checkout.exception.CheckoutDomainException;
 import com.dsports.order.domain.checkout.exception.CheckoutErrorCode;
+import com.dsports.order.domain.order.exception.OrderDomainException;
+import com.dsports.order.domain.order.exception.OrderErrorCode;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
@@ -187,6 +189,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CheckoutDomainException.class)
     public Mono<ApiError> handleCheckoutDomainException(CheckoutDomainException ex, ServerWebExchange exchange) {
         var status = CHECKOUT_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    private static final Map<OrderErrorCode, HttpStatus> ORDER_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(OrderErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(OrderErrorCode.ORDER_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(OrderErrorCode.ORDER_EMPTY, HttpStatus.BAD_REQUEST),
+        Map.entry(OrderErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.ORDER_ALREADY_CANCELLED, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.ORDER_ALREADY_DELIVERED, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.CHECKOUT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(OrderErrorCode.CHECKOUT_NOT_VALIDATED, HttpStatus.BAD_REQUEST),
+        Map.entry(OrderErrorCode.CART_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(OrderErrorCode.CART_EMPTY, HttpStatus.BAD_REQUEST),
+        Map.entry(OrderErrorCode.INSUFFICIENT_STOCK, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.DUPLICATE_ORDER, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(OrderErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(OrderErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(OrderErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
+    @ExceptionHandler(OrderDomainException.class)
+    public Mono<ApiError> handleOrderDomainException(OrderDomainException ex, ServerWebExchange exchange) {
+        var status = ORDER_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);

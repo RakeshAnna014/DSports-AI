@@ -23,6 +23,15 @@ export const computeDiscount = (mrp: number, sellingPrice: number): number =>
 export const formatPrice = (amount: number, currency = 'USD'): string =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
+export const formatDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
 export type StockLevel = 'in_stock' | 'low_stock' | 'out_of_stock';
 
 export const computeStockLevel = (inventory?: InventoryRecord[]): { level: StockLevel; label: string } => {
