@@ -35,7 +35,7 @@ public class CheckoutR2dbcRepositoryAdapter implements CheckoutRepository {
 
     @Override
     public Mono<Checkout> findByCustomerId(UUID customerId) {
-        return checkoutRepo.findByCustomerIdAndStatusNotIn(customerId, "EXPIRED", "CANCELLED")
+        return checkoutRepo.findActiveByCustomerId(customerId)
             .flatMap(entity -> itemRepo.findByCheckoutId(entity.getId())
                 .collectList()
                 .map(items -> CheckoutEntityMapper.toDomain(entity, items)));
@@ -43,7 +43,7 @@ public class CheckoutR2dbcRepositoryAdapter implements CheckoutRepository {
 
     @Override
     public Mono<Boolean> existsActiveCheckout(UUID customerId) {
-        return checkoutRepo.existsByCustomerIdAndStatusNotIn(customerId, "EXPIRED", "CANCELLED");
+        return checkoutRepo.existsActiveCheckout(customerId);
     }
 
     @Override
