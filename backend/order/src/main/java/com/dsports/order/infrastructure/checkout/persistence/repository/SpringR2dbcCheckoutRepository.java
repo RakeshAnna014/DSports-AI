@@ -13,10 +13,10 @@ import java.util.UUID;
 @Repository
 public interface SpringR2dbcCheckoutRepository extends R2dbcRepository<CheckoutEntity, UUID> {
 
-    @Query("SELECT * FROM checkouts WHERE customer_id = :customerId AND status <> 'EXPIRED' AND status <> 'CANCELLED' LIMIT 1")
+    @Query("SELECT * FROM checkouts WHERE customer_id = :customerId AND status <> 'EXPIRED' AND status <> 'CANCELLED' AND expires_at > NOW() LIMIT 1")
     Mono<CheckoutEntity> findActiveByCustomerId(UUID customerId);
 
-    @Query("SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM checkouts WHERE customer_id = :customerId AND status <> 'EXPIRED' AND status <> 'CANCELLED'")
+    @Query("SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM checkouts WHERE customer_id = :customerId AND status <> 'EXPIRED' AND status <> 'CANCELLED' AND expires_at > NOW()")
     Mono<Boolean> existsActiveCheckout(UUID customerId);
 
     @Query("SELECT * FROM checkout_items WHERE checkout_id = :checkoutId ORDER BY created_at")
