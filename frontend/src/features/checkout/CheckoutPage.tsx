@@ -75,6 +75,10 @@ const CheckoutPage = () => {
       let active: CheckoutResponse;
       try {
         active = await checkoutApi.getActive();
+        if (active && (!active.items || active.items.length === 0)) {
+          await checkoutApi.cancel(active.id);
+          throw new Error('Stale checkout - recreating');
+        }
       } catch {
         const created = await checkoutApi.create();
         console.log('Checkout created:', created);
