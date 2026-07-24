@@ -113,6 +113,10 @@ const MainLayout = () => {
                     <ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>
                     My Orders
                   </MenuItem>
+                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/payments'); }}>
+                    <ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>
+                    Payments
+                  </MenuItem>
                   <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>
                     <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
                     Profile

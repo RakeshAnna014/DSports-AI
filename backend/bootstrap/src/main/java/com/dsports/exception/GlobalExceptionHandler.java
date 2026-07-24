@@ -6,6 +6,8 @@ import com.dsports.order.domain.checkout.exception.CheckoutDomainException;
 import com.dsports.order.domain.checkout.exception.CheckoutErrorCode;
 import com.dsports.order.domain.order.exception.OrderDomainException;
 import com.dsports.order.domain.order.exception.OrderErrorCode;
+import com.dsports.payment.domain.payment.exception.PaymentDomainException;
+import com.dsports.payment.domain.payment.exception.PaymentErrorCode;
 import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.domain.exception.CatalogErrorCode;
 import com.dsports.identity.domain.exception.ErrorCode;
@@ -216,6 +218,36 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrderDomainException.class)
     public Mono<ApiError> handleOrderDomainException(OrderDomainException ex, ServerWebExchange exchange) {
         var status = ORDER_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
+        var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        logStatus(status, ex.getMessage());
+        return Mono.just(apiError);
+    }
+
+    private static final Map<PaymentErrorCode, HttpStatus> PAYMENT_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(PaymentErrorCode.PAYMENT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(PaymentErrorCode.PAYMENT_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(PaymentErrorCode.DUPLICATE_PAYMENT, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAYMENT_ALREADY_SUCCESSFUL, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAYMENT_ALREADY_CANCELLED, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAYMENT_ALREADY_REFUNDED, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAYMENT_ALREADY_FAILED, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.AMOUNT_MISMATCH, HttpStatus.BAD_REQUEST),
+        Map.entry(PaymentErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(PaymentErrorCode.ORDER_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(PaymentErrorCode.ORDER_ALREADY_PAID, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.CANNOT_REFUND_NON_SUCCESS_PAYMENT, HttpStatus.BAD_REQUEST),
+        Map.entry(PaymentErrorCode.CANNOT_CANCEL_TERMINAL_PAYMENT, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.GATEWAY_ERROR, HttpStatus.BAD_GATEWAY),
+        Map.entry(PaymentErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(PaymentErrorCode.GENERIC, HttpStatus.INTERNAL_SERVER_ERROR),
+        Map.entry(PaymentErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
+    @ExceptionHandler(PaymentDomainException.class)
+    public Mono<ApiError> handlePaymentDomainException(PaymentDomainException ex, ServerWebExchange exchange) {
+        var status = PAYMENT_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
         var apiError = buildApiError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
         logStatus(status, ex.getMessage());
         return Mono.just(apiError);

@@ -11,6 +11,10 @@ import CheckoutPage from '@/features/checkout/CheckoutPage';
 import OrdersPage from '@/features/orders/OrdersPage';
 import OrderDetailPage from '@/features/orders/OrderDetailPage';
 import OrderSuccessPage from '@/features/orders/OrderSuccessPage';
+import PaymentPage from '@/features/payments/PaymentPage';
+import PaymentSuccessPage from '@/features/payments/PaymentSuccessPage';
+import PaymentFailurePage from '@/features/payments/PaymentFailurePage';
+import PaymentHistoryPage from '@/features/payments/PaymentHistoryPage';
 import NotFoundPage from '@/features/not-found/NotFoundPage';
 
 const router = createBrowserRouter([
@@ -28,6 +32,10 @@ const router = createBrowserRouter([
       { path: '/orders', element: <OrdersPage /> },
       { path: '/orders/:id', element: <OrderDetailPage /> },
       { path: '/order-success', element: <OrderSuccessPage /> },
+      { path: '/payment', element: <PaymentPage /> },
+      { path: '/payment-success', element: <PaymentSuccessPage /> },
+      { path: '/payment-failure', element: <PaymentFailurePage /> },
+      { path: '/payments', element: <PaymentHistoryPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
