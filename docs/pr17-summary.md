@@ -254,7 +254,7 @@ _To be implemented with testcontainers + R2DBC + WebTestClient:_
    - Admin endpoints — ADMIN role enforcement
 
 5. **Flyway migration test**
-   - V17__create_order_tables.sql executes cleanly
+   - V21__create_order_tables.sql executes cleanly
 
 ---
 
@@ -321,7 +321,7 @@ _To be implemented with testcontainers + R2DBC + WebTestClient:_
 | `interfaces/order/PublicOrderController.java` | Customer REST controller |
 | `interfaces/order/AdminOrderController.java` | Admin REST controller |
 | `interfaces/order/dto/*.java` | Request/Response DTOs |
-| `resources/db/migration/V17__create_order_tables.sql` | Flyway migration |
+| `resources/db/migration/V21__create_order_tables.sql` | Flyway migration |
 
 ### Backend — Bootstrap module
 
