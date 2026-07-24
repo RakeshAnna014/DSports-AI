@@ -14,7 +14,6 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
-  FormLabel,
   Chip,
   List,
   ListItem,
@@ -278,7 +277,7 @@ const CheckoutPage = () => {
                               <strong>{opt.label}</strong> ({opt.days} business days)
                             </Typography>
                             <Typography variant="body2" fontWeight={600}>
-                              {opt.charge === 0 ? 'Free' : formatPrice(opt.charge)}
+                              {formatPrice(opt.charge)}
                             </Typography>
                           </Box>
                         }

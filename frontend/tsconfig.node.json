@@ -8,8 +8,11 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "strict": true
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "strict": true,
+    "outDir": "node_modules/.tsbuild",
+    "declarationDir": "node_modules/.tsbuild"
   },
   "include": ["vite.config.ts"]
 }

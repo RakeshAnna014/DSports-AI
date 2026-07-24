@@ -1,4 +1,4 @@
-import type { Price, InventoryRecord } from '@/types/catalog';
+import type { InventoryRecord } from '@/types/catalog';
 
 export const getProductImageUrl = (name: string, images?: { url: string; primary?: boolean }[]): string => {
   if (images && images.length > 0) {

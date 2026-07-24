@@ -20,7 +20,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -31,8 +30,6 @@ import Grid from '@mui/material/Grid2';
 import {
   ArrowBack,
   LocalShippingOutlined,
-  PaymentOutlined,
-  CheckCircleOutline,
   CancelOutlined,
   Inventory2Outlined,
 } from '@mui/icons-material';
@@ -235,7 +232,7 @@ const OrderDetailPage = () => {
                           </TableCell>
                           <TableCell align="right">{item.quantity}</TableCell>
                           <TableCell align="right">{formatPrice(item.unitPrice)}</TableCell>
-                          <TableCell align="right" fontWeight={600}>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
                             {formatPrice(item.lineTotal)}
                           </TableCell>
                         </TableRow>

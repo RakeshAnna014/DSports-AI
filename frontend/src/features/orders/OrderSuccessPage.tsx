@@ -1,6 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardContent, Divider, Stack } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import { CheckCircleOutline, ReceiptLongOutlined, ShoppingBagOutlined } from '@mui/icons-material';
 
 const OrderSuccessPage = () => {

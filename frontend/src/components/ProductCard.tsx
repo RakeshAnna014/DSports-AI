@@ -37,7 +37,6 @@ interface ProductCardProps {
 const ProductCard = ({
   product,
   brandName,
-  categoryName,
   price,
   inventory,
   onViewDetails,

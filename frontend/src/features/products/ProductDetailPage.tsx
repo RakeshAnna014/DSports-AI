@@ -29,7 +29,6 @@ import {
 } from '@mui/icons-material';
 import ImageGallery from '@/components/ImageGallery';
 import ProductCard from '@/components/ProductCard';
-import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import {
   useProductDetail,
   useProducts,

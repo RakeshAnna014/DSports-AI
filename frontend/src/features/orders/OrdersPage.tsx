@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   Card,
-  CardContent,
   Chip,
   Stack,
   Alert,
@@ -24,7 +23,6 @@ import {
   ReceiptLongOutlined,
   VisibilityOutlined,
   CancelOutlined,
-  ShoppingBagOutlined,
 } from '@mui/icons-material';
 import type { OrderSummaryResponse } from '@/types/orders';
 import { ordersApi } from '@/api/orders';

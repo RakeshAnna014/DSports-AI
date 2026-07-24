@@ -1,4 +1,4 @@
-import { Box, TextField, MenuItem, InputAdornment, Stack } from '@mui/material';
+import { TextField, MenuItem, InputAdornment, Stack } from '@mui/material';
 import { SearchOutlined } from '@mui/icons-material';
 import type { Sport, Category, Brand } from '@/types/catalog';
 
