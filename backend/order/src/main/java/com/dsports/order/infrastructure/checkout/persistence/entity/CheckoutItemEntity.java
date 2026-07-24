@@ -1,6 +1,8 @@
 package com.dsports.order.infrastructure.checkout.persistence.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -9,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Table("checkout_items")
-public class CheckoutItemEntity {
+public class CheckoutItemEntity implements Persistable<UUID> {
 
     @Id
     private UUID id;
@@ -41,8 +43,18 @@ public class CheckoutItemEntity {
     @Column("created_at")
     private Instant createdAt;
 
+    @Transient
+    private boolean isNew;
+
+    @Override
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    @Override
+    @Transient
+    public boolean isNew() { return isNew; }
+    public void setNew(boolean isNew) { this.isNew = isNew; }
+
     public UUID getCheckoutId() { return checkoutId; }
     public void setCheckoutId(UUID checkoutId) { this.checkoutId = checkoutId; }
     public UUID getProductId() { return productId; }

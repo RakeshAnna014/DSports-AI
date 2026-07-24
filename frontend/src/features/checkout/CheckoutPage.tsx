@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -62,8 +62,11 @@ const CheckoutPage = () => {
   const [selectedDelivery, setSelectedDelivery] = useState<string>('STANDARD');
   const [submitting, setSubmitting] = useState(false);
   const [validated, setValidated] = useState(false);
+  const initializingRef = useRef(false);
 
   useEffect(() => {
+    if (initializingRef.current) return;
+    initializingRef.current = true;
     initCheckout();
   }, []);
 

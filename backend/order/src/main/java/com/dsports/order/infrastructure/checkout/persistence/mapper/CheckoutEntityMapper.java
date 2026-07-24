@@ -55,6 +55,7 @@ public final class CheckoutEntityMapper {
         entity.setLineTotal(item.getLineTotal());
         entity.setImageUrl(item.getImageUrl());
         entity.setCreatedAt(item.getCreatedAt());
+        entity.setNew(true);
         return entity;
     }
 
