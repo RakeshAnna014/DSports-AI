@@ -77,7 +77,12 @@ const CheckoutPage = () => {
         active = await checkoutApi.getActive();
       } catch {
         const created = await checkoutApi.create();
+        console.log('Checkout created:', created);
+        if (!created?.id) {
+          throw new Error('Invalid checkout creation response - missing id');
+        }
         active = await checkoutApi.getById(created.id);
+        console.log('Checkout fetched:', active);
       }
       setCheckout(active);
       if (active.shippingAddressId) setSelectedAddress(active.shippingAddressId);
@@ -168,7 +173,8 @@ const CheckoutPage = () => {
     );
   }
 
-  if (!checkout) {
+  if (!checkout || !checkout.items) {
+    console.error('Invalid checkout response:', checkout);
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <CircularProgress />
