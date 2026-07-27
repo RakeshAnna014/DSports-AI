@@ -62,12 +62,11 @@ public class ValidateCheckoutUseCase {
                 }))
                 .thenReturn(checkout);
             })
-            .flatMap(validatedCheckout -> checkoutRepository.findById(validatedCheckout.getId()))
-            .flatMap(checkout -> checkoutRepository.save(checkout)
+            .flatMap(validatedCheckout -> checkoutRepository.save(validatedCheckout)
                 .doOnSuccess(v -> {
-                    checkout.getDomainEvents().forEach(eventPublisher::publish);
-                    checkout.clearDomainEvents();
+                    validatedCheckout.getDomainEvents().forEach(eventPublisher::publish);
+                    validatedCheckout.clearDomainEvents();
                 })
-                .thenReturn(CheckoutResultMapper.toResult(checkout)));
+                .thenReturn(CheckoutResultMapper.toResult(validatedCheckout)));
     }
 }

@@ -101,6 +101,11 @@ public final class Order {
             placedAt, cancelledAt, version, createdAt, updatedAt);
     }
 
+    public void markPendingPayment() {
+        transitionTo(OrderStatus.PENDING_PAYMENT);
+        this.updatedAt = Instant.now();
+    }
+
     public void confirm() {
         transitionTo(OrderStatus.CONFIRMED);
         this.updatedAt = Instant.now();

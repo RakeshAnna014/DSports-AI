@@ -39,6 +39,7 @@ export interface CreatePaymentPayload {
 export type PaymentStatus =
   | 'CREATED'
   | 'PENDING'
+  | 'PROCESSING'
   | 'AUTHORIZED'
   | 'SUCCESS'
   | 'FAILED'

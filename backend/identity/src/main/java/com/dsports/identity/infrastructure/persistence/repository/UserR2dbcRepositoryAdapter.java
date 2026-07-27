@@ -137,6 +137,10 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
         return addressRepository.findByCustomerId(customerId)
                 .collectList()
                 .flatMap(existing -> {
+                    var existingIds = existing.stream()
+                            .map(AddressEntity::getId)
+                            .collect(Collectors.toSet());
+
                     var currentIds = addresses.stream()
                             .map(a -> a.getId().value())
                             .collect(Collectors.toSet());
@@ -147,8 +151,13 @@ public class UserR2dbcRepositoryAdapter implements UserRepository {
                             .toArray(Mono[]::new);
 
                     var saveOps = addresses.stream()
-                            .map(a -> toAddressEntity(a, customerId))
-                            .map(addressRepository::save)
+                            .map(a -> {
+                                var entity = toAddressEntity(a, customerId);
+                                if (!existingIds.contains(entity.getId())) {
+                                    entity.setNew(true);
+                                }
+                                return addressRepository.save(entity);
+                            })
                             .toArray(Mono[]::new);
 
                     return Mono.when(concatArrays(deleteOps, saveOps));

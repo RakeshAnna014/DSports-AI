@@ -102,6 +102,7 @@ public class PlaceOrderUseCase {
                     );
                 }))
             .flatMap(order -> {
+                order.markPendingPayment();
                 var reservationItems = order.getItems().stream()
                     .map(item -> new InventoryReservationPort.ReservationItem(
                         item.getProductId(), item.getQuantity()))

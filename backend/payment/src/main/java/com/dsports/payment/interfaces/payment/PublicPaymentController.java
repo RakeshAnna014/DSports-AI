@@ -1,15 +1,18 @@
 package com.dsports.payment.interfaces.payment;
 
 import com.dsports.payment.application.payment.command.CancelPaymentCommand;
+import com.dsports.payment.application.payment.command.CapturePaymentCommand;
 import com.dsports.payment.application.payment.command.CreatePaymentCommand;
 import com.dsports.payment.application.payment.command.RefundPaymentCommand;
 import com.dsports.payment.application.payment.query.GetPaymentHistoryQuery;
 import com.dsports.payment.application.payment.query.GetPaymentQuery;
 import com.dsports.payment.application.payment.usecase.CancelPaymentUseCase;
+import com.dsports.payment.application.payment.usecase.CapturePaymentUseCase;
 import com.dsports.payment.application.payment.usecase.CreatePaymentUseCase;
 import com.dsports.payment.application.payment.usecase.GetPaymentHistoryUseCase;
 import com.dsports.payment.application.payment.usecase.GetPaymentUseCase;
 import com.dsports.payment.application.payment.usecase.RefundPaymentUseCase;
+import com.dsports.payment.interfaces.payment.dto.CapturePaymentRequest;
 import com.dsports.payment.interfaces.payment.dto.CreatePaymentRequest;
 import com.dsports.payment.interfaces.payment.dto.PaymentResponse;
 import com.dsports.payment.interfaces.payment.dto.PaymentSummaryResponse;
@@ -42,17 +45,20 @@ import java.util.UUID;
 public class PublicPaymentController {
 
     private final CreatePaymentUseCase createPaymentUseCase;
+    private final CapturePaymentUseCase capturePaymentUseCase;
     private final GetPaymentUseCase getPaymentUseCase;
     private final GetPaymentHistoryUseCase getPaymentHistoryUseCase;
     private final CancelPaymentUseCase cancelPaymentUseCase;
     private final RefundPaymentUseCase refundPaymentUseCase;
 
     public PublicPaymentController(CreatePaymentUseCase createPaymentUseCase,
+                                    CapturePaymentUseCase capturePaymentUseCase,
                                     GetPaymentUseCase getPaymentUseCase,
                                     GetPaymentHistoryUseCase getPaymentHistoryUseCase,
                                     CancelPaymentUseCase cancelPaymentUseCase,
                                     RefundPaymentUseCase refundPaymentUseCase) {
         this.createPaymentUseCase = createPaymentUseCase;
+        this.capturePaymentUseCase = capturePaymentUseCase;
         this.getPaymentUseCase = getPaymentUseCase;
         this.getPaymentHistoryUseCase = getPaymentHistoryUseCase;
         this.cancelPaymentUseCase = cancelPaymentUseCase;
@@ -78,6 +84,29 @@ public class PublicPaymentController {
         var command = new CreatePaymentCommand(userId, request.orderId(), request.amount(),
             request.currency(), request.paymentMethod(), request.paymentProvider());
         return createPaymentUseCase.execute(command)
+            .map(PaymentResponse::from);
+    }
+
+    @PostMapping("/{paymentId}/capture")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Capture a payment",
+               description = "Captures an authorized payment. Processes the payment through the gateway and marks it as success or failure.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Payment captured successfully",
+                     content = @Content(schema = @Schema(implementation = PaymentResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request or payment state"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - payment belongs to another user"),
+        @ApiResponse(responseCode = "404", description = "Payment not found"),
+        @ApiResponse(responseCode = "409", description = "Concurrent modification")
+    })
+    public Mono<PaymentResponse> capturePayment(@PathVariable UUID paymentId,
+                                                 Authentication authentication,
+                                                 @Valid @RequestBody CapturePaymentRequest request) {
+        var userId = extractUserId(authentication);
+        var command = new CapturePaymentCommand(paymentId, userId,
+            request.transactionId(), request.gatewayReference());
+        return capturePaymentUseCase.execute(command)
             .map(PaymentResponse::from);
     }
 

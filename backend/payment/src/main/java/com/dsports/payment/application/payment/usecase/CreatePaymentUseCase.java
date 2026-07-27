@@ -65,12 +65,13 @@ public class CreatePaymentUseCase {
                     command.amount(), command.currency());
 
                 payment.initiatePayment(paymentMethod, paymentProvider);
+                payment.markProcessing();
 
                 var money = new Money(command.amount(), command.currency());
-                var gatewayRequest = new PaymentGateway.CreatePaymentRequest(
+                var gatewayRequest = new PaymentGateway.InitiatePaymentRequest(
                     paymentReference, money, "Payment for Order " + command.orderId());
 
-                return paymentGateway.createPayment(gatewayRequest)
+                return paymentGateway.initiatePayment(gatewayRequest)
                     .flatMap(gatewayResult -> {
                         if (gatewayResult.success()) {
                             payment.authorize(gatewayResult.transactionId(), gatewayResult.gatewayReference());

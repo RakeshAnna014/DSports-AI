@@ -139,6 +139,18 @@ public final class Cart {
         this.updatedAt = Instant.now();
     }
 
+    public void complete() {
+        if (status != CartStatus.CHECKED_OUT) {
+            throw new CartDomainException(CartErrorCode.INVALID_STATUS_TRANSITION,
+                "Only checked-out carts can be completed. Current status: " + status);
+        }
+        items.clear();
+        this.status = CartStatus.COMPLETED;
+        this.updatedAt = Instant.now();
+        domainEvents.add(new CartClearedEvent(id, userId));
+        calculateTotals();
+    }
+
     public void abandon() {
         if (!status.isActive()) {
             throw new CartDomainException(CartErrorCode.INVALID_STATUS_TRANSITION,

@@ -25,6 +25,7 @@ const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'de
   REFUNDED: 'info',
   CREATED: 'default',
   PENDING: 'warning',
+  PROCESSING: 'info',
   AUTHORIZED: 'info',
 };
 

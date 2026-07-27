@@ -1,172 +1,171 @@
-# PR #18 — Payment Management
+# PR #18 - Payment Management
 
 ## Architecture
 
-The Payment bounded context follows DDD + Clean Architecture with package structure:
-
 ```
-com.dsports.payment/
-  domain/payment/
-    model/          Payment (aggregate), PaymentId, PaymentReference, TransactionId, Money, PaymentStatus, PaymentMethod, PaymentProvider
-    event/          PaymentCreatedEvent, PaymentAuthorizedEvent, PaymentSucceededEvent, PaymentFailedEvent, PaymentCancelledEvent, PaymentRefundedEvent
-    exception/      PaymentDomainException, PaymentErrorCode
-  application/payment/
-    command/        CreatePaymentCommand, CapturePaymentCommand, CancelPaymentCommand, RefundPaymentCommand
-    query/          GetPaymentQuery, GetPaymentHistoryQuery
-    result/         PaymentResult, PaymentSummaryResult, PaymentResultMapper
-    port/           PaymentRepository, PaymentGateway, OrderPaymentPort, EventPublisher
-    usecase/        CreatePaymentUseCase, CapturePaymentUseCase, CancelPaymentUseCase, RefundPaymentUseCase, GetPaymentUseCase, GetPaymentHistoryUseCase
-  infrastructure/payment/
-    persistence/entity/     PaymentEntity, PaymentAuditEntity
-    persistence/repository/ SpringR2dbcPaymentRepository, SpringR2dbcPaymentAuditRepository, PaymentR2dbcRepositoryAdapter
-    persistence/mapper/     PaymentEntityMapper
-    gateway/                MockPaymentGateway
-    event/                  PaymentSpringEventPublisherAdapter
-    config/                 PaymentInfrastructureConfiguration
-  interfaces/payment/
-    dto/            CreatePaymentRequest, PaymentResponse, PaymentSummaryResponse
-                    PublicPaymentController
+presentation (PublicPaymentController)
+    ↓
+application (CreatePaymentUseCase, CapturePaymentUseCase, CancelPaymentUseCase, RefundPaymentUseCase, GetPaymentUseCase, PaymentHistoryUseCase)
+    ↓
+domain (Payment aggregate, PaymentStatus, PaymentMethod, PaymentProvider, value objects, domain events)
+    ↓
+infrastructure (MockPaymentGateway, PaymentR2dbcRepositoryAdapter, PaymentSpringEventPublisherAdapter)
 ```
 
-Dependencies: `dsports-shared`, `spring-boot-starter-webflux/data-r2dbc/validation/security`, `swagger-annotations-jakarta`.
-
----
+Clean Architecture is strictly followed. The `bootstrap` module wires all dependencies via `PaymentModuleConfig`.
 
 ## Payment Lifecycle
 
 ```
-CREATED → PENDING → AUTHORIZED → SUCCESS → REFUNDED
-                     ↘              ↙
-                      → FAILED →
+CREATED → PENDING → PROCESSING → AUTHORIZED → SUCCESS → REFUNDED
+                                    \-> FAILED
+                        \-> FAILED
+            \-> CANCELLED
 ```
 
-Terminal states: `SUCCESS`, `FAILED`, `CANCELLED`, `REFUNDED`.
+### Status Descriptions
 
-Valid transitions enforced via `PaymentStatus.canTransitionTo()`.
-
----
+| Status | Description |
+|--------|-------------|
+| CREATED | Payment record created, not yet initiated |
+| PENDING | Payment initiated with method/provider selected |
+| PROCESSING | Payment being processed by gateway |
+| AUTHORIZED | Payment authorized by gateway (funds held) |
+| SUCCESS | Payment successfully captured |
+| FAILED | Payment failed |
+| CANCELLED | Payment cancelled before completion |
+| REFUNDED | Successful payment refunded |
 
 ## Gateway Abstraction
 
-The `PaymentGateway` interface defines provider-independent operations:
+`PaymentGateway` interface provides provider-independence:
 
-- `createPayment(CreatePaymentRequest)` → `GatewayResult`
-- `capturePayment(gatewayReference)` → `GatewayResult`
-- `cancelPayment(gatewayReference)` → `GatewayResult`
-- `refundPayment(gatewayReference, Money)` → `GatewayResult`
-- `getPaymentStatus(gatewayReference)` → `GatewayStatus`
+```java
+public interface PaymentGateway {
+    Mono<GatewayResult> initiatePayment(InitiatePaymentRequest request);
+    Mono<GatewayResult> capturePayment(String gatewayReference);
+    Mono<GatewayResult> cancelPayment(String gatewayReference);
+    Mono<GatewayResult> refundPayment(String gatewayReference, Money amount);
+    Mono<GatewayStatus> getPaymentStatus(String gatewayReference);
+}
+```
 
-New providers (Stripe, Razorpay, PayPal) only need to implement this interface and be registered as a `@Component` or switched via configuration.
+### Mock Gateway
 
----
+`MockPaymentGateway` supports configurable simulation modes via `payment.mock.mode`:
 
-## Mock Gateway
+| Mode | Behavior |
+|------|----------|
+| `success` (default) | All operations succeed with mock transaction IDs |
+| `failure` | `initiatePayment` returns failure |
+| `timeout` | `initiatePayment` returns timeout failure |
 
-`MockPaymentGateway` simulates all payment operations with configurable behaviour:
+Other operations (capture, cancel, refund) always succeed in mock mode.
 
-| Property | Effect |
-|----------|--------|
-| `payment.mock.mode=success` | All operations succeed |
-| `payment.mock.mode=failure` | Create payment always fails |
-| `payment.mock.mode=timeout` | Create payment simulates timeout |
-| `payment.mock.mode=cancel` | Create payment simulates cancellation |
-
-Default mode: `success`.
-
-No external dependencies required. All responses are generated with synthetic transaction and gateway reference IDs.
-
----
-
-## Business Rules Enforced
+## Business Rules
 
 - User must be authenticated
-- Order must exist and belong to user
+- Order must exist and belong to the user
 - Order must not already be paid
-- Payment amount must exactly match Order Grand Total
-- Each Order can have only one successful payment
-- Unique Payment Reference generated (`PAY-YYYYMMDD-XXXX-XXXXXXXX`)
-- Full payment audit trail stored in `payment_audit` table
-- Refunds only for SUCCESS payments
+- Payment amount must equal order grand total
+- Payment currency must match order currency
+- One successful payment per order
+- Unique payment reference generated per payment
+- Payment audit history stored
+- Refund allowed only for SUCCESS payments
 - Cancelled payments cannot become successful
-- Optimistic locking via `@Version` (HTTP 409 on conflict)
 
----
+## Integration Points
 
-## REST API
+### Order Integration (`OrderPaymentPort`)
+
+- `getOrderData()` - Validates order ownership, returns grand total, currency, paid status
+- `markOrderAsPaid()` - Transitions order from PENDING_PAYMENT to CONFIRMED after successful payment
+
+### Event-Driven Integration (`PaymentEventListener`)
+
+Listens for `PaymentSucceededEvent` and:
+1. Marks order as paid (CONFIRMED)
+2. Deducts inventory via `InventoryRepository.stockOut()`
+3. Clears the user's cart via `CartRepository.clear()`
+
+### Order Flow Update
+
+`PlaceOrderUseCase` now marks orders as `PENDING_PAYMENT` after placing (instead of leaving them as `CREATED`).
+
+## Files Created
+
+### Backend
+- `backend/payment/src/main/java/com/dsports/payment/interfaces/payment/dto/CapturePaymentRequest.java`
+- `backend/payment/src/main/resources/db/migration/V23__add_processing_payment_status.sql`
+- `backend/bootstrap/src/main/java/com/dsports/event/PaymentEventListener.java`
+- `backend/payment/src/test/java/com/dsports/payment/domain/payment/model/PaymentTest.java`
+- `backend/payment/src/test/java/com/dsports/payment/application/payment/usecase/CreatePaymentUseCaseTest.java`
+- `backend/payment/src/test/java/com/dsports/payment/infrastructure/payment/gateway/MockPaymentGatewayTest.java`
+- `backend/payment/src/test/java/com/dsports/payment/interfaces/payment/PublicPaymentControllerTest.java`
+- `docs/pr18-summary.md`
+
+## Files Modified
+
+### Backend
+- `backend/payment/src/main/java/com/dsports/payment/domain/payment/model/PaymentStatus.java` - Added PROCESSING
+- `backend/payment/src/main/java/com/dsports/payment/domain/payment/model/Payment.java` - Added markProcessing(), updated authorize/success transitions
+- `backend/payment/src/main/java/com/dsports/payment/application/payment/port/PaymentGateway.java` - Renamed createPayment -> initiatePayment
+- `backend/payment/src/main/java/com/dsports/payment/infrastructure/payment/gateway/MockPaymentGateway.java` - Updated to initiatePayment
+- `backend/payment/src/main/java/com/dsports/payment/application/payment/usecase/CreatePaymentUseCase.java` - Added PROCESSING step, updated gateway call
+- `backend/payment/src/main/java/com/dsports/payment/application/payment/usecase/CapturePaymentUseCase.java` - Added gateway capture, error handling
+- `backend/payment/src/main/java/com/dsports/payment/interfaces/payment/PublicPaymentController.java` - Added capture endpoint
+- `backend/bootstrap/src/main/java/com/dsports/config/PaymentModuleConfig.java` - Implemented markOrderAsPaid(), added CapturePaymentUseCase
+- `backend/bootstrap/src/main/java/com/dsports/config/OpenApiConfig.java` - Added Payments API group
+- `backend/order/src/main/java/com/dsports/order/domain/order/model/Order.java` - Added markPendingPayment()
+- `backend/order/src/main/java/com/dsports/order/application/order/usecase/PlaceOrderUseCase.java` - Orders now marked PENDING_PAYMENT
+
+### Frontend
+- `frontend/src/types/payments.ts` - Added PROCESSING to PaymentStatus
+- `frontend/src/features/payments/PaymentHistoryPage.tsx` - Added PROCESSING status color
+
+## Database Changes
+
+### V23 - Add PROCESSING payment status
+
+- Drops existing CHECK constraint on `payments.status`
+- Adds new CHECK constraint including PROCESSING
+
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/payments` | Create payment (validates order, initiates via gateway) |
-| POST | `/api/v1/payments/{id}/capture` | Capture/confirm payment |
-| POST | `/api/v1/payments/{id}/cancel` | Cancel payment |
-| POST | `/api/v1/payments/{id}/refund` | Refund successful payment |
-| GET | `/api/v1/payments/{id}` | Get payment details |
+| POST | `/api/v1/payments` | Create and initiate a payment |
+| POST | `/api/v1/payments/{paymentId}/capture` | Capture an authorized payment |
+| GET | `/api/v1/payments/{paymentId}` | Get payment details |
 | GET | `/api/v1/payments/history` | Get user's payment history |
+| POST | `/api/v1/payments/{paymentId}/cancel` | Cancel a payment |
+| POST | `/api/v1/payments/{paymentId}/refund` | Refund a successful payment |
 
-All endpoints tagged with `@Tag(name = "Payments")` and documented with `@Operation` / `@ApiResponses`.
+## Frontend Summary
 
----
+Frontend components already existed and were updated:
+- `PaymentPage.tsx` - 3-step stepper: Order Summary → Payment Method → Confirm & Pay
+- `PaymentSuccessPage.tsx` - Shows success with payment reference, links to order
+- `PaymentFailurePage.tsx` - Shows failure reason with retry option
+- `PaymentHistoryPage.tsx` - Table listing with status chips (PROCESSING added)
 
-## Frontend Integration
+## Testing Summary
 
-| Route | Component | Description |
-|-------|-----------|-------------|
-| `/payment?orderId=&amount=&currency=&orderNumber=` | PaymentPage | Multi-step payment flow (summary → method → pay) |
-| `/payment-success` | PaymentSuccessPage | Success confirmation with reference, amount, order |
-| `/payment-failure` | PaymentFailurePage | Failure message with retry option |
-| `/payments` | PaymentHistoryPage | Table of all user payments with status chips |
+| Test File | Type | Tests |
+|-----------|------|-------|
+| `PaymentTest.java` | Domain | Creation, lifecycle, transitions, validation (15+ tests) |
+| `CreatePaymentUseCaseTest.java` | Use Case | Success, already paid, amount mismatch, currency mismatch, gateway failure, gateway error, invalid method, invalid provider (9 tests) |
+| `MockPaymentGatewayTest.java` | Infrastructure | Initiate success, failure, timeout, capture, cancel, refund, get status (7 tests) |
+| `PublicPaymentControllerTest.java` | Controller | Create, get, history, cancel, refund, capture (6 tests) |
 
----
+## Production Readiness
 
-## Database Schema (Flyway V22)
-
-**payments** table:
-- `id` UUID PK, `payment_reference` VARCHAR(50) UNIQUE, `order_id` UUID, `user_id` UUID, `amount` DECIMAL(12,2), `currency` VARCHAR(3), `payment_method` VARCHAR(20), `payment_provider` VARCHAR(20), `transaction_id` VARCHAR(100), `gateway_reference` VARCHAR(100), `status` VARCHAR(20) with CHECK constraint, `failure_reason` TEXT, `paid_at` TIMESTAMPTZ, `version` INTEGER, `created_at` / `updated_at` TIMESTAMPTZ
-
-**payment_audit** table:
-- `id` UUID PK, `payment_id` UUID FK → payments(id), `event_type` VARCHAR(50), `from_status` VARCHAR(20), `to_status` VARCHAR(20), `details` TEXT, `created_at` TIMESTAMPTZ
-
-Indexes on: `payment_reference` (unique), `order_id`, `user_id`, `status`.
-
----
-
-## Future Stripe Integration
-
-```java
-@Component
-public class StripePaymentGateway implements PaymentGateway {
-    // Implement createPayment -> StripeClient.paymentIntents.create()
-    // Implement capturePayment -> paymentIntents.confirm()
-    // etc.
-}
-```
-
-Wire in `PaymentModuleConfig`:
-```java
-@Bean @Primary
-public PaymentGateway paymentGateway() {
-    return new StripePaymentGateway(stripeApiKey);
-}
-```
-
----
-
-## Future Razorpay Integration
-
-```java
-@Component
-public class RazorpayPaymentGateway implements PaymentGateway {
-    // Implement createPayment -> razorpayClient.orders.create()
-    // Implement capturePayment -> razorpayClient.payments.capture()
-    // etc.
-}
-```
-
----
-
-## Refund Strategy
-
-- Only `SUCCESS` payments can be refunded
-- Refund transitions payment to `REFUNDED` status
-- Gateway is called for external refund; failure is logged but local state is updated
-- Full audit trail stored
+- Optimistic locking via `@Version` on PaymentEntity (returns HTTP 409 on conflict)
+- Global exception handling with proper HTTP status codes
+- SLF4J logging throughout
+- OpenAPI/Swagger documentation for all payment endpoints
+- Input validation on all request DTOs
+- All reactive (no blocking calls)
+- Flyway migration for schema changes
+- Event-driven integration via Spring ApplicationEventPublisher

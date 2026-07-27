@@ -1,6 +1,8 @@
 package com.dsports.identity.infrastructure.persistence.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -8,11 +10,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Table("customer_addresses")
-public class AddressEntity {
+public class AddressEntity implements Persistable<UUID> {
 
     @Id
     @Column("id")
     private UUID id;
+
+    @Transient
+    private boolean isNew;
 
     @Column("customer_id")
     private UUID customerId;
@@ -66,8 +71,13 @@ public class AddressEntity {
         this.updatedAt = updatedAt;
     }
 
+    @Override
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    @Override
+    public boolean isNew() { return isNew; }
+    public void setNew(boolean isNew) { this.isNew = isNew; }
 
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }

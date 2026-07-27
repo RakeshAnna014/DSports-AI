@@ -96,8 +96,17 @@ public final class Payment {
         this.updatedAt = Instant.now();
     }
 
-    public void authorize(String transactionId, String gatewayReference) {
+    public void markProcessing() {
         if (status != PaymentStatus.PENDING) {
+            throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
+                "Cannot mark payment processing in status: " + status);
+        }
+        transitionTo(PaymentStatus.PROCESSING);
+        this.updatedAt = Instant.now();
+    }
+
+    public void authorize(String transactionId, String gatewayReference) {
+        if (status != PaymentStatus.PROCESSING) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
                 "Cannot authorize payment in status: " + status);
         }
@@ -109,7 +118,7 @@ public final class Payment {
     }
 
     public void markSuccess(String transactionId, String gatewayReference) {
-        if (status != PaymentStatus.PENDING && status != PaymentStatus.AUTHORIZED) {
+        if (status != PaymentStatus.PROCESSING && status != PaymentStatus.AUTHORIZED) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
                 "Cannot mark payment successful in status: " + status);
         }

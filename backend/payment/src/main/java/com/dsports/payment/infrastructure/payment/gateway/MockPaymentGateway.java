@@ -21,8 +21,8 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     @Override
-    public Mono<GatewayResult> createPayment(CreatePaymentRequest request) {
-        log.info("MockGateway: Creating payment for reference {} with amount {} {}",
+    public Mono<GatewayResult> initiatePayment(InitiatePaymentRequest request) {
+        log.info("MockGateway: Initiating payment for reference {} with amount {} {}",
             request.paymentReference().value(), request.amount().amount(), request.amount().currency());
 
         return simulateProcessing(request.paymentReference().value())
@@ -30,15 +30,15 @@ public class MockPaymentGateway implements PaymentGateway {
                 if ("success".equalsIgnoreCase(mockMode)) {
                     var txnId = "MOCK-TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                     var gwRef = "MOCK-GW-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                    log.info("MockGateway: Payment created successfully. TXN: {}, GW Ref: {}", txnId, gwRef);
+                    log.info("MockGateway: Payment initiated successfully. TXN: {}, GW Ref: {}", txnId, gwRef);
                     return new GatewayResult(true, txnId, gwRef, "Payment initiated successfully");
                 }
                 if ("failure".equalsIgnoreCase(mockMode)) {
-                    log.warn("MockGateway: Payment creation failed (mock mode: {})", mockMode);
+                    log.warn("MockGateway: Payment initiation failed (mock mode: {})", mockMode);
                     return new GatewayResult(false, null, null, "Mock payment declined");
                 }
                 if ("timeout".equalsIgnoreCase(mockMode)) {
-                    log.warn("MockGateway: Payment creation timeout (mock mode: {})", mockMode);
+                    log.warn("MockGateway: Payment initiation timeout (mock mode: {})", mockMode);
                     return new GatewayResult(false, null, null, "Mock payment gateway timeout");
                 }
                 log.warn("MockGateway: Payment cancelled by mock (mode: {})", mockMode);

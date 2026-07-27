@@ -87,6 +87,7 @@ public class OpenApiConfig {
                 new Tag().name("Pricing").description("Price lookup"),
                 new Tag().name("Shopping Cart").description("Shopping cart management"),
                 new Tag().name("Checkout").description("Checkout and payment preparation"),
+                new Tag().name("Payments").description("Payment processing, lifecycle, and history"),
                 new Tag().name("Orders").description("Customer order management, lifecycle, and history"),
                 new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
@@ -199,6 +200,15 @@ public class OpenApiConfig {
             .group("orders")
             .displayName("Orders")
             .pathsToMatch("/api/v1/orders/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi paymentsApi() {
+        return GroupedOpenApi.builder()
+            .group("payments")
+            .displayName("Payments")
+            .pathsToMatch("/api/v1/payments/**")
             .build();
     }
 

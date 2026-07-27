@@ -37,9 +37,25 @@ public class CapturePaymentUseCase {
                     return Mono.error(new PaymentDomainException(PaymentErrorCode.PAYMENT_NOT_OWNED_BY_USER,
                         "Payment does not belong to user: " + command.userId()));
                 }
-                payment.markSuccess(command.transactionId(), command.gatewayReference());
-                return paymentRepository.save(payment)
-                    .thenReturn(payment);
+                if (payment.getGatewayReference() == null) {
+                    return Mono.error(new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
+                        "Cannot capture payment without gateway reference"));
+                }
+                return paymentGateway.capturePayment(payment.getGatewayReference())
+                    .flatMap(gatewayResult -> {
+                        if (gatewayResult.success()) {
+                            payment.markSuccess(gatewayResult.transactionId(), gatewayResult.gatewayReference());
+                        } else {
+                            payment.markFailed(gatewayResult.message());
+                        }
+                        return paymentRepository.save(payment)
+                            .thenReturn(payment);
+                    })
+                    .onErrorResume(e -> {
+                        payment.markFailed(e.getMessage());
+                        return paymentRepository.save(payment)
+                            .thenReturn(payment);
+                    });
             })
             .map(payment -> {
                 payment.getDomainEvents().forEach(eventPublisher::publish);

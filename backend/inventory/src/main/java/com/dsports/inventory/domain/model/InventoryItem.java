@@ -85,10 +85,11 @@ public final class InventoryItem {
             throw new InventoryDomainException(InventoryErrorCode.INVALID_QUANTITY,
                     "Stock-out quantity must be positive");
         }
-        var availableAfter = this.availableQuantity.value() - quantity.value();
+        var previousAvailable = this.availableQuantity.value();
+        var availableAfter = previousAvailable - quantity.value();
         if (availableAfter < 0) {
             throw new InventoryDomainException(InventoryErrorCode.STOCK_OUT_EXCEEDS_AVAILABLE,
-                    "Cannot stock out " + quantity.value() + " units; only " + this.availableQuantity.value() + " available");
+                    "Cannot stock out " + quantity.value() + " units; only " + previousAvailable + " available");
         }
         var reserved = this.reservedQuantity.value();
         var availableAfterReserved = availableAfter - reserved;
@@ -100,6 +101,7 @@ public final class InventoryItem {
         this.updatedAt = Instant.now();
         updateStatus();
         recordEvent(new StockRemovedEvent(this.id, quantity, this.status));
+        recordEvent(new InventoryUpdatedEvent(this.id, previousAvailable, quantity, this.status));
         if (this.status == InventoryStatus.OUT_OF_STOCK) {
             recordEvent(new OutOfStockEvent(this.id));
         } else if (this.status == InventoryStatus.LOW_STOCK) {
