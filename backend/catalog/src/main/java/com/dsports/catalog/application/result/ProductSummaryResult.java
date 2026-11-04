@@ -2,6 +2,7 @@ package com.dsports.catalog.application.result;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ProductSummaryResult(
@@ -14,5 +15,9 @@ public record ProductSummaryResult(
     UUID sportId,
     String status,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    /** The primary image (or the first one); null when the product has none. */
+    String imageUrl,
+    /** All image URLs in display order. */
+    List<String> images
 ) {}

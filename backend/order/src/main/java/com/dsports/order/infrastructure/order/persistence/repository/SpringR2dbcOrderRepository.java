@@ -19,7 +19,10 @@ public interface SpringR2dbcOrderRepository extends R2dbcRepository<OrderEntity,
 
     Mono<Boolean> existsByCheckoutId(UUID checkoutId);
 
-    Mono<Long> countBy();
+    @Query("SELECT nextval('order_number_seq')")
+    Mono<Long> nextOrderSequence();
+
+    Flux<OrderEntity> findByStatusAndPlacedAtBefore(String status, java.time.Instant cutoff);
 
     @Query("SELECT * FROM order_items WHERE order_id = :orderId ORDER BY created_at")
     Flux<OrderItemEntity> findItemsByOrderId(UUID orderId);

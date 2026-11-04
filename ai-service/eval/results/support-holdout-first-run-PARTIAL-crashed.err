@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "C:\Users\ranna\Documents\AI\DSports-AI\ai-service\eval\run_support_eval.py", line 366, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\ranna\Documents\AI\DSports-AI\ai-service\eval\run_support_eval.py", line 344, in main
+    res = run_case(world, case, stats)
+  File "C:\Users\ranna\Documents\AI\DSports-AI\ai-service\eval\run_support_eval.py", line 185, in run_case
+    token = world.token(key)
+  File "C:\Users\ranna\Documents\AI\DSports-AI\ai-service\eval\run_support_eval.py", line 102, in token
+    self.tokens[key] = login(self.customer(key)["email"], self.data["password"])
+                             ~~~~~~~~~~~~~^^^^^
+  File "C:\Users\ranna\Documents\AI\DSports-AI\ai-service\eval\run_support_eval.py", line 98, in customer
+    return self.data["customers"][key]
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^
+KeyError: 'missing3'

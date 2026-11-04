@@ -8,80 +8,90 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * In-process stand-in for a payment provider. Like a real provider it is idempotent: capturing an authorisation twice
+ * returns the first capture, and a refund request is executed once per idempotency key.
+ * <p>
+ * Each operation's outcome is configurable ({@code success}, {@code failure} = declined, {@code timeout} = never
+ * answers) so failure handling can be exercised end to end:
+ * {@code payment.mock.mode}, {@code payment.mock.capture-mode}, {@code payment.mock.refund-mode}.
+ */
 @Component
 public class MockPaymentGateway implements PaymentGateway {
     private static final Logger log = LoggerFactory.getLogger(MockPaymentGateway.class);
+    private static final Duration LATENCY = Duration.ofMillis(100);
 
-    private final String mockMode;
+    private final String authorizeMode;
+    private final String captureMode;
+    private final String refundMode;
+    private final Map<String, GatewayResult> captures = new ConcurrentHashMap<>();
+    private final Map<String, GatewayResult> refunds = new ConcurrentHashMap<>();
 
-    public MockPaymentGateway(@Value("${payment.mock.mode:success}") String mockMode) {
-        this.mockMode = mockMode;
+    public MockPaymentGateway(@Value("${payment.mock.mode:success}") String authorizeMode,
+                              @Value("${payment.mock.capture-mode:success}") String captureMode,
+                              @Value("${payment.mock.refund-mode:success}") String refundMode) {
+        this.authorizeMode = authorizeMode;
+        this.captureMode = captureMode;
+        this.refundMode = refundMode;
     }
 
     @Override
     public Mono<GatewayResult> initiatePayment(InitiatePaymentRequest request) {
-        log.info("MockGateway: Initiating payment for reference {} with amount {} {}",
-            request.paymentReference().value(), request.amount().amount(), request.amount().currency());
-
-        return simulateProcessing(request.paymentReference().value())
-            .map(delay -> {
-                if ("success".equalsIgnoreCase(mockMode)) {
-                    var txnId = "MOCK-TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                    var gwRef = "MOCK-GW-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                    log.info("MockGateway: Payment initiated successfully. TXN: {}, GW Ref: {}", txnId, gwRef);
-                    return new GatewayResult(true, txnId, gwRef, "Payment initiated successfully");
-                }
-                if ("failure".equalsIgnoreCase(mockMode)) {
-                    log.warn("MockGateway: Payment initiation failed (mock mode: {})", mockMode);
-                    return new GatewayResult(false, null, null, "Mock payment declined");
-                }
-                if ("timeout".equalsIgnoreCase(mockMode)) {
-                    log.warn("MockGateway: Payment initiation timeout (mock mode: {})", mockMode);
-                    return new GatewayResult(false, null, null, "Mock payment gateway timeout");
-                }
-                log.warn("MockGateway: Payment cancelled by mock (mode: {})", mockMode);
-                return new GatewayResult(false, null, null, "Mock payment cancelled by simulation");
-            });
+        log.info("MockGateway: authorizing {} {} for {}", request.amount().amount(), request.amount().currency(),
+            request.paymentReference().value());
+        return respond(authorizeMode, () -> new GatewayResult(true, newId("MOCK-TXN-"), newId("MOCK-GW-"),
+            "Payment authorized"), "Mock payment declined");
     }
 
     @Override
     public Mono<GatewayResult> capturePayment(String gatewayReference) {
-        log.info("MockGateway: Capturing payment for gateway reference {}", gatewayReference);
-        return simulateProcessing(gatewayReference)
-            .map(delay -> {
-                var txnId = "MOCK-TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                return new GatewayResult(true, txnId, gatewayReference, "Payment captured successfully");
-            });
+        var previous = captures.get(gatewayReference);
+        if (previous != null) {
+            log.info("MockGateway: {} already captured; returning original capture", gatewayReference);
+            return Mono.just(previous).delayElement(LATENCY);
+        }
+        return respond(captureMode, () -> captures.computeIfAbsent(gatewayReference,
+            ref -> new GatewayResult(true, newId("MOCK-TXN-"), ref, "Payment captured")), "Mock capture declined");
     }
 
     @Override
     public Mono<GatewayResult> cancelPayment(String gatewayReference) {
-        log.info("MockGateway: Cancelling payment for gateway reference {}", gatewayReference);
-        return simulateProcessing(gatewayReference)
-            .map(delay -> new GatewayResult(true, null, gatewayReference, "Payment cancelled successfully"));
+        log.info("MockGateway: voiding authorization {}", gatewayReference);
+        return Mono.just(new GatewayResult(true, null, gatewayReference, "Authorization voided")).delayElement(LATENCY);
     }
 
     @Override
-    public Mono<GatewayResult> refundPayment(String gatewayReference, Money amount) {
-        log.info("MockGateway: Refunding {} {} for gateway reference {}",
-            amount.amount(), amount.currency(), gatewayReference);
-        return simulateProcessing(gatewayReference)
-            .map(delay -> {
-                var txnId = "MOCK-REF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                return new GatewayResult(true, txnId, gatewayReference, "Refund initiated successfully");
-            });
+    public Mono<GatewayResult> refundPayment(String gatewayReference, Money amount, String idempotencyKey) {
+        var previous = refunds.get(idempotencyKey);
+        if (previous != null) {
+            log.info("MockGateway: refund {} already executed; returning original result", idempotencyKey);
+            return Mono.just(previous).delayElement(LATENCY);
+        }
+        log.info("MockGateway: refunding {} {} of {}", amount.amount(), amount.currency(), gatewayReference);
+        return respond(refundMode, () -> refunds.computeIfAbsent(idempotencyKey,
+            key -> new GatewayResult(true, newId("MOCK-REF-"), gatewayReference, "Refund completed")), "Mock refund declined");
     }
 
     @Override
     public Mono<GatewayStatus> getPaymentStatus(String gatewayReference) {
-        log.info("MockGateway: Getting status for gateway reference {}", gatewayReference);
-        return simulateProcessing(gatewayReference)
-            .map(delay -> new GatewayStatus("SUCCESS", null, gatewayReference));
+        var status = captures.containsKey(gatewayReference) ? "CAPTURED" : "AUTHORIZED";
+        return Mono.just(new GatewayStatus(status, null, gatewayReference)).delayElement(LATENCY);
     }
 
-    private Mono<Long> simulateProcessing(String id) {
-        return Mono.delay(java.time.Duration.ofMillis(100));
+    private Mono<GatewayResult> respond(String mode, java.util.function.Supplier<GatewayResult> success, String declineMessage) {
+        return switch (mode.toLowerCase()) {
+            case "success" -> Mono.fromSupplier(success).delayElement(LATENCY);
+            case "timeout" -> Mono.never();
+            default -> Mono.just(new GatewayResult(false, null, null, declineMessage)).delayElement(LATENCY);
+        };
+    }
+
+    private static String newId(String prefix) {
+        return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 }

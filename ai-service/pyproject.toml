@@ -1,0 +1,49 @@
+[project]
+name = "dsports-ai-service"
+version = "0.1.0"
+description = "DSports Customer AI service: orchestration over the DSports REST APIs (foundation)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic-settings>=2.7",
+    "pyjwt>=2.10",
+    "httpx>=0.28",
+    "asyncpg>=0.30",
+    "google-genai>=1.0",
+    "google-auth>=2.38",
+    "langgraph>=0.3",
+    "langchain-core>=0.3",
+    "mcp>=1.2",
+    "prometheus-client>=0.26.0",
+    "pyyaml>=6.0.3",
+    "numpy>=2.5.3",
+    "tzdata>=2026.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    # only to generate the sample scanned PDF (scripts/make_scanned_sample.py); not in the runtime image
+    "reportlab>=5.0.1",
+    "pillow>=12.3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: needs a real PostgreSQL (AI_TEST_DATABASE_URL)",
+    "live: calls the real Vertex AI service with the configured credentials (AI_RUN_LIVE_TESTS=1)",
+]
+# Default run = hermetic unit tests. Opt in with: pytest -m integration / pytest -m live
+addopts = "-m 'not integration and not live' -ra"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -51,6 +51,9 @@ public class PaymentEntity {
     @Column("paid_at")
     private Instant paidAt;
 
+    @Column("refunded_amount")
+    private BigDecimal refundedAmount;
+
     @Version
     private int version;
 
@@ -86,6 +89,8 @@ public class PaymentEntity {
     public void setFailureReason(String failureReason) { this.failureReason = failureReason; }
     public Instant getPaidAt() { return paidAt; }
     public void setPaidAt(Instant paidAt) { this.paidAt = paidAt; }
+    public BigDecimal getRefundedAmount() { return refundedAmount; }
+    public void setRefundedAmount(BigDecimal refundedAmount) { this.refundedAmount = refundedAmount; }
     public int getVersion() { return version; }
     public void setVersion(int version) { this.version = version; }
     public Instant getCreatedAt() { return createdAt; }

@@ -9,6 +9,7 @@ import com.dsports.payment.domain.payment.model.PaymentReference;
 import com.dsports.payment.infrastructure.payment.persistence.mapper.PaymentEntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -44,8 +45,8 @@ public class PaymentR2dbcRepositoryAdapter implements PaymentRepository {
     }
 
     @Override
-    public Mono<Payment> findByOrderId(UUID orderId) {
-        return paymentRepo.findByOrderId(orderId)
+    public Flux<Payment> findByOrderId(UUID orderId) {
+        return paymentRepo.findByOrderIdOrderByCreatedAtDesc(orderId)
             .map(PaymentEntityMapper::toDomain);
     }
 
@@ -56,28 +57,27 @@ public class PaymentR2dbcRepositoryAdapter implements PaymentRepository {
     }
 
     @Override
-    public Mono<Boolean> existsByOrderIdAndStatus(UUID orderId, String status) {
-        return paymentRepo.existsByOrderIdAndStatus(orderId, status);
-    }
-
-    @Override
     public Mono<Void> save(Payment payment) {
         var entity = PaymentEntityMapper.toEntity(payment);
 
         return transactionalOperator.execute(tx ->
-            paymentRepo.findById(payment.getId().value())
-                .flatMap(existing -> {
-                    entity.setVersion(existing.getVersion());
-                    return paymentRepo.save(entity);
-                })
-                .switchIfEmpty(paymentRepo.save(entity))
+            // Saved with the version it was loaded with: a concurrent change makes the update match no row.
+            paymentRepo.save(entity)
                 .onErrorMap(OptimisticLockingFailureException.class, e ->
                     new PaymentDomainException(PaymentErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
-                        "Concurrent modification detected for payment " + payment.getId().value()))
+                        "Payment " + payment.getId().value() + " was modified concurrently. Reload and retry."))
+                .onErrorMap(DataIntegrityViolationException.class, e -> isDuplicateOpenPayment(e)
+                    ? new PaymentDomainException(PaymentErrorCode.DUPLICATE_PAYMENT,
+                        "Order " + payment.getOrderId() + " already has an open or completed payment")
+                    : e)
                 .flatMap(savedEntity -> {
                     payment.setVersion(savedEntity.getVersion());
                     return Mono.empty();
                 })
         ).then();
+    }
+
+    private static boolean isDuplicateOpenPayment(DataIntegrityViolationException e) {
+        return e.getMessage() != null && e.getMessage().contains("uq_payments_order_open");
     }
 }

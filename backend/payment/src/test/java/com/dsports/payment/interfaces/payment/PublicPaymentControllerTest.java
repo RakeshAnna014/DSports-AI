@@ -3,7 +3,6 @@ package com.dsports.payment.interfaces.payment;
 import com.dsports.payment.application.payment.command.CancelPaymentCommand;
 import com.dsports.payment.application.payment.command.CapturePaymentCommand;
 import com.dsports.payment.application.payment.command.CreatePaymentCommand;
-import com.dsports.payment.application.payment.command.RefundPaymentCommand;
 import com.dsports.payment.application.payment.query.GetPaymentHistoryQuery;
 import com.dsports.payment.application.payment.query.GetPaymentQuery;
 import com.dsports.payment.application.payment.result.PaymentResult;
@@ -13,8 +12,10 @@ import com.dsports.payment.application.payment.usecase.CapturePaymentUseCase;
 import com.dsports.payment.application.payment.usecase.CreatePaymentUseCase;
 import com.dsports.payment.application.payment.usecase.GetPaymentHistoryUseCase;
 import com.dsports.payment.application.payment.usecase.GetPaymentUseCase;
-import com.dsports.payment.application.payment.usecase.RefundPaymentUseCase;
-import com.dsports.payment.interfaces.payment.dto.CapturePaymentRequest;
+import com.dsports.payment.application.refund.ManageRefundsUseCase;
+import com.dsports.payment.application.refund.RequestRefundUseCase;
+import com.dsports.payment.domain.payment.model.PaymentId;
+import com.dsports.payment.domain.refund.Refund;
 import com.dsports.payment.interfaces.payment.dto.CreatePaymentRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +49,10 @@ class PublicPaymentControllerTest {
     @Mock
     private CancelPaymentUseCase cancelPaymentUseCase;
     @Mock
-    private RefundPaymentUseCase refundPaymentUseCase;
+    private RequestRefundUseCase requestRefundUseCase;
+
+    @Mock
+    private ManageRefundsUseCase manageRefundsUseCase;
     @Mock
     private Authentication authentication;
 
@@ -65,7 +69,7 @@ class PublicPaymentControllerTest {
             paymentId, "PAY-REF-001", orderId, userId,
             amount, "INR", "UPI", "MOCK",
             "TXN-001", "GW-001", "SUCCESS", null,
-            Instant.now(), 0, Instant.now(), Instant.now()
+            Instant.now(), BigDecimal.ZERO, 0, Instant.now(), Instant.now()
         );
     }
 
@@ -129,7 +133,7 @@ class PublicPaymentControllerTest {
             paymentId, "PAY-REF-001", orderId, userId,
             amount, "INR", "UPI", "MOCK",
             null, null, "CANCELLED", null,
-            null, 0, Instant.now(), Instant.now()
+            null, BigDecimal.ZERO, 0, Instant.now(), Instant.now()
         );
         when(cancelPaymentUseCase.execute(any(CancelPaymentCommand.class)))
             .thenReturn(Mono.just(cancelledResult));
@@ -142,37 +146,33 @@ class PublicPaymentControllerTest {
     }
 
     @Test
-    void shouldRefundPayment() {
+    void shouldRequestRefundForOwnPaymentWithIdempotencyKey() {
         when(authentication.getPrincipal()).thenReturn(userId.toString());
-        var refundedResult = new PaymentResult(
-            paymentId, "PAY-REF-001", orderId, userId,
-            amount, "INR", "UPI", "MOCK",
-            "TXN-001", "GW-001", "REFUNDED", null,
-            Instant.now(), 0, Instant.now(), Instant.now()
-        );
-        when(refundPaymentUseCase.execute(any(RefundPaymentCommand.class)))
-            .thenReturn(Mono.just(refundedResult));
+        var refund = Refund.request(PaymentId.fromUUID(paymentId), orderId, userId, amount, "INR", "damaged", userId, "key-1");
+        when(requestRefundUseCase.execute(any(RequestRefundUseCase.Command.class))).thenReturn(Mono.just(refund));
 
-        StepVerifier.create(controller.refundPayment(paymentId, authentication))
-            .assertNext(response -> {
-                assertThat(response.status()).isEqualTo("REFUNDED");
-            })
+        StepVerifier.create(controller.requestRefund(paymentId, "key-1",
+                new com.dsports.payment.interfaces.payment.dto.RefundRequest(null, "damaged"), authentication))
+            .assertNext(result -> assertThat(result.status()).isEqualTo("REQUESTED"))
             .verifyComplete();
+
+        var captor = org.mockito.ArgumentCaptor.forClass(RequestRefundUseCase.Command.class);
+        org.mockito.Mockito.verify(requestRefundUseCase).execute(captor.capture());
+        assertThat(captor.getValue().customerOnly()).isTrue();
+        assertThat(captor.getValue().requesterId()).isEqualTo(userId);
+        assertThat(captor.getValue().idempotencyKey()).isEqualTo("key-1");
     }
 
     @Test
-    void shouldCapturePayment() {
+    void shouldCapturePaymentUsingOnlyServerSideGatewayData() {
         when(authentication.getPrincipal()).thenReturn(userId.toString());
         when(capturePaymentUseCase.execute(any(CapturePaymentCommand.class)))
             .thenReturn(Mono.just(sampleResult()));
 
-        var request = new CapturePaymentRequest("TXN-001", "GW-001");
-
-        StepVerifier.create(controller.capturePayment(paymentId, authentication, request))
-            .assertNext(response -> {
-                assertThat(response.status()).isEqualTo("SUCCESS");
-                assertThat(response.transactionId()).isEqualTo("TXN-001");
-            })
+        StepVerifier.create(controller.capturePayment(paymentId, authentication))
+            .assertNext(response -> assertThat(response.status()).isEqualTo("SUCCESS"))
             .verifyComplete();
+
+        org.mockito.Mockito.verify(capturePaymentUseCase).execute(new CapturePaymentCommand(paymentId, userId));
     }
 }

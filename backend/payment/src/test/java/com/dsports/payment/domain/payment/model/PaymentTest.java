@@ -174,19 +174,82 @@ class PaymentTest {
         }
 
         @Test
-        @DisplayName("Should refund successful payment")
-        void shouldRefund() {
+        @DisplayName("Partial refunds accumulate until the payment is fully refunded")
+        void shouldTrackPartialAndFullRefunds() {
             payment.markProcessing();
             payment.markSuccess("TXN-001", "GW-001");
-            payment.refund();
+
+            payment.applyRefund(new BigDecimal("400.00"));
+            assertEquals(PaymentStatus.PARTIALLY_REFUNDED, payment.getStatus());
+            assertEquals(0, new BigDecimal("600.00").compareTo(payment.getRefundableAmount()));
+
+            payment.applyRefund(new BigDecimal("600.00"));
             assertEquals(PaymentStatus.REFUNDED, payment.getStatus());
-            assertTrue(payment.getDomainEvents().stream().anyMatch(e -> e instanceof PaymentRefundedEvent));
+            assertTrue(payment.isFullyRefunded());
+            assertEquals(0, BigDecimal.ZERO.compareTo(payment.getRefundableAmount()));
+            assertEquals(2, payment.getDomainEvents().stream().filter(e -> e instanceof PaymentRefundedEvent).count());
         }
 
         @Test
-        @DisplayName("Should not refund non-successful payment")
-        void shouldNotRefundPending() {
-            assertThrows(PaymentDomainException.class, payment::refund);
+        @DisplayName("Cannot refund more than was captured")
+        void shouldRejectRefundAboveCapturedAmount() {
+            payment.markProcessing();
+            payment.markSuccess("TXN-001", "GW-001");
+            payment.applyRefund(new BigDecimal("900.00"));
+
+            var ex = assertThrows(PaymentDomainException.class, () -> payment.applyRefund(new BigDecimal("100.01")));
+            assertEquals(PaymentErrorCode.INVALID_REFUND_AMOUNT, ex.getErrorCode());
+            assertEquals(PaymentStatus.PARTIALLY_REFUNDED, payment.getStatus());
+        }
+
+        @Test
+        @DisplayName("Cannot refund an uncaptured payment")
+        void shouldNotRefundUncapturedPayment() {
+            var ex = assertThrows(PaymentDomainException.class, () -> payment.applyRefund(new BigDecimal("1.00")));
+            assertEquals(PaymentErrorCode.CANNOT_REFUND_NON_SUCCESS_PAYMENT, ex.getErrorCode());
+        }
+
+        @Test
+        @DisplayName("Capture claim moves AUTHORIZED to PROCESSING and blocks cancellation")
+        void shouldClaimCaptureAndBlockCancellation() {
+            payment.markProcessing();
+            payment.authorize("TXN-001", "GW-001");
+
+            payment.beginCapture();
+
+            assertEquals(PaymentStatus.PROCESSING, payment.getStatus());
+            assertTrue(payment.isCaptureInProgress());
+            var ex = assertThrows(PaymentDomainException.class, payment::cancel);
+            assertEquals(PaymentErrorCode.PAYMENT_IN_PROGRESS, ex.getErrorCode());
+        }
+
+        @Test
+        @DisplayName("Capture claim is re-entrant for retries and rejected for terminal payments")
+        void shouldAllowRetryingClaimButNotOnTerminalPayment() {
+            payment.markProcessing();
+            payment.authorize("TXN-001", "GW-001");
+            payment.beginCapture();
+            assertDoesNotThrow(payment::beginCapture);
+
+            payment.markFailed("declined");
+            assertThrows(PaymentDomainException.class, payment::beginCapture);
+        }
+
+        @Test
+        @DisplayName("An authorized payment can be voided")
+        void shouldVoidAuthorizedPayment() {
+            payment.markProcessing();
+            payment.authorize("TXN-001", "GW-001");
+            payment.cancel();
+            assertEquals(PaymentStatus.CANCELLED, payment.getStatus());
+        }
+
+        @Test
+        @DisplayName("A captured payment cannot be marked failed")
+        void shouldNotFailCapturedPayment() {
+            payment.markProcessing();
+            payment.markSuccess("TXN-001", "GW-001");
+            assertThrows(PaymentDomainException.class, () -> payment.markFailed("late decline"));
         }
 
         @Test

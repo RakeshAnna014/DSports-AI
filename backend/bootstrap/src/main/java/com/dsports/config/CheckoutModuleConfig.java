@@ -52,7 +52,8 @@ public class CheckoutModuleConfig {
         return (productId, requestedQuantity) ->
             getInventoryByProductUseCase.execute(
                     com.dsports.inventory.domain.model.ProductId.fromUUID(productId))
-                .reduce(0, (sum, item) -> sum + item.availableQuantity())
+                // Sellable stock: on hand minus units already held for unpaid orders.
+                .reduce(0, (sum, item) -> sum + Math.max(0, item.availableQuantity() - item.reservedQuantity()))
                 .map(availableQty -> new InventoryPort.InventoryResult(
                     productId, availableQty, availableQty >= requestedQuantity))
                 .switchIfEmpty(Mono.just(new InventoryPort.InventoryResult(

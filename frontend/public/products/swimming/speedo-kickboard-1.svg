@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F8FC"/><stop offset="1" stop-color="#E8EEF7"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><ellipse cx="200" cy="338" rx="110" ry="14" fill="#0B1426" opacity=".12"/><g transform="translate(200 200) scale(.82) translate(-200 -200)"><path d="M140 50H260Q300 50 300 100V290Q300 350 250 350H150Q100 350 100 290V100Q100 50 140 50Z" fill="#0369A1"/>
+      <ellipse cx="160" cy="214" rx="26" ry="40" fill="#F8FAFC"/><ellipse cx="240" cy="214" rx="26" ry="40" fill="#F8FAFC"/>
+      <path d="M130 100H270" stroke="#FDE047" stroke-width="12"/><path d="M130 304H270" stroke="#082F49" stroke-width="12"/></g></svg>

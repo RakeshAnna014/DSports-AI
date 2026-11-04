@@ -8,7 +8,6 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:dsports}?TimeZone=UTC
     user: ${DB_USER:dsports}
     password: ${DB_PASSWORD:dsports123}
-    validate-on-migrate: false
 
 logging:
   level:
@@ -17,6 +16,9 @@ logging:
     org.flywaydb: DEBUG
 
 app:
+  rate-limit:                       # local development only: the browser/E2E harnesses register and log in hundreds of users from one address (the Vite proxy)
+    auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:100000}
+    tickets-per-minute: ${RATE_LIMIT_TICKETS_PER_MINUTE:100000}
   jwt:
     secret: ${JWT_SECRET:dev-secret-key-for-local-development-only-not-for-production}
 

@@ -20,6 +20,7 @@ public record OrderResult(
     BigDecimal shippingCharge,
     BigDecimal taxAmount,
     BigDecimal discountAmount,
+    String promotionCode,
     BigDecimal grandTotal,
     String currency,
     Instant placedAt,

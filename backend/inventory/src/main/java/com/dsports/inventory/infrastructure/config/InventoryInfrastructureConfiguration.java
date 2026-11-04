@@ -1,5 +1,11 @@
 package com.dsports.inventory.infrastructure.config;
 
+import com.dsports.inventory.application.port.StockReservationRepository;
+import com.dsports.inventory.application.usecase.FulfillOrderReservationsUseCase;
+import com.dsports.inventory.application.usecase.ReleaseOrderReservationsUseCase;
+import com.dsports.inventory.application.usecase.ReserveStockForOrderUseCase;
+import com.dsports.inventory.infrastructure.persistence.repository.SpringR2dbcStockReservationRepository;
+import com.dsports.inventory.infrastructure.persistence.repository.StockReservationR2dbcRepositoryAdapter;
 import com.dsports.inventory.application.port.EventPublisher;
 import com.dsports.inventory.application.port.InventoryRepository;
 import com.dsports.inventory.application.usecase.*;
@@ -41,7 +47,31 @@ public class InventoryInfrastructureConfiguration {
                 inventoryEventPublisher, inventoryTransactionalOperator);
     }
 
+    @Bean
+    public StockReservationRepository stockReservationRepository(
+            SpringR2dbcStockReservationRepository springStockReservationRepository) {
+        return new StockReservationR2dbcRepositoryAdapter(springStockReservationRepository);
+    }
+
     // ============ USE CASES ============
+
+    @Bean
+    public ReserveStockForOrderUseCase reserveStockForOrderUseCase(InventoryRepository inventoryRepository,
+                                                                   StockReservationRepository stockReservationRepository) {
+        return new ReserveStockForOrderUseCase(inventoryRepository, stockReservationRepository);
+    }
+
+    @Bean
+    public FulfillOrderReservationsUseCase fulfillOrderReservationsUseCase(InventoryRepository inventoryRepository,
+                                                                           StockReservationRepository stockReservationRepository) {
+        return new FulfillOrderReservationsUseCase(inventoryRepository, stockReservationRepository);
+    }
+
+    @Bean
+    public ReleaseOrderReservationsUseCase releaseOrderReservationsUseCase(InventoryRepository inventoryRepository,
+                                                                           StockReservationRepository stockReservationRepository) {
+        return new ReleaseOrderReservationsUseCase(inventoryRepository, stockReservationRepository);
+    }
 
     @Bean
     public CreateInventoryUseCase createInventoryUseCase(InventoryRepository inventoryRepository) {

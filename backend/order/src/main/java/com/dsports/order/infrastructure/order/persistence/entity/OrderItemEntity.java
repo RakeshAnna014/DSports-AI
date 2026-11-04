@@ -1,6 +1,8 @@
 package com.dsports.order.infrastructure.order.persistence.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -8,8 +10,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Order items have application-assigned IDs and no version column, so Spring Data cannot infer
+ * newness from the entity itself. The repository adapter replaces an order's items on every save
+ * (delete + insert), so the mapper marks every outgoing item as new to force an INSERT.
+ */
 @Table("order_items")
-public class OrderItemEntity {
+public class OrderItemEntity implements Persistable<UUID> {
 
     @Id
     private UUID id;
@@ -41,8 +48,17 @@ public class OrderItemEntity {
     @Column("created_at")
     private Instant createdAt;
 
+    @Transient
+    private boolean isNew;
+
+    @Override
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    @Override
+    @Transient
+    public boolean isNew() { return isNew; }
+    public void setNew(boolean isNew) { this.isNew = isNew; }
     public UUID getOrderId() { return orderId; }
     public void setOrderId(UUID orderId) { this.orderId = orderId; }
     public UUID getProductId() { return productId; }

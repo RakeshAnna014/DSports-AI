@@ -1,119 +1,42 @@
 import { useState } from 'react';
 import { Box, IconButton } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { getProductImageUrl } from '@/lib/productUtils';
+import ProductImage from '@/components/common/ProductImage';
+import { colors } from '@/design/tokens';
 
 interface ImageGalleryProps {
   productName: string;
   images?: { url: string; primary?: boolean }[];
 }
 
+/** A large product image with a thumbnail strip; the primary image comes first. Every image falls back to the DSports visual if it fails. */
 const ImageGallery = ({ productName, images = [] }: ImageGalleryProps) => {
-  const allUrls =
-    images.length > 0
-      ? images.map((img) => img.url)
-      : [getProductImageUrl(productName)];
-  const [activeIndex, setActiveIndex] = useState(0);
-  const hasMultiple = allUrls.length > 1;
+  const ordered = [...images].sort((a, b) => Number(!!b.primary) - Number(!!a.primary));
+  const urls = ordered.length > 0 ? ordered.map((i) => i.url) : [undefined];
+  const [active, setActive] = useState(0);
+  const multiple = urls.length > 1;
+  const step = (d: number) => setActive((i) => (i + d + urls.length) % urls.length);
 
   return (
-    <Box>
-      <Box
-        sx={{
-          position: 'relative',
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: 'grey.100',
-          mb: 1,
-        }}
-      >
-        <Box
-          component="img"
-          src={allUrls[activeIndex]}
-          alt={`${productName} - Image ${activeIndex + 1}`}
-          loading="lazy"
-          sx={{
-            width: '100%',
-            height: { xs: 300, sm: 400, md: 480 },
-            objectFit: 'contain',
-            display: 'block',
-          }}
-        />
-        {hasMultiple && (
+    <Box data-testid="image-gallery">
+      <Box sx={{ position: 'relative', borderRadius: 4, overflow: 'hidden', border: `1px solid ${colors.line}`, mb: 1.25 }}>
+        <ProductImage key={urls[active] ?? 'none'} src={urls[active]} alt={`${productName} - image ${active + 1} of ${urls.length}`} eager />
+        {multiple && (
           <>
-            <IconButton
-              aria-label="Previous image"
-              onClick={() =>
-                setActiveIndex((prev) =>
-                  prev === 0 ? allUrls.length - 1 : prev - 1,
-                )
-              }
-              sx={{
-                position: 'absolute',
-                left: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                bgcolor: 'rgba(255,255,255,0.9)',
-                '&:hover': { bgcolor: 'white' },
-              }}
-            >
-              <ChevronLeft />
-            </IconButton>
-            <IconButton
-              aria-label="Next image"
-              onClick={() =>
-                setActiveIndex((prev) =>
-                  prev === allUrls.length - 1 ? 0 : prev + 1,
-                )
-              }
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                bgcolor: 'rgba(255,255,255,0.9)',
-                '&:hover': { bgcolor: 'white' },
-              }}
-            >
-              <ChevronRight />
-            </IconButton>
+            <IconButton aria-label="Previous image" onClick={() => step(-1)} sx={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: '#fff' } }}><ChevronLeft /></IconButton>
+            <IconButton aria-label="Next image" onClick={() => step(1)} sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: '#fff' } }}><ChevronRight /></IconButton>
           </>
         )}
       </Box>
-
-      {hasMultiple && (
-        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5 }}>
-          {allUrls.map((url, index) => (
-            <Box
-              key={index}
-              component="img"
-              src={url}
-              alt={`${productName} thumbnail ${index + 1}`}
-              loading="lazy"
-              onClick={() => setActiveIndex(index)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e: React.KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setActiveIndex(index);
-                }
-              }}
-              sx={{
-                width: 64,
-                height: 64,
-                objectFit: 'cover',
-                borderRadius: 1,
-                cursor: 'pointer',
-                border: '2px solid',
-                borderColor:
-                  index === activeIndex ? 'primary.main' : 'transparent',
-                opacity: index === activeIndex ? 1 : 0.6,
-                transition: 'opacity 0.2s, border-color 0.2s',
-                '&:hover': { opacity: 1 },
-                flexShrink: 0,
-              }}
-            />
+      {multiple && (
+        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5 }} role="tablist" aria-label="Product images">
+          {urls.map((url, index) => (
+            <Box key={`${url}-${index}`} role="tab" aria-selected={index === active} aria-label={`Show image ${index + 1}`} tabIndex={0} data-testid="gallery-thumb"
+              onClick={() => setActive(index)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(index); } }}
+              sx={{ width: 76, flexShrink: 0, cursor: 'pointer', borderRadius: 2, overflow: 'hidden', border: '2px solid', borderColor: index === active ? 'primary.main' : colors.line,
+                opacity: index === active ? 1 : 0.7, transition: 'opacity .2s, border-color .2s', '&:hover, &:focus-visible': { opacity: 1, outline: 'none', borderColor: 'primary.light' } }}>
+              <ProductImage src={url} alt={`${productName} thumbnail ${index + 1}`} />
+            </Box>
           ))}
         </Box>
       )}

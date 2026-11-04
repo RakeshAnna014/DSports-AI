@@ -6,7 +6,11 @@ import com.dsports.identity.application.port.OAuthProviderGateway;
 import com.dsports.identity.application.port.PasswordEncoder;
 import com.dsports.identity.application.port.RefreshTokenRepository;
 import com.dsports.identity.application.port.RefreshTokenHasher;
+import com.dsports.identity.application.port.ShopperProfileRepository;
+import com.dsports.identity.application.port.SportTaxonomyPort;
 import com.dsports.identity.application.port.TokenProvider;
+import com.dsports.identity.application.usecase.ShopperProfileUseCase;
+import com.dsports.identity.infrastructure.persistence.repository.ShopperProfileR2dbcAdapter;
 import com.dsports.identity.application.port.UserRepository;
 import com.dsports.identity.application.usecase.CreateAddressUseCase;
 import com.dsports.identity.application.usecase.DeleteAddressUseCase;
@@ -82,8 +86,10 @@ public class IdentityInfrastructureConfiguration {
     public JwtTokenProvider jwtTokenProvider(
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.access-token-expiration:15m}") Duration accessTokenExpiration,
-            @Value("${app.jwt.refresh-token-expiration:7d}") Duration refreshTokenExpiration) {
-        return new JwtTokenProvider(secret, accessTokenExpiration, refreshTokenExpiration);
+            @Value("${app.jwt.refresh-token-expiration:7d}") Duration refreshTokenExpiration,
+            @Value("${app.jwt.issuer:dsports}") String issuer,
+            @Value("${app.jwt.audience:dsports-api}") String audience) {
+        return new JwtTokenProvider(secret, accessTokenExpiration, refreshTokenExpiration, issuer, audience);
     }
 
     @Bean
@@ -168,5 +174,15 @@ public class IdentityInfrastructureConfiguration {
     @Bean
     public SetDefaultAddressUseCase setDefaultAddressUseCase(UserRepository userRepository) {
         return new SetDefaultAddressUseCase(userRepository);
+    }
+
+    @Bean
+    public ShopperProfileRepository shopperProfileRepository(DatabaseClient databaseClient) {
+        return new ShopperProfileR2dbcAdapter(databaseClient);
+    }
+
+    @Bean
+    public ShopperProfileUseCase shopperProfileUseCase(ShopperProfileRepository repository, SportTaxonomyPort taxonomy, java.time.Clock clock) {
+        return new ShopperProfileUseCase(repository, taxonomy, clock);
     }
 }

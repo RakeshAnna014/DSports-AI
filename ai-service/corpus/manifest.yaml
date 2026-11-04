@@ -1,0 +1,82 @@
+# Metadata for every document in this folder. SAMPLE corpus: none of it is manufacturer documentation.
+# productSku (optional) links a document to one catalogue product; the indexer resolves it to a product id.
+documents:
+  - file: return-policy.md
+    source: return-policy.md
+    documentType: policy
+    title: DSports Return Policy
+    version: "1"
+  - file: refund-policy.md
+    source: refund-policy.md
+    documentType: policy
+    title: DSports Refund Policy
+    version: "1"
+  - file: shipping-policy.md
+    source: shipping-policy.md
+    documentType: policy
+    title: DSports Shipping and Tracking
+    version: "1"
+  - file: faq.md
+    source: faq.md
+    documentType: faq
+    title: DSports Frequently Asked Questions
+    version: "1"
+  - file: cricket-bat-buying-guide.md
+    source: cricket-bat-buying-guide.md
+    documentType: guide
+    title: Cricket Bat Buying Guide
+    sport: Cricket
+    category: Bat
+    version: "1"
+  - file: running-shoe-buying-guide.md
+    source: running-shoe-buying-guide.md
+    documentType: guide
+    title: Running Shoe Buying Guide
+    category: Shoes
+    version: "1"
+  - file: cricket-bat-care.md
+    source: cricket-bat-care.md
+    documentType: care
+    title: Cricket Bat Care and Maintenance
+    sport: Cricket
+    category: Bat
+    version: "1"
+  - file: mrf-cricket-bat-virgin-care-sheet.md
+    source: mrf-cricket-bat-virgin-care-sheet.md
+    documentType: care
+    title: "MRF Cricket Bat - Virgin: Care Sheet"
+    sport: Cricket
+    category: Bat
+    brand: MRF
+    productSku: CR-BAT-MRF-001
+    version: "1"
+  - file: warranty-card-scanned.pdf
+    source: warranty-card-scanned.pdf
+    documentType: warranty
+    title: DSports Warranty Card (scanned copy)
+    version: "1"
+  - file: missing-delivery-procedure.md
+    source: missing-delivery-procedure.md
+    documentType: procedure
+    title: Missing or Late Delivery Procedure (sample)
+    version: "1"
+  - file: damaged-or-wrong-product-procedure.md
+    source: damaged-or-wrong-product-procedure.md
+    documentType: procedure
+    title: Damaged, Wrong or Defective Product Procedure (sample)
+    version: "1"
+  - file: payment-problems-procedure.md
+    source: payment-problems-procedure.md
+    documentType: procedure
+    title: Payment Problems Procedure (sample)
+    version: "1"
+  - file: exchange-policy.md
+    source: exchange-policy.md
+    documentType: policy
+    title: DSports Exchange Policy (sample)
+    version: "1"
+  - file: support-cases-guide.md
+    source: support-cases-guide.md
+    documentType: procedure
+    title: How Support Cases Work (sample)
+    version: "1"

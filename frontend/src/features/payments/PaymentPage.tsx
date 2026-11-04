@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
@@ -24,7 +24,11 @@ import {
   TableRow,
 } from '@mui/material';
 import { paymentsApi } from '@/api/payments';
-import type { PaymentMethod, PaymentProvider } from '@/types/payments';
+import { ordersApi } from '@/api/orders';
+import { getApiError, getApiErrorMessage } from '@/api/errors';
+import type { OrderResponse } from '@/types/orders';
+import type { PaymentMethod, PaymentProvider, PaymentResponse } from '@/types/payments';
+import { CAPTURED_STATUSES } from '@/types/payments';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'UPI', label: 'UPI' },
@@ -34,52 +38,105 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'COD', label: 'Cash on Delivery' },
 ];
 
-const PAYMENT_PROVIDERS: { value: PaymentProvider; label: string }[] = [
-  { value: 'MOCK', label: 'Mock Payment (Test)' },
-];
+const PAYMENT_PROVIDER: PaymentProvider = 'MOCK';
 
 const steps = ['Order Summary', 'Payment Method', 'Make Payment'];
+
+/** authorizing → capturing → done; a capture that times out can be retried on the same payment. */
+type Phase = 'idle' | 'authorizing' | 'capturing' | 'captureRetry';
+
+const RETRYABLE_CAPTURE_CODES = ['GATEWAY_TIMEOUT', 'GATEWAY_ERROR', 'OPTIMISTIC_LOCKING_CONFLICT'];
 
 const PaymentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId') || '';
-  const amount = parseFloat(searchParams.get('amount') || '0');
-  const currency = searchParams.get('currency') || 'INR';
-  const orderNumber = searchParams.get('orderNumber') || '';
 
+  const [order, setOrder] = useState<OrderResponse | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(true);
   const [activeStep, setActiveStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
-  const [paymentProvider] = useState<PaymentProvider>('MOCK');
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [pendingPayment, setPendingPayment] = useState<PaymentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleNext = () => setActiveStep((prev) => prev + 1);
-  const handleBack = () => setActiveStep((prev) => prev - 1);
+  const busy = phase === 'authorizing' || phase === 'capturing';
+
+  useEffect(() => {
+    if (!orderId) {
+      setLoadingOrder(false);
+      return;
+    }
+    ordersApi
+      .getOrder(orderId)
+      .then(setOrder)
+      .catch((err) => setError(getApiErrorMessage(err, 'Could not load the order')))
+      .finally(() => setLoadingOrder(false));
+  }, [orderId]);
+
+  const goToResult = useCallback(
+    (payment: PaymentResponse) => {
+      if (CAPTURED_STATUSES.includes(payment.status)) {
+        navigate(`/payment-success?paymentId=${payment.id}`, { replace: true });
+      } else {
+        navigate(
+          `/payment-failure?orderId=${orderId}&reason=${encodeURIComponent(payment.failureReason || 'Payment declined')}`,
+          { replace: true },
+        );
+      }
+    },
+    [navigate, orderId],
+  );
+
+  const capture = useCallback(
+    async (payment: PaymentResponse) => {
+      setPhase('capturing');
+      setError(null);
+      try {
+        const captured = await paymentsApi.capturePayment(payment.id);
+        setPendingPayment(null);
+        goToResult(captured);
+      } catch (err) {
+        const apiError = getApiError(err);
+        if (apiError && RETRYABLE_CAPTURE_CODES.includes(apiError.code)) {
+          setPendingPayment(payment);
+          setPhase('captureRetry');
+          setError(`${apiError.message} Your card has not been charged twice; retrying is safe.`);
+          return;
+        }
+        setPhase('idle');
+        setError(getApiErrorMessage(err, 'Payment could not be completed'));
+      }
+    },
+    [goToResult],
+  );
 
   const handleMakePayment = async () => {
-    setLoading(true);
+    if (!order || busy) return;
+    setPhase('authorizing');
     setError(null);
     try {
-      const result = await paymentsApi.createPayment({
-        orderId,
-        amount,
-        currency,
+      const payment = await paymentsApi.createPayment({
+        orderId: order.id,
+        amount: order.grandTotal,
+        currency: order.currency,
         paymentMethod,
-        paymentProvider,
+        paymentProvider: PAYMENT_PROVIDER,
       });
-      if (result.status === 'SUCCESS') {
-        navigate(`/payment-success?paymentId=${result.id}&orderId=${orderId}&amount=${amount}&currency=${currency}&paymentReference=${result.paymentReference}`);
-      } else if (result.status === 'FAILED') {
-        navigate(`/payment-failure?paymentId=${result.id}&orderId=${orderId}&reason=${encodeURIComponent(result.failureReason || 'Payment declined')}`);
+      if (payment.status === 'AUTHORIZED' || payment.status === 'PROCESSING') {
+        await capture(payment);
       } else {
-        setActiveStep(2);
+        setPhase('idle');
+        goToResult(payment);
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Payment failed';
-      setError(msg);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setPhase('idle');
+      const apiError = getApiError(err);
+      if (apiError?.code === 'ORDER_ALREADY_PAID') {
+        navigate(`/orders/${orderId}`, { replace: true });
+        return;
+      }
+      setError(getApiErrorMessage(err, 'Payment could not be started'));
     }
   };
 
@@ -90,6 +147,37 @@ const PaymentPage = () => {
       </Container>
     );
   }
+
+  if (loadingOrder) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (!order) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error">{error || 'Order not found.'}</Alert>
+      </Container>
+    );
+  }
+
+  if (order.status !== 'PENDING_PAYMENT') {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity={order.status === 'CANCELLED' ? 'warning' : 'info'} sx={{ mb: 2 }}>
+          Order {order.orderNumber} is {order.status.replace('_', ' ').toLowerCase()} and cannot be paid.
+        </Alert>
+        <Button variant="contained" onClick={() => navigate(`/orders/${order.id}`)}>
+          View order
+        </Button>
+      </Container>
+    );
+  }
+
+  const total = `${order.currency} ${order.grandTotal.toFixed(2)}`;
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -106,7 +194,7 @@ const PaymentPage = () => {
       </Stepper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={busy ? undefined : () => setError(null)}>
           {error}
         </Alert>
       )}
@@ -119,17 +207,21 @@ const PaymentPage = () => {
               <TableBody>
                 <TableRow>
                   <TableCell>Order Number</TableCell>
-                  <TableCell align="right">{orderNumber || orderId}</TableCell>
+                  <TableCell align="right">{order.orderNumber}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Items</TableCell>
+                  <TableCell align="right">{order.items.reduce((n, i) => n + i.quantity, 0)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Amount</TableCell>
-                  <TableCell align="right">{currency} {amount.toFixed(2)}</TableCell>
+                  <TableCell align="right">{total}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-            <Button variant="contained" onClick={handleNext}>
+            <Button variant="contained" onClick={() => setActiveStep(1)}>
               Continue
             </Button>
           </Box>
@@ -150,12 +242,12 @@ const PaymentPage = () => {
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Payment Provider: {PAYMENT_PROVIDERS.find((p) => p.value === paymentProvider)?.label}
+            Payment Provider: Mock Payment (Test)
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button onClick={handleBack}>Back</Button>
-            <Button variant="contained" onClick={handleNext}>
+            <Button onClick={() => setActiveStep(0)}>Back</Button>
+            <Button variant="contained" onClick={() => setActiveStep(2)}>
               Continue
             </Button>
           </Box>
@@ -168,19 +260,34 @@ const PaymentPage = () => {
             Confirm Payment
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Amount: {currency} {amount.toFixed(2)}
+            Amount: {total}
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Method: {paymentMethod} | Provider: {paymentProvider}
+            Method: {paymentMethod}
           </Typography>
 
+          {busy && (
+            <Box sx={{ my: 2, display: 'flex', gap: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <CircularProgress size={20} />
+              <Typography variant="body2" data-testid="payment-phase">
+                {phase === 'authorizing' ? 'Authorizing payment…' : 'Confirming payment…'}
+              </Typography>
+            </Box>
+          )}
+
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Button variant="outlined" onClick={handleBack} disabled={loading}>
+            <Button variant="outlined" onClick={() => setActiveStep(1)} disabled={busy || phase === 'captureRetry'}>
               Back
             </Button>
-            <Button variant="contained" color="primary" onClick={handleMakePayment} disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : `Pay ${currency} ${amount.toFixed(2)}`}
-            </Button>
+            {phase === 'captureRetry' && pendingPayment ? (
+              <Button variant="contained" color="warning" onClick={() => capture(pendingPayment)}>
+                Retry confirmation
+              </Button>
+            ) : (
+              <Button variant="contained" color="primary" onClick={handleMakePayment} disabled={busy}>
+                {busy ? <CircularProgress size={24} /> : `Pay ${total}`}
+              </Button>
+            )}
           </Box>
         </Paper>
       )}

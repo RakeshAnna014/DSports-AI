@@ -114,16 +114,39 @@ public final class InventoryItem {
             throw new InventoryDomainException(InventoryErrorCode.INVALID_QUANTITY,
                     "Reserve quantity must be positive");
         }
-        var availableAfterReservation = this.availableQuantity.value() - quantity.value();
-        if (availableAfterReservation < 0) {
+        var sellable = getSellableQuantity();
+        if (quantity.value() > sellable) {
             throw new InventoryDomainException(InventoryErrorCode.RESERVATION_EXCEEDS_AVAILABLE,
-                    "Cannot reserve " + quantity.value() + " units; only " + this.availableQuantity.value() + " available");
+                    "Cannot reserve " + quantity.value() + " units; only " + sellable + " available");
         }
         this.reservedQuantity = this.reservedQuantity.add(quantity);
         this.updatedAt = Instant.now();
         updateStatus();
         recordEvent(new StockReservedEvent(this.id, quantity, this.status));
         if (this.status == InventoryStatus.LOW_STOCK) {
+            recordEvent(new LowStockEvent(this.id, this.availableQuantity.value(), this.reorderLevel.value()));
+        }
+    }
+
+    public void fulfillReservation(Quantity quantity) {
+        if (quantity.value() <= 0) {
+            throw new InventoryDomainException(InventoryErrorCode.INVALID_QUANTITY,
+                    "Fulfillment quantity must be positive");
+        }
+        if (quantity.value() > this.reservedQuantity.value()) {
+            throw new InventoryDomainException(InventoryErrorCode.INVALID_RESERVED_QUANTITY,
+                    "Cannot fulfill " + quantity.value() + " reserved units; only " + this.reservedQuantity.value() + " reserved");
+        }
+        // Reserved units are part of on-hand stock, so fulfilling them removes them from both counters.
+        var previousAvailable = this.availableQuantity.value();
+        this.availableQuantity = this.availableQuantity.subtract(quantity);
+        this.reservedQuantity = this.reservedQuantity.subtract(quantity);
+        this.updatedAt = Instant.now();
+        updateStatus();
+        recordEvent(new InventoryUpdatedEvent(this.id, previousAvailable, quantity, this.status));
+        if (this.status == InventoryStatus.OUT_OF_STOCK) {
+            recordEvent(new OutOfStockEvent(this.id));
+        } else if (this.status == InventoryStatus.LOW_STOCK) {
             recordEvent(new LowStockEvent(this.id, this.availableQuantity.value(), this.reorderLevel.value()));
         }
     }
@@ -185,6 +208,11 @@ public final class InventoryItem {
     public InventoryStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    /** Units that can still be promised to a customer: on-hand stock minus units already reserved. */
+    public int getSellableQuantity() {
+        return this.availableQuantity.value() - this.reservedQuantity.value();
+    }
+
     public int getVersion() { return version; }
 
     public List<DomainEvent> getDomainEvents() {

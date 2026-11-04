@@ -13,6 +13,8 @@ import {
   TextField,
 } from '@mui/material';
 import { PersonOutline } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
+import ProfilesPanel from './ProfilesPanel';
 import { profileApi } from '@/api/profile';
 import type { CustomerProfile } from '@/types/profile';
 
@@ -76,12 +78,15 @@ const ProfilePage = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Box sx={{ maxWidth: 760, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="h4">My Profile</Typography>
-        {!editing && (
-          <Button variant="outlined" onClick={() => setEditing(true)}>Edit</Button>
-        )}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="text" component={RouterLink} to="/support?new=1" data-testid="profile-contact-support">Contact support</Button>
+          {!editing && (
+            <Button variant="outlined" onClick={() => setEditing(true)}>Edit</Button>
+          )}
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -141,6 +146,8 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
       )}
+
+      {profile && !editing && <ProfilesPanel />}
     </Box>
   );
 };

@@ -11,6 +11,7 @@ import {
   Link,
 } from '@mui/material';
 import { useAuthStore } from '@/store/authStore';
+import { getApiErrorMessage } from '@/api/errors';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -37,11 +38,7 @@ const RegisterPage = () => {
       await register({ email, password, firstName, lastName });
       navigate('/login', { replace: true });
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+      setError(getApiErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

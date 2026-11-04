@@ -1,21 +1,61 @@
-version: '3.9'
-
 services:
   postgres:
-    image: postgres:16
+    # pgvector image is a drop-in superset of postgres:16 (same major and glibc as postgres:16, same data volume).
+    image: pgvector/pgvector:pg16-trixie
     container_name: dsports-postgres
     restart: unless-stopped
 
     environment:
       POSTGRES_DB: dsports
       POSTGRES_USER: dsports
-      POSTGRES_PASSWORD: dsports123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dsports123}
 
     ports:
       - "5432:5432"
 
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      # Runs only on a fresh volume; for an existing volume run: docker exec -i dsports-postgres psql -U dsports -d dsports < ai-service/db/init-ai-db.sql
+      - ./ai-service/db/init-ai-db.sql:/docker-entrypoint-initdb.d/10-init-ai-db.sql:ro
+
+  # Tika server with Tesseract OCR, used by the AI service to extract text from documents.
+  tika:
+    image: apache/tika:latest-full
+    container_name: dsports-tika
+    restart: unless-stopped
+    profiles: ["ai"]
+    ports:
+      - "9998:9998"
+
+  # Customer AI service (Phase 1 foundation: health, JWT validation, Vertex access; no assistant features yet).
+  # Needs JWT_SECRET (same as the backend), AI_CUSTOMER_HASH_KEY and GOOGLE_APPLICATION_CREDENTIALS (host path of a
+  # service-account key, mounted read-only). Start the backend on the host first. Unset values make the service refuse
+  # to start with a validation error (they are not required for other services).
+  ai-service:
+    build: ./ai-service
+    container_name: dsports-ai-service
+    restart: unless-stopped
+    profiles: ["ai"]
+    depends_on:
+      - postgres
+      - tika
+    environment:
+      AI_TIKA_URL: http://tika:9998
+      AI_EMBEDDING_LOCATION: ${AI_EMBEDDING_LOCATION:-}
+      AI_MCP_ALLOWED_HOSTS: ${AI_MCP_ALLOWED_HOSTS:-localhost:*,127.0.0.1:*,ai-service:*,host.docker.internal:*}
+      JWT_SECRET: ${JWT_SECRET:-}
+      AI_CUSTOMER_HASH_KEY: ${AI_CUSTOMER_HASH_KEY:-}
+      DSPORTS_BASE_URL: ${DSPORTS_BASE_URL:-http://host.docker.internal:8080}
+      AI_DATABASE_URL: postgresql://dsports:${POSTGRES_PASSWORD:-dsports123}@postgres:5432/dsports_ai
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp.json
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      AI_VERTEX_LOCATION: ${AI_VERTEX_LOCATION:-us-central1}
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/run/secrets/gcp.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8090:8090"
 
 volumes:
   postgres-data:

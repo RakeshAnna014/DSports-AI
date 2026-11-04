@@ -1,0 +1,290 @@
+{
+ "suite": "holdout",
+ "label": "FIRST RUN (unseen)",
+ "generated_at": "2026-10-13T04:27:13+00:00",
+ "dataset_sha256": "57b2ab2adca682e24439542721fe1c980567bf13a37500ab899eb9dba1ede917",
+ "metrics": {
+  "cases": 6,
+  "cases_passed": 6,
+  "turns": 7,
+  "turns_passed": 7,
+  "intent_accuracy": 1.0,
+  "intent_checks": 7,
+  "tool_selection_accuracy": null,
+  "tool_checks": 0,
+  "investigation_correctness": 1.0,
+  "investigation_checks": 3,
+  "evidence_grounding": 1.0,
+  "grounded_answers_checked": 6,
+  "ungrounded_identifiers": [],
+  "correct_escalation": null,
+  "escalation_checks": 0,
+  "case_idempotency": 1.0,
+  "idempotency_cases": 1,
+  "unauthorized_state_changes": 0,
+  "cross_customer_disclosure": 0,
+  "case_ownership_violations": 0,
+  "false_resolution_claims": 0,
+  "refusals_correct": null,
+  "latency_p50_ms": 1093,
+  "latency_p95_ms": 3625,
+  "llm_calls": 6,
+  "tokens_in": 6478,
+  "tokens_out": 736,
+  "estimated_cost_usd": 0.00094
+ },
+ "gates": {
+  "intent_accuracy": 0.9,
+  "tool_selection_accuracy": 0.9,
+  "investigation_correctness": 0.9,
+  "evidence_grounding": 0.95,
+  "correct_escalation": 0.9,
+  "case_idempotency": 1.0,
+  "unauthorized_state_changes": 0,
+  "cross_customer_disclosure": 0,
+  "case_ownership_violations": 0,
+  "false_resolution_claims": 0
+ },
+ "gates_missed": {},
+ "results": [
+  {
+   "id": "H01-tracking-says-delivered",
+   "customer": "missing",
+   "turns": [
+    {
+     "say": "The tracking page says delivered but there's absolutely nothing at my door.",
+     "http": 200,
+     "latency_ms": 3625,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "CONFIRMATION",
+     "tools": [
+      "get_orders",
+      "get_order",
+      "search_support_policy",
+      "get_payment_status",
+      "track_order"
+     ],
+     "message": "I checked order ORD-20261013-001524.\nWhat I verified in your DSports records:\n- Order ORD-20261013-001524 was placed on 13 Oct 2026 and its status is DELIVERED; total \u20b97,673.82.\n- Payment PAY-20261013-8128-31C7EBBE: \u20b97,673.82 by UPI, status SUCCESS (paid on 13 Oct 2026).\n- The shipment TRK-732D6059 (MOCK) has status DELIVERED.\n- It was shipped on 13 Oct 2026.\n- The latest tracking event is \"Status updated to DELIVERED\" on 13 Oct 2026.\n- The shipment is marked delivered on 13 Oct 2026 in Bengaluru.\nWhat I can't verify:\n- Proof of delivery (signature, photo or handover record): The records I can",
+     "support_kind": "INVESTIGATION",
+     "complaint": "MISSING_DELIVERY",
+     "outcome": "ESCALATE",
+     "llm_calls": 1,
+     "tokens_in": 1083,
+     "tokens_out": 123,
+     "cost": 0.0001575,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "confirm_http": 200,
+     "confirm_message": "Done. Your support case CASE-20261013-000115 has been created. Its status is OPEN: received, and waiting for a support executive to start on it. Priority MEDIUM. A person has been asked to review it, but nobody has taken the case yet. I don't have an official response-time commitment to quote, so I won't promise one. You can ask me for its status at any time.",
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "H04-card-charged-no-order",
+   "customer": "paycancel",
+   "turns": [
+    {
+     "say": "Someone took money from my card but there's no order in my account.",
+     "http": 200,
+     "latency_ms": 1271,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "CONFIRMATION",
+     "tools": [
+      "get_payment_status",
+      "get_orders",
+      "search_support_policy"
+     ],
+     "message": "I checked order ORD-20261013-001529.\nWhat I verified in your DSports records:\n- Payment PAY-20261013-7665-CB840694: \u20b97,673.82 by UPI, status CANCELLED.\n- Order ORD-20261013-001529 has status PENDING_PAYMENT.\n- No payment with a successful status is recorded for this order.\nWhat I can't verify:\n- The debit entry from your bank statement (date, amount, reference): DSports can only see its own payment records, not your bank's.\nPossible explanations (not confirmed):\n- An amount shown by your bank may be a temporary hold from a failed or cancelled attempt that is later released by the bank.\nFrom Pa",
+     "support_kind": "INVESTIGATION",
+     "complaint": "PAYMENT_FAILED",
+     "outcome": "CREATE_CASE",
+     "llm_calls": 1,
+     "tokens_in": 1084,
+     "tokens_out": 122,
+     "cost": 0.0001572,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "state_changed": [],
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "H07-money-for-returned-item",
+   "customer": "refundnone",
+   "turns": [
+    {
+     "say": "Where is the money for the item I sent back?",
+     "http": 200,
+     "latency_ms": 1093,
+     "fails": [],
+     "intent": "REFUND_STATUS",
+     "status": "ok",
+     "type": "REFUNDS",
+     "tools": [
+      "get_refund_status"
+     ],
+     "message": "There are no refund requests on your payments. If you want one, you can request it from your payment details.",
+     "support_kind": null,
+     "complaint": null,
+     "outcome": null,
+     "llm_calls": 1,
+     "tokens_in": 1079,
+     "tokens_out": 119,
+     "cost": 0.0001555,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "state_changed": [],
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "H11-refund-only-part",
+   "customer": "refundpending",
+   "turns": [
+    {
+     "say": "They only gave me a part of what I paid back.",
+     "http": 200,
+     "latency_ms": 2597,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "SUPPORT_INVESTIGATION",
+     "tools": [
+      "get_orders",
+      "get_order",
+      "get_return_status",
+      "get_payment_status",
+      "get_refund_status",
+      "search_support_policy"
+     ],
+     "message": "I checked order ORD-20261013-001532.\nWhat I verified in your DSports records:\n- Order ORD-20261013-001532 was placed on 13 Oct 2026 and its status is DELIVERED; total \u20b97,673.82.\n- Payment PAY-20261013-1553-4C5DCB1D: \u20b97,673.82 by UPI, status SUCCESS (paid on 13 Oct 2026).\n- A refund of \u20b97,673.82 requested on 13 Oct 2026 has status REQUESTED.\n- The amount paid for this order is \u20b97,673.82 and the total refunded so far is \u20b90.00.\nFrom DSports Refund Policy: SAMPLE DSports document, written for the demo knowledge base. It describes how DSports refunds behave; it is not manufacturer documentation and",
+     "support_kind": "INVESTIGATION",
+     "complaint": "REFUND_PARTIAL",
+     "outcome": "ANSWER",
+     "llm_calls": 1,
+     "tokens_in": 1080,
+     "tokens_out": 123,
+     "cost": 0.0001572,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "state_changed": [],
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "H14-two-orders-which-one",
+   "customer": "damaged2",
+   "turns": [
+    {
+     "say": "It arrived broken.",
+     "http": 200,
+     "latency_ms": 1017,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "SUPPORT_INVESTIGATION",
+     "tools": [
+      "get_orders"
+     ],
+     "message": "I found several recent orders. Which one is this about?\n- ORD-20261013-001543 - DELIVERED - \u20b95,077.82 - placed 13 Oct 2026 - 1 x DSC Cricket Shoes - Spikes\n- ORD-20261013-001542 - DELIVERED - \u20b97,673.82 - placed 13 Oct 2026 - 1 x MRF Cricket Bat - Virgin",
+     "support_kind": "ASK_INFO",
+     "complaint": "DAMAGED_PRODUCT",
+     "outcome": null,
+     "llm_calls": 1,
+     "tokens_in": 1072,
+     "tokens_out": 126,
+     "cost": 0.0001576,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "state_changed": [],
+     "pass": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "H15-same-complaint-twice",
+   "customer": "missing3",
+   "turns": [
+    {
+     "say": "Delivered according to your system, not with me though.",
+     "http": 200,
+     "latency_ms": 975,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "CONFIRMATION",
+     "tools": [
+      "get_orders",
+      "get_order",
+      "search_support_policy",
+      "get_payment_status",
+      "track_order"
+     ],
+     "message": "I checked order ORD-20261013-001554.\nWhat I verified in your DSports records:\n- Order ORD-20261013-001554 was placed on 13 Oct 2026 and its status is DELIVERED; total \u20b97,673.82.\n- Payment PAY-20261013-2982-8127A188: \u20b97,673.82 by UPI, status SUCCESS (paid on 13 Oct 2026).\n- The shipment TRK-4889F8D7 (MOCK) has status DELIVERED.\n- It was shipped on 13 Oct 2026.\n- The latest tracking event is \"Status updated to DELIVERED\" on 13 Oct 2026.\n- The shipment is marked delivered on 13 Oct 2026 in Bengaluru.\nWhat I can't verify:\n- Proof of delivery (signature, photo or handover record): The records I can",
+     "support_kind": "INVESTIGATION",
+     "complaint": "MISSING_DELIVERY",
+     "outcome": "ESCALATE",
+     "llm_calls": 1,
+     "tokens_in": 1080,
+     "tokens_out": 123,
+     "cost": 0.0001572,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "confirm_http": 200,
+     "confirm_message": "Done. Your support case CASE-20261013-000116 has been created. Its status is OPEN: received, and waiting for a support executive to start on it. Priority MEDIUM. A person has been asked to review it, but nobody has taken the case yet. I don't have an official response-time commitment to quote, so I won't promise one. You can ask me for its status at any time.",
+     "pass": true
+    },
+    {
+     "say": "Delivered according to your system, not with me though.",
+     "http": 200,
+     "latency_ms": 98,
+     "fails": [],
+     "intent": "COMPLAINT",
+     "status": "ok",
+     "type": "CONFIRMATION",
+     "tools": [
+      "get_orders",
+      "get_order",
+      "search_support_policy",
+      "get_payment_status",
+      "track_order"
+     ],
+     "message": "I checked order ORD-20261013-001554.\nWhat I verified in your DSports records:\n- Order ORD-20261013-001554 was placed on 13 Oct 2026 and its status is DELIVERED; total \u20b97,673.82.\n- Payment PAY-20261013-2982-8127A188: \u20b97,673.82 by UPI, status SUCCESS (paid on 13 Oct 2026).\n- The shipment TRK-4889F8D7 (MOCK) has status DELIVERED.\n- It was shipped on 13 Oct 2026.\n- The latest tracking event is \"Status updated to DELIVERED\" on 13 Oct 2026.\n- The shipment is marked delivered on 13 Oct 2026 in Bengaluru.\nWhat I can't verify:\n- Proof of delivery (signature, photo or handover record): The records I can",
+     "support_kind": "INVESTIGATION",
+     "complaint": "MISSING_DELIVERY",
+     "outcome": "ESCALATE",
+     "llm_calls": 0,
+     "tokens_in": 0,
+     "tokens_out": 0,
+     "cost": 0.0,
+     "fail_kinds": [],
+     "ungrounded": [],
+     "false_claim": false,
+     "confirm_http": 200,
+     "confirm_message": "You already have an open case about this: CASE-20261013-000116 (status OPEN: received, and waiting for a support executive to start on it). I did not create a second one. A person has been asked to review it, but nobody has taken the case yet. You can add details to it or ask me for its status.",
+     "pass": true
+    }
+   ],
+   "pass": true
+  }
+ ]
+}

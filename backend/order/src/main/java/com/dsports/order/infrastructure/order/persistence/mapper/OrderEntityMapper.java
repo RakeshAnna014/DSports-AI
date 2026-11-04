@@ -34,6 +34,7 @@ public final class OrderEntityMapper {
         entity.setShippingCharge(order.getShippingCharge());
         entity.setTaxAmount(order.getTaxAmount());
         entity.setDiscountAmount(order.getDiscountAmount());
+        entity.setPromotionCode(order.getPromotionCode());
         entity.setGrandTotal(order.getGrandTotal());
         entity.setCurrency(order.getCurrency());
         entity.setPlacedAt(order.getPlacedAt());
@@ -56,6 +57,7 @@ public final class OrderEntityMapper {
         entity.setLineTotal(item.getLineTotal());
         entity.setProductImage(item.getProductImage());
         entity.setCreatedAt(item.getCreatedAt());
+        entity.setNew(true);
         return entity;
     }
 
@@ -63,7 +65,7 @@ public final class OrderEntityMapper {
         var items = itemEntities.stream()
             .map(OrderEntityMapper::toItemDomain)
             .toList();
-        return Order.reconstitute(
+        var order = Order.reconstitute(
             OrderId.fromUUID(entity.getId()),
             new OrderNumber(entity.getOrderNumber()),
             entity.getUserId(),
@@ -84,6 +86,8 @@ public final class OrderEntityMapper {
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );
+        order.attachPromotion(entity.getPromotionCode());
+        return order;
     }
 
     public static OrderItem toItemDomain(OrderItemEntity entity) {

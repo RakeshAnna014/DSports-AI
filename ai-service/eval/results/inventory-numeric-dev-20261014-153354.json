@@ -1,0 +1,175 @@
+{
+ "suite": "dev",
+ "total": 30,
+ "failed": 0,
+ "groups": {
+  "stock_risk": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "R1 the brief's example: 50 in stock, 12 a day, 7 day lead time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R2 plenty of stock",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R3 long lead time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R4 open order arrives in time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R5 medium risk, order can wait two days",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R6 rounded up to the case pack",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R7 lifted to the minimum order quantity",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R8 no demand at all",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R9 open order lands tomorrow",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "R10 the open order is too late: expedite, do not re-order",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  },
+  "promotion": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "P1 30% off, elasticity 2",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P2 50% off turns the margin negative",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P3 stock caps the sales",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P4 20% off, elasticity 1.5",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P5 zero discount is the baseline",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P6 stock arriving inside the window counts",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P7 discounting below cost",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P8 aged excess stock: the write-down avoided outweighs the margin given up",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P9 pull-forward",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "P10 missing cost",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  },
+  "forecasting": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "F1 weekly pattern (seed 1)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F2 weekly pattern (seed 9)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F3 growing trend",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F4 zero demand",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F5 intermittent demand 0.3/day",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F6 annual season",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F7 stock-out days do not depress the forecast",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F8 a promotion does not inflate the baseline",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F9 30 days of history is insufficient",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "F10 80% interval is roughly calibrated",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  }
+ }
+}

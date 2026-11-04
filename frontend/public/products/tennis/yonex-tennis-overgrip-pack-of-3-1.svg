@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F8FC"/><stop offset="1" stop-color="#E8EEF7"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><ellipse cx="200" cy="338" rx="110" ry="14" fill="#0B1426" opacity=".12"/><g transform="translate(200 200) scale(.82) translate(-200 -200)"><rect x="90" y="150" width="220" height="100" rx="22" fill="#16A34A"/><ellipse cx="90" cy="200" rx="30" ry="50" fill="#0F7233"/><ellipse cx="90" cy="200" rx="14" ry="26" fill="#052E16"/>
+      <path d="M130 150V250M170 150V250M210 150V250M250 150V250M290 150V250" stroke="#F8FAFC" stroke-width="5" opacity=".7"/><rect x="170" y="178" width="100" height="44" rx="10" fill="#FFFFFF" opacity=".9"/>
+      <text x="220" y="208" font-size="22" font-family="Arial" font-weight="800" text-anchor="middle" fill="#052E16">GRIP</text></g></svg>

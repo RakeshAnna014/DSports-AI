@@ -15,6 +15,7 @@ public record CheckoutResult(
     String deliveryMethodName,
     BigDecimal deliveryCharge,
     BigDecimal discountAmount,
+    String promotionCode,
     BigDecimal subtotal,
     BigDecimal taxAmount,
     BigDecimal totalAmount,

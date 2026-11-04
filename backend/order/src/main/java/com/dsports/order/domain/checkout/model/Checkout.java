@@ -34,6 +34,8 @@ public final class Checkout {
     private BigDecimal taxAmount;
     private BigDecimal deliveryCharge;
     private BigDecimal discountAmount;
+    private UUID promotionId;
+    private String promotionCode;
     private BigDecimal totalAmount;
     private String currency;
     private String notes;
@@ -102,6 +104,62 @@ public final class Checkout {
             expiresAt, validatedAt, cancelledAt, version, createdAt, updatedAt);
     }
 
+    /** Same as the other overload, plus the promotion that is applied to the checkout (both null when none). */
+    public static Checkout reconstitute(CheckoutId id, UUID customerId, UUID cartId,
+                                         CheckoutStatus status, UUID shippingAddressId,
+                                         DeliveryMethod deliveryMethod, List<CheckoutItem> items,
+                                         BigDecimal subtotal, BigDecimal taxAmount,
+                                         BigDecimal deliveryCharge, BigDecimal discountAmount,
+                                         BigDecimal totalAmount, String currency, String notes,
+                                         Instant expiresAt, Instant validatedAt, Instant cancelledAt,
+                                         int version, Instant createdAt, Instant updatedAt,
+                                         UUID promotionId, String promotionCode) {
+        var checkout = reconstitute(id, customerId, cartId, status, shippingAddressId, deliveryMethod, items, subtotal, taxAmount,
+            deliveryCharge, discountAmount, totalAmount, currency, notes, expiresAt, validatedAt, cancelledAt, version, createdAt, updatedAt);
+        checkout.promotionId = promotionId;
+        checkout.promotionCode = promotionCode;
+        return checkout;
+    }
+
+    /**
+     * Applies a promotion whose discount the caller computed from authoritative rules. One promotion per checkout: applying the
+     * same one again is a no-op that refreshes the amount, a different one must be removed first. Only an unvalidated
+     * (PENDING) checkout can change, so a validated total never moves underneath the customer.
+     */
+    public void applyPromotion(UUID promotionId, String code, BigDecimal discount) {
+        ensureNotTerminal();
+        ensurePromotionsEditable();
+        if (this.promotionId != null && !this.promotionId.equals(promotionId)) {
+            throw new CheckoutDomainException(CheckoutErrorCode.PROMOTION_ALREADY_APPLIED,
+                "Promotion " + this.promotionCode + " is already applied; remove it before applying another");
+        }
+        if (discount.signum() < 0 || discount.compareTo(subtotal) > 0) {
+            throw new CheckoutDomainException(CheckoutErrorCode.PROMOTION_NOT_APPLICABLE, "The discount is outside the order subtotal");
+        }
+        this.promotionId = Objects.requireNonNull(promotionId);
+        this.promotionCode = Objects.requireNonNull(code);
+        this.discountAmount = discount.setScale(2, RoundingMode.HALF_UP);
+        recalculateTotal();
+        this.updatedAt = Instant.now();
+    }
+
+    public void removePromotion() {
+        ensureNotTerminal();
+        ensurePromotionsEditable();
+        this.promotionId = null;
+        this.promotionCode = null;
+        this.discountAmount = BigDecimal.ZERO.setScale(2);
+        recalculateTotal();
+        this.updatedAt = Instant.now();
+    }
+
+    private void ensurePromotionsEditable() {
+        if (status != CheckoutStatus.PENDING) {
+            throw new CheckoutDomainException(CheckoutErrorCode.PROMOTION_NOT_EDITABLE,
+                "Promotions can only be changed before the checkout is validated");
+        }
+    }
+
     public void selectShippingAddress(UUID addressId) {
         ensureNotTerminal();
         this.shippingAddressId = Objects.requireNonNull(addressId);
@@ -155,6 +213,16 @@ public final class Checkout {
         domainEvents.add(new CheckoutExpiredEvent(id, customerId));
     }
 
+    /** The checkout became an order; it can no longer be modified, cancelled or reused. */
+    public void complete() {
+        if (isExpired()) {
+            throw new CheckoutDomainException(CheckoutErrorCode.CHECKOUT_EXPIRED,
+                "Checkout has expired at: " + expiresAt);
+        }
+        transitionTo(CheckoutStatus.COMPLETED);
+        this.updatedAt = Instant.now();
+    }
+
     public void cancel() {
         ensureNotTerminal();
         this.status = CheckoutStatus.CANCELLED;
@@ -202,6 +270,8 @@ public final class Checkout {
     public BigDecimal getTaxAmount() { return taxAmount; }
     public BigDecimal getDeliveryCharge() { return deliveryCharge; }
     public BigDecimal getDiscountAmount() { return discountAmount; }
+    public UUID getPromotionId() { return promotionId; }
+    public String getPromotionCode() { return promotionCode; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public String getCurrency() { return currency; }
     public String getNotes() { return notes; }

@@ -89,6 +89,10 @@ public class OpenApiConfig {
                 new Tag().name("Checkout").description("Checkout and payment preparation"),
                 new Tag().name("Payments").description("Payment processing, lifecycle, and history"),
                 new Tag().name("Orders").description("Customer order management, lifecycle, and history"),
+                new Tag().name("Notifications").description("Notification management, history, and retry"),
+                new Tag().name("Shipments").description("Shipment and delivery management"),
+                new Tag().name("Reviews").description("Product reviews, ratings, and moderation"),
+                new Tag().name("Wishlist").description("Wishlist and favorites management"),
                 new Tag().name("Admin").description("Administrative operations for catalog, inventory, and pricing"),
                 new Tag().name("Actuator").description("Application health and monitoring")
             ));
@@ -195,6 +199,33 @@ public class OpenApiConfig {
     }
 
     @Bean
+    public GroupedOpenApi notificationsApi() {
+        return GroupedOpenApi.builder()
+            .group("notifications")
+            .displayName("Notifications")
+            .pathsToMatch("/api/v1/notifications/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi shipmentsApi() {
+        return GroupedOpenApi.builder()
+            .group("shipments")
+            .displayName("Shipments")
+            .pathsToMatch("/api/v1/shipments/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi reviewsApi() {
+        return GroupedOpenApi.builder()
+            .group("reviews")
+            .displayName("Reviews")
+            .pathsToMatch("/api/v1/reviews/**")
+            .build();
+    }
+
+    @Bean
     public GroupedOpenApi ordersApi() {
         return GroupedOpenApi.builder()
             .group("orders")
@@ -209,6 +240,15 @@ public class OpenApiConfig {
             .group("payments")
             .displayName("Payments")
             .pathsToMatch("/api/v1/payments/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi wishlistApi() {
+        return GroupedOpenApi.builder()
+            .group("wishlist")
+            .displayName("Wishlist")
+            .pathsToMatch("/api/v1/wishlist/**")
             .build();
     }
 

@@ -11,8 +11,8 @@ import java.util.UUID;
 public interface PaymentRepository {
     Mono<Payment> findById(PaymentId id);
     Mono<Payment> findByPaymentReference(PaymentReference paymentReference);
-    Mono<Payment> findByOrderId(UUID orderId);
+    /** All payment attempts for an order, newest first. */
+    Flux<Payment> findByOrderId(UUID orderId);
     Flux<Payment> findByUserId(UUID userId);
-    Mono<Boolean> existsByOrderIdAndStatus(UUID orderId, String status);
     Mono<Void> save(Payment payment);
 }

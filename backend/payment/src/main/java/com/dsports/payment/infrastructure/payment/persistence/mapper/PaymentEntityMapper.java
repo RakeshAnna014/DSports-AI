@@ -28,6 +28,7 @@ public final class PaymentEntityMapper {
         entity.setStatus(payment.getStatus().name());
         entity.setFailureReason(payment.getFailureReason());
         entity.setPaidAt(payment.getPaidAt());
+        entity.setRefundedAmount(payment.getRefundedAmount());
         entity.setVersion(payment.getVersion());
         entity.setCreatedAt(payment.getCreatedAt());
         entity.setUpdatedAt(payment.getUpdatedAt());
@@ -49,6 +50,7 @@ public final class PaymentEntityMapper {
             PaymentStatus.valueOf(entity.getStatus()),
             entity.getFailureReason(),
             entity.getPaidAt(),
+            entity.getRefundedAmount(),
             entity.getVersion(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()

@@ -17,6 +17,12 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // The AI assistant is a separate service; if it is down only the assistant is affected, never the shop.
+      '/ai-api': {
+        target: 'http://localhost:8090',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ai-api/, ''),
+      },
     },
   },
 });

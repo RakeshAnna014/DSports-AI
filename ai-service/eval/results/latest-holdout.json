@@ -1,0 +1,139 @@
+{
+  "summary": {
+    "generated_at": "2026-10-16T08:57:23+00:00",
+    "duration_s": 69,
+    "cases": 26,
+    "cases_passed": 26,
+    "turns": 31,
+    "by_category": {
+      "advisor": {
+        "passed": 2,
+        "total": 2
+      },
+      "multiturn": {
+        "passed": 1,
+        "total": 1
+      },
+      "orders": {
+        "passed": 4,
+        "total": 4
+      },
+      "rag": {
+        "passed": 6,
+        "total": 6
+      },
+      "reorder": {
+        "passed": 1,
+        "total": 1
+      },
+      "returns": {
+        "passed": 1,
+        "total": 1
+      },
+      "search": {
+        "passed": 6,
+        "total": 6
+      },
+      "security": {
+        "passed": 5,
+        "total": 5
+      }
+    },
+    "intent_accuracy": 1.0,
+    "intent_checks": 10,
+    "tool_selection_accuracy": 1.0,
+    "tool_checks": 7,
+    "retrieval_hit_at_5": 1.0,
+    "retrieval_mrr": 1.0,
+    "retrieval_checks": 9,
+    "groundedness_model_text_first_pass": 1.0,
+    "groundedness_delivered_independent": 1.0,
+    "ai_answers_checked": 19,
+    "hallucinated_product_or_price": 0,
+    "ungrounded_status_or_eligibility_claims": 0,
+    "unauthorized_access": 0,
+    "latency_ms": {
+      "p50": 1503.7,
+      "p95": 2946.1,
+      "max": 10568.2
+    },
+    "server_latency_ms": {
+      "p50": 1476,
+      "p95": 2914
+    },
+    "tier_distribution": {
+      "2": 19,
+      "0": 11,
+      "1": 1
+    },
+    "tokens_per_llm_request": {
+      "in_mean": 1598.2,
+      "out_mean": 152.1,
+      "requests_with_llm": 20
+    },
+    "estimated_cost_usd": {
+      "total": 0.012771,
+      "per_request_mean": 0.000412,
+      "note": "ESTIMATE from AI_PRICE_TABLE_JSON; null means no price table was configured"
+    },
+    "tool_latency_ms_p50": {
+      "check_return_eligibility": 5,
+      "create_return": 12,
+      "get_cart": 4,
+      "get_order": 13,
+      "get_orders": 11,
+      "get_payment_status": 4,
+      "get_product": 16,
+      "get_product_knowledge": 162,
+      "search_products": 210,
+      "track_order": 17
+    },
+    "dataset": "holdout.yaml",
+    "category_coverage": {
+      "search": {
+        "required": 12,
+        "have": 6
+      },
+      "advisor": {
+        "required": 8,
+        "have": 2
+      },
+      "rag": {
+        "required": 10,
+        "have": 6
+      },
+      "orders": {
+        "required": 8,
+        "have": 4
+      },
+      "returns": {
+        "required": 6,
+        "have": 1
+      },
+      "support": {
+        "required": 6,
+        "have": 0
+      },
+      "reorder": {
+        "required": 4,
+        "have": 1
+      },
+      "multiturn": {
+        "required": 6,
+        "have": 1
+      },
+      "security": {
+        "required": 12,
+        "have": 5
+      }
+    },
+    "gates": {
+      "intent_accuracy >= 0.90": true,
+      "tool_selection_accuracy >= 0.90": true,
+      "retrieval_hit_at_5 >= 0.80": true,
+      "groundedness (delivered, independent) >= 0.95": true,
+      "hallucinated product/price == 0": true,
+      "unauthorized access == 0": true
+    }
+  }
+}

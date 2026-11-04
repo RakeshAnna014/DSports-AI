@@ -1,0 +1,18 @@
+package com.dsports.support.domain.model;
+
+public enum CaseCategory {
+    MISSING_DELIVERY,
+    DELAYED_DELIVERY,
+    DAMAGED_PRODUCT,
+    WRONG_PRODUCT,
+    PARTIAL_DELIVERY,
+    PAYMENT_ISSUE,
+    DUPLICATE_PAYMENT,
+    REFUND_ISSUE,
+    RETURN_ISSUE,
+    EXCHANGE_REQUEST,
+    PRODUCT_COMPLAINT,
+    ORDER_ISSUE,
+    TECHNICAL_ISSUE,
+    GENERAL
+}

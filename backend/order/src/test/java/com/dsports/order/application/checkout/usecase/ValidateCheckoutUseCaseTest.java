@@ -80,7 +80,7 @@ class ValidateCheckoutUseCaseTest {
             })
             .verifyComplete();
 
-        verify(checkoutRepository, atLeast(2)).findById(any(CheckoutId.class));
+        verify(checkoutRepository, times(1)).findById(any(CheckoutId.class));
         verify(checkoutRepository).save(any());
     }
 

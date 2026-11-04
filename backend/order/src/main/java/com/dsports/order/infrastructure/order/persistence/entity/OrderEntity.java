@@ -45,6 +45,9 @@ public class OrderEntity {
     @Column("discount_amount")
     private BigDecimal discountAmount;
 
+    @Column("promotion_code")
+    private String promotionCode;
+
     @Column("grand_total")
     private BigDecimal grandTotal;
 
@@ -89,6 +92,8 @@ public class OrderEntity {
     public void setTaxAmount(BigDecimal taxAmount) { this.taxAmount = taxAmount; }
     public BigDecimal getDiscountAmount() { return discountAmount; }
     public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
     public BigDecimal getGrandTotal() { return grandTotal; }
     public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = grandTotal; }
     public String getCurrency() { return currency; }

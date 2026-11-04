@@ -1,0 +1,9 @@
+# Internal inventory knowledge (SAMPLE documents written for the POC).
+# document_type starts with inv_: the retriever never returns these to customers (see Retriever.search_chunks, internal flag).
+documents:
+  - {file: replenishment-policy.md, source: inv-replenishment-policy.md, documentType: inv_policy, title: Replenishment Policy, version: "1"}
+  - {file: supplier-lead-times-and-moq.md, source: inv-supplier-lead-times-and-moq.md, documentType: inv_policy, title: Supplier Lead Times and MOQ, version: "1"}
+  - {file: clearance-and-promotion-policy.md, source: inv-clearance-and-promotion-policy.md, documentType: inv_policy, title: Clearance and Promotion Policy, version: "1"}
+  - {file: warehouse-transfer-policy.md, source: inv-warehouse-transfer-policy.md, documentType: inv_policy, title: Warehouse and Regional Transfer Policy, version: "1"}
+  - {file: event-preparedness-playbook.md, source: inv-event-preparedness-playbook.md, documentType: inv_event, title: Event and Tournament Preparedness Playbook, version: "1"}
+  - {file: category-strategy.md, source: inv-category-strategy.md, documentType: inv_strategy, title: Category Strategy, version: "1"}

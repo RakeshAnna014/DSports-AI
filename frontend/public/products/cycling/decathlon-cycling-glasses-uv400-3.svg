@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF2F8"/><stop offset="1" stop-color="#DCE5F2"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><g transform="translate(200 214) scale(1.5) translate(-200 -200)"><path d="M44 168Q200 140 356 168" stroke="#0B1426" stroke-width="12" fill="none"/>
+      <path d="M72 168H178Q186 236 138 244Q84 244 72 168Z" fill="#2563EB" opacity=".9"/><path d="M222 168H328Q316 244 262 244Q214 236 222 168Z" fill="#2563EB" opacity=".9"/>
+      <path d="M96 182H164M246 182H306" stroke="#FFFFFF" stroke-width="6" opacity=".5" stroke-linecap="round"/>
+      <path d="M178 176Q200 160 222 176" stroke="#B8F23C" stroke-width="10" fill="none"/></g><g><rect x="14" y="14" width="86" height="26" rx="13" fill="#0B1426" opacity=".78"/><text x="57" y="32" font-size="12" font-family="Arial" font-weight="700" text-anchor="middle" fill="#FFFFFF">Detail</text></g></svg>

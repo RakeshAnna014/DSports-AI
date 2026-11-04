@@ -1,0 +1,12 @@
+package com.dsports.returns.domain.exception;
+
+public enum ReturnsErrorCode {
+    RETURN_NOT_FOUND,
+    RETURN_NOT_OWNED_BY_USER,
+    NOT_ELIGIBLE,
+    INVALID_STATUS_TRANSITION,
+    IDEMPOTENCY_KEY_REUSED,
+    VALIDATION_ERROR,
+    OPTIMISTIC_LOCKING_CONFLICT,
+    INTERNAL_ERROR
+}

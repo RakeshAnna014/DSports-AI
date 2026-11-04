@@ -67,8 +67,9 @@ class InventoryItemTest {
 
         assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(15));
         assertThat(item.getStatus()).isEqualTo(InventoryStatus.IN_STOCK);
-        assertThat(item.getDomainEvents()).hasSize(1);
+        assertThat(item.getDomainEvents()).hasSize(2);
         assertThat(item.getDomainEvents().get(0)).isInstanceOf(StockRemovedEvent.class);
+        assertThat(item.getDomainEvents().get(1)).isInstanceOf(InventoryUpdatedEvent.class);
     }
 
     @Test
@@ -80,9 +81,10 @@ class InventoryItemTest {
 
         assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(5));
         assertThat(item.getStatus()).isEqualTo(InventoryStatus.LOW_STOCK);
-        assertThat(item.getDomainEvents()).hasSize(2);
+        assertThat(item.getDomainEvents()).hasSize(3);
         assertThat(item.getDomainEvents().get(0)).isInstanceOf(StockRemovedEvent.class);
-        assertThat(item.getDomainEvents().get(1)).isInstanceOf(LowStockEvent.class);
+        assertThat(item.getDomainEvents().get(1)).isInstanceOf(InventoryUpdatedEvent.class);
+        assertThat(item.getDomainEvents().get(2)).isInstanceOf(LowStockEvent.class);
     }
 
     @Test
@@ -94,9 +96,10 @@ class InventoryItemTest {
 
         assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(0));
         assertThat(item.getStatus()).isEqualTo(InventoryStatus.OUT_OF_STOCK);
-        assertThat(item.getDomainEvents()).hasSize(2);
+        assertThat(item.getDomainEvents()).hasSize(3);
         assertThat(item.getDomainEvents().get(0)).isInstanceOf(StockRemovedEvent.class);
-        assertThat(item.getDomainEvents().get(1)).isInstanceOf(OutOfStockEvent.class);
+        assertThat(item.getDomainEvents().get(1)).isInstanceOf(InventoryUpdatedEvent.class);
+        assertThat(item.getDomainEvents().get(2)).isInstanceOf(OutOfStockEvent.class);
     }
 
     @Test
@@ -155,6 +158,45 @@ class InventoryItemTest {
                 .hasMessageContaining("Cannot reserve")
                 .satisfies(e -> assertThat(((InventoryDomainException) e).getErrorCode())
                         .isEqualTo(InventoryErrorCode.RESERVATION_EXCEEDS_AVAILABLE));
+    }
+
+    @Test
+    void shouldFulfillReservationByRemovingUnitsFromOnHandAndReservedStock() {
+        var item = InventoryItem.create(PRODUCT_ID, WAREHOUSE_ID, Quantity.from(20), REORDER_LEVEL);
+        item.reserve(Quantity.from(5));
+        item.clearDomainEvents();
+
+        item.fulfillReservation(Quantity.from(3));
+
+        assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(17));
+        assertThat(item.getReservedQuantity()).isEqualTo(ReservedQuantity.from(2));
+        assertThat(item.getDomainEvents().get(0)).isInstanceOf(InventoryUpdatedEvent.class);
+    }
+
+    @Test
+    void shouldFireLowStockEventWhenFulfillmentDropsBelowReorderLevel() {
+        var item = InventoryItem.create(PRODUCT_ID, WAREHOUSE_ID, Quantity.from(12), REORDER_LEVEL);
+        item.reserve(Quantity.from(5));
+        item.clearDomainEvents();
+
+        item.fulfillReservation(Quantity.from(5));
+
+        assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(7));
+        assertThat(item.getReservedQuantity()).isEqualTo(ReservedQuantity.zero());
+        assertThat(item.getStatus()).isEqualTo(InventoryStatus.LOW_STOCK);
+        assertThat(item.getDomainEvents()).anyMatch(e -> e instanceof LowStockEvent);
+    }
+
+    @Test
+    void shouldRejectFulfillingMoreThanReserved() {
+        var item = InventoryItem.create(PRODUCT_ID, WAREHOUSE_ID, Quantity.from(20), REORDER_LEVEL);
+        item.reserve(Quantity.from(2));
+
+        assertThatThrownBy(() -> item.fulfillReservation(Quantity.from(3)))
+                .isInstanceOf(InventoryDomainException.class)
+                .satisfies(e -> assertThat(((InventoryDomainException) e).getErrorCode())
+                        .isEqualTo(InventoryErrorCode.INVALID_RESERVED_QUANTITY));
+        assertThat(item.getAvailableQuantity()).isEqualTo(Quantity.from(20));
     }
 
     @Test

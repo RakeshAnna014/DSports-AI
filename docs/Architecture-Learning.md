@@ -31,3 +31,35 @@ Domain = "What is allowed?"
 Application = "What needs to happen?"
 
 Infrastructure = "How does it happen?"
+
+# Infrastructure Layer
+
+Purpose
+
+The Infrastructure Layer provides concrete implementations of the interfaces (Ports) defined by the Application Layer.
+
+It is the only layer that knows about frameworks such as Spring Boot, R2DBC, BCrypt, SMTP, Kafka, or external APIs.
+
+Responsibilities
+
+- Implement repository interfaces
+- Implement password encoding
+- Publish domain events
+- Send notifications
+- Integrate external systems
+
+Rules
+
+Infrastructure depends on Application and Domain.
+
+Application never depends on Infrastructure.
+
+Domain never depends on Infrastructure.
+
+Simple Rule
+
+Domain = Business
+
+Application = Workflow
+
+Infrastructure = Technology

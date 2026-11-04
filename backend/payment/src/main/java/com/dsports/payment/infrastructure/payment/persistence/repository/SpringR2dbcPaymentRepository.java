@@ -11,7 +11,6 @@ import java.util.UUID;
 @Repository
 public interface SpringR2dbcPaymentRepository extends R2dbcRepository<PaymentEntity, UUID> {
     Mono<PaymentEntity> findByPaymentReference(String paymentReference);
-    Mono<PaymentEntity> findByOrderId(UUID orderId);
+    Flux<PaymentEntity> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
     Flux<PaymentEntity> findByUserIdOrderByCreatedAtDesc(UUID userId);
-    Mono<Boolean> existsByOrderIdAndStatus(UUID orderId, String status);
 }

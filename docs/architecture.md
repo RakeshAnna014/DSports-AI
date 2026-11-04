@@ -4,6 +4,8 @@
 **Author:** Senior Solution Architect  
 **Status:** Approved for Implementation  
 
+> ⚠️ **Target architecture, not as-built.** Several sections (variants, response envelope, `/api/v1` everywhere, RS256, idempotency keys, timeouts, billing/returns/franchise) differ from the current code. See [baseline/07-documentation-discrepancies.md](baseline/07-documentation-discrepancies.md) (audit of 2026-10-05).
+
 ---
 
 ## Table of Contents
@@ -172,18 +174,42 @@ identity ← catalog ← cart ← order ← payment
 - No circular dependencies.
 - Cross-module queries use dedicated query interfaces, not direct repository access.
 
-### 4.3 AI Module (Placeholder)
+### 4.3 AI Module (Placeholder) and the Python AI Service
 
-The `ai` module exists as an empty package structure with no implementation:
+The Java `ai` module remains an empty package structure with no implementation.
 
+**Decision (ADR-009):** the customer-facing AI is a separate **Python service**, not a Spring AI implementation
+inside this monolith. This supersedes the earlier "Spring AI" assumption for V3 and is an intentional architecture
+decision, not an accident of tooling. **Phase 1 Customer AI is implemented** in `ai-service/` (product discovery, advisor/compare,
+RAG, order/return/refund support, confirmed reorder/return, MCP, guardrails, observability, evaluation) and in the React app
+(`frontend/src/features/ai`). See `docs/ai/`.
+
+```text
+Java:
+Commerce domain
+Price
+Inventory
+Orders
+Payments
+Refunds
+Shipments
+Returns
+Authentication/authorization
+
+Python:
+AI orchestration
+Intent understanding
+LangGraph
+RAG
+Embeddings
+MCP
+LLM interaction
+AI-specific state/observability
 ```
-com.dsports.ai/
-├── domain/          # Future: AIQuery, SearchResult, Recommendation
-├── application/     # Future: SearchService, RecommendationService
-└── infrastructure/  # Future: OpenAIAdapter, EmbeddingClient, VectorStore
-```
 
-This ensures the package structure exists and module dependencies can be planned without refactoring when AI features begin.
+The Python service reads DSports data only through the public REST APIs, forwarding the customer's JWT, so Spring's
+ownership checks remain the authority. It keeps its own data (embeddings, conversations, audit, usage) in a separate
+`dsports_ai` PostgreSQL database with pgvector. Details: `docs/ai/01-architecture.md`.
 
 ---
 
@@ -237,7 +263,7 @@ Extraction is low-risk because every module already communicates through interfa
 
 | Technology | When | Why |
 |------------|------|-----|
-| Spring AI | V2+ | AI integration (OpenAI, Gemini, Ollama) |
+| Python AI service (FastAPI, LangGraph, MCP) | Phase 1 Customer AI (implemented) | AI orchestration, RAG, LLM access — see ADR-009 (replaces the Spring AI assumption) |
 | Kafka | Post-launch | Async events, AI training pipelines |
 | Redis | Post-launch | Caching, rate-limiting, session store |
 | Elasticsearch | V2+ | Advanced product search |
@@ -1119,14 +1145,14 @@ public interface PaymentProvider {
 | Version | Feature | Approach | Effort |
 |---------|---------|----------|--------|
 | V2 | AI Product Search | PostgreSQL full-text (V1) → Elasticsearch + embeddings | 4 weeks |
-| V3 | AI Shopping Assistant | Spring AI + OpenAI/Gemini for conversational product discovery | 6 weeks |
+| V3 | AI Shopping Assistant | Python AI service (FastAPI + LangGraph + MCP) with Gemini, per ADR-009 — Phase 1 Customer AI | 6 weeks |
 | V4 | Product Recommendations | Collaborative filtering (pre-trained) → hybrid model | 4 weeks |
 | V5 | Customer Support Agent | RAG-based chatbot with order/return context | 6 weeks |
 | V6 | Inventory Prediction | Time-series forecasting | 4 weeks |
 | V7 | Demand Forecasting | ML pipeline with historical order data | 6 weeks |
 | V8 | Fraud Detection | Anomaly detection on payment/order patterns | 4 weeks |
 
-The empty `ai/` module exists now so these features slot in without refactoring the package structure.
+The AI features run in the separate Python service described in §4.3; the empty Java `ai/` module is unused.
 
 ---
 

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useAuthStore } from '@/store/authStore';
 import { cartApi, type CartItemResponse, type CartResponse } from '@/api/cart';
 import { getProductImageUrl } from '@/lib/productUtils';
+import { useUiStore } from '@/store/uiStore';
 
 export interface CartItem {
   itemId?: string;
@@ -20,7 +21,8 @@ interface CartState {
   initialized: boolean;
   loading: boolean;
   refreshCart: () => Promise<void>;
-  addItem: (item: Omit<CartItem, 'quantity' | 'itemId' | 'lineTotal'>) => Promise<void>;
+  /** Adds the quantity in one request; rejects with the API error so callers can show it. */
+  addItem: (item: Omit<CartItem, 'quantity' | 'itemId' | 'lineTotal'>, quantity?: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -89,26 +91,29 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
 
-  addItem: async (item) => {
+  addItem: async (item, quantity = 1) => {
     const { isAuthenticated } = useAuthStore.getState();
     if (!isAuthenticated) {
       set((state) => {
         const existing = state.items.find((i) => i.productId === item.productId);
         const updated = existing
           ? state.items.map((i) =>
-              i.productId === item.productId ? { ...i, quantity: i.quantity + 1 } : i,
+              i.productId === item.productId ? { ...i, quantity: i.quantity + quantity } : i,
             )
-          : [...state.items, { ...item, quantity: 1 }];
+          : [...state.items, { ...item, quantity }];
         saveLocalCart(updated);
         return { items: updated, totalItems: updated.reduce((s, i) => s + i.quantity, 0) };
       });
+      useUiStore.getState().noteAdded({ productId: item.productId, name: item.name });
       return;
     }
     try {
-      const cart = await cartApi.addItem(item.productId, 1);
+      const cart = await cartApi.addItem(item.productId, quantity);
       set({ ...fromCartResponse(cart), cartId: cart.id });
-    } catch {
+      useUiStore.getState().noteAdded({ productId: item.productId, name: item.name });   // drives the "Added to cart" confirmation
+    } catch (err) {
       await get().refreshCart();
+      throw err;
     }
   },
 

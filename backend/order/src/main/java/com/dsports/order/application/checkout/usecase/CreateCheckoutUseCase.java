@@ -51,7 +51,7 @@ public class CreateCheckoutUseCase {
             .flatMap(exists -> {
                 if (exists) {
                     return Mono.error(new CheckoutDomainException(
-                        CheckoutErrorCode.CHECKOUT_ALREADY_TERMINAL,
+                        CheckoutErrorCode.ACTIVE_CHECKOUT_EXISTS,
                         "An active checkout already exists for customer: " + customerId));
                 }
                 return cartPort.getActiveCart(customerId);

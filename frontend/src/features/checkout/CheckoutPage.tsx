@@ -24,6 +24,7 @@ import {
   TextField,
   Collapse,
   Tooltip,
+  MenuItem,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import {
@@ -42,8 +43,18 @@ import { checkoutApi } from '@/api/checkout';
 import { cartApi } from '@/api/cart';
 import type { CartItemResponse } from '@/api/cart';
 import { ordersApi } from '@/api/orders';
+import { getApiErrorMessage } from '@/api/errors';
 import { formatPrice } from '@/lib/productUtils';
 import apiClient from '@/api/client';
+import PromoCodeSection from './PromoCodeSection';
+import {
+  COUNTRIES,
+  EMPTY_ADDRESS,
+  toAddressRequest,
+  validateAddress,
+  type AddressErrors,
+  type NewAddressForm,
+} from './addressValidation';
 
 interface Address {
   addressId: string;
@@ -55,15 +66,6 @@ interface Address {
   country: string;
   postalCode: string;
   isDefault: boolean;
-}
-
-interface NewAddressForm {
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
 }
 
 const DELIVERY_OPTIONS = [
@@ -85,13 +87,11 @@ const CheckoutPage = () => {
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState<NewAddressForm>({
-    line1: '', line2: '', city: '', state: '', country: '', postalCode: '',
-  });
+  const [newAddress, setNewAddress] = useState<NewAddressForm>(EMPTY_ADDRESS);
+  const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [addressTouched, setAddressTouched] = useState(false);
 
-  const [promoCode, setPromoCode] = useState('');
-  const [promoMessage, setPromoMessage] = useState<string | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
 
   const [cartItems, setCartItems] = useState<CartItemResponse[]>([]);
 
@@ -140,8 +140,8 @@ const CheckoutPage = () => {
       } catch {
         setCartItems([]);
       }
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to initialize checkout';
+    } catch (err) {
+      const msg = getApiErrorMessage(err, err instanceof Error ? err.message : 'Failed to initialize checkout');
       setError(msg);
     } finally {
       setLoading(false);
@@ -172,26 +172,31 @@ const CheckoutPage = () => {
       const updated = await checkoutApi.selectAddress(checkout.id, { addressId });
       setCheckout(updated);
       setSelectedAddress(addressId);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to select address');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to select address'));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const updateAddressField = (field: keyof NewAddressForm, value: string) => {
+    const next = { ...newAddress, [field]: value };
+    setNewAddress(next);
+    if (addressTouched) setAddressErrors(validateAddress(next));
+  };
+
   const handleSaveAddress = async () => {
-    if (!newAddress.line1 || !newAddress.city || !newAddress.state || !newAddress.postalCode) {
-      setError('Please fill in all required fields');
+    setAddressTouched(true);
+    const errors = validateAddress(newAddress);
+    setAddressErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setAddressError('Please correct the highlighted fields.');
       return;
     }
     setSavingAddress(true);
-    setError(null);
+    setAddressError(null);
     try {
-      const resp = await apiClient.post<Address>('/customers/me/addresses', {
-        ...newAddress,
-        type: 'SHIPPING',
-        line2: newAddress.line2 || undefined,
-      });
+      const resp = await apiClient.post<Address>('/customers/me/addresses', toAddressRequest(newAddress));
       const saved = resp.data;
       if (!saved || !saved.addressId) {
         throw new Error('Invalid address response from server');
@@ -199,10 +204,13 @@ const CheckoutPage = () => {
       const addrResp = await apiClient.get<{ addresses: Address[] }>('/customers/me/addresses');
       setAddresses(addrResp.data.addresses);
       setShowAddressForm(false);
-      setNewAddress({ line1: '', line2: '', city: '', state: '', country: '', postalCode: '' });
+      setNewAddress(EMPTY_ADDRESS);
+      setAddressErrors({});
+      setAddressTouched(false);
       await handleSelectAddress(saved.addressId);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to save address');
+    } catch (err) {
+      // Kept inside the form: the customer's input and the cart/checkout state are untouched, so they can correct and retry.
+      setAddressError(getApiErrorMessage(err, err instanceof Error && err.message ? err.message : 'The address could not be saved. Check your connection and try again.'));
     } finally {
       setSavingAddress(false);
     }
@@ -214,23 +222,15 @@ const CheckoutPage = () => {
     setError(null);
     try {
       const updated = await checkoutApi.selectDeliveryMethod(checkout.id, {
-        deliveryMethodCode: code as any,
+        deliveryMethodCode: code as 'STANDARD' | 'EXPRESS' | 'NEXT_DAY',
       });
       setCheckout(updated);
       setSelectedDelivery(code);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to select delivery method');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to select delivery method'));
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleApplyPromo = () => {
-    if (!promoCode.trim()) return;
-    setPromoMessage(null);
-    setPromoError(null);
-    // TODO: backend promo/coupon endpoint
-    setPromoError('Promo code feature is not yet available on the server.');
   };
 
   const handleUpdateQuantity = async (productId: string, delta: number) => {
@@ -245,8 +245,8 @@ const CheckoutPage = () => {
     try {
       await cartApi.updateQuantity(cartItem.id, newQty);
       await refreshCheckoutAndCart();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to update quantity');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to update quantity'));
     } finally {
       setSubmitting(false);
     }
@@ -259,8 +259,8 @@ const CheckoutPage = () => {
     try {
       await cartApi.removeItem(cartItem.id);
       await refreshCheckoutAndCart();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to remove item');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to remove item'));
     } finally {
       setSubmitting(false);
     }
@@ -274,8 +274,8 @@ const CheckoutPage = () => {
       const validated = await checkoutApi.validate(checkout.id);
       setCheckout(validated);
       setValidated(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Validation failed');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Validation failed'));
     } finally {
       setSubmitting(false);
     }
@@ -287,12 +287,9 @@ const CheckoutPage = () => {
     setError(null);
     try {
       const order = await ordersApi.placeOrder({ checkoutId: checkout.id });
-      const amount = order.grandTotal ?? checkout.totalAmount;
-      const currency = order.currency ?? checkout.currency;
-      await checkoutApi.cancel(checkout.id);
-      navigate(`/payment?orderId=${order.id}&amount=${amount}&currency=${currency}&orderNumber=${order.orderNumber}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to place order');
+      navigate(`/payment?orderId=${order.id}`);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to place order'));
     } finally {
       setSubmitting(false);
     }
@@ -379,59 +376,88 @@ const CheckoutPage = () => {
                 </Box>
 
                 <Collapse in={showAddressForm}>
-                  <Stack spacing={2} sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Stack spacing={2} sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }} component="form" noValidate
+                    onSubmit={(e) => { e.preventDefault(); handleSaveAddress(); }} aria-label="New shipping address">
+                    {addressError && <Alert severity="error" role="alert">{addressError}</Alert>}
                     <TextField
-                      label="Address Line 1 *"
+                      label="Address Line 1"
+                      required
                       size="small"
                       value={newAddress.line1}
-                      onChange={(e) => setNewAddress({ ...newAddress, line1: e.target.value })}
+                      onChange={(e) => updateAddressField('line1', e.target.value)}
+                      error={!!addressErrors.line1}
+                      helperText={addressErrors.line1}
+                      slotProps={{ htmlInput: { maxLength: 255, autoComplete: 'address-line1' } }}
                     />
                     <TextField
                       label="Address Line 2"
                       size="small"
                       value={newAddress.line2}
-                      onChange={(e) => setNewAddress({ ...newAddress, line2: e.target.value })}
+                      onChange={(e) => updateAddressField('line2', e.target.value)}
+                      error={!!addressErrors.line2}
+                      helperText={addressErrors.line2}
+                      slotProps={{ htmlInput: { maxLength: 255, autoComplete: 'address-line2' } }}
                     />
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <TextField
-                        label="City *"
+                        label="City"
+                        required
                         size="small"
                         sx={{ flex: 1 }}
                         value={newAddress.city}
-                        onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                        onChange={(e) => updateAddressField('city', e.target.value)}
+                        error={!!addressErrors.city}
+                        helperText={addressErrors.city}
+                        slotProps={{ htmlInput: { maxLength: 100, autoComplete: 'address-level2' } }}
                       />
                       <TextField
-                        label="State *"
+                        label="State"
+                        required
                         size="small"
                         sx={{ flex: 1 }}
                         value={newAddress.state}
-                        onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                        onChange={(e) => updateAddressField('state', e.target.value)}
+                        error={!!addressErrors.state}
+                        helperText={addressErrors.state}
+                        slotProps={{ htmlInput: { maxLength: 100, autoComplete: 'address-level1' } }}
                       />
                     </Box>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <TextField
-                        label="Postal Code *"
+                        label="Postal Code"
+                        required
                         size="small"
                         sx={{ flex: 1 }}
                         value={newAddress.postalCode}
-                        onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
+                        onChange={(e) => updateAddressField('postalCode', e.target.value)}
+                        error={!!addressErrors.postalCode}
+                        helperText={addressErrors.postalCode}
+                        slotProps={{ htmlInput: { maxLength: 20, autoComplete: 'postal-code' } }}
                       />
                       <TextField
+                        select
                         label="Country"
+                        required
                         size="small"
                         sx={{ flex: 1 }}
                         value={newAddress.country}
-                        onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value })}
-                      />
+                        onChange={(e) => updateAddressField('country', e.target.value)}
+                        error={!!addressErrors.country}
+                        helperText={addressErrors.country}
+                      >
+                        {COUNTRIES.map((c) => (
+                          <MenuItem key={c.code} value={c.code}>{c.name}</MenuItem>
+                        ))}
+                      </TextField>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
+                        type="submit"
                         variant="contained"
                         size="small"
-                        onClick={handleSaveAddress}
                         disabled={savingAddress}
                       >
-                        {savingAddress ? <CircularProgress size={20} /> : 'Save Address'}
+                        {savingAddress ? <CircularProgress size={20} aria-label="Saving address" /> : 'Save Address'}
                       </Button>
                     </Box>
                   </Stack>
@@ -466,46 +492,6 @@ const CheckoutPage = () => {
                       </ListItem>
                     ))}
                   </List>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card variant="outlined" sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Promo Code
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <TextField
-                    size="small"
-                    placeholder="Enter promo code"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    sx={{ flex: 1 }}
-                    disabled={promoMessage !== null}
-                  />
-                  {promoMessage ? (
-                    <Button
-                      variant="outlined"
-                      onClick={() => { setPromoMessage(null); setPromoCode(''); setPromoError(null); }}
-                    >
-                      Remove
-                    </Button>
-                  ) : (
-                    <Button variant="contained" onClick={handleApplyPromo} disabled={!promoCode.trim()}>
-                      Apply
-                    </Button>
-                  )}
-                </Box>
-                {promoError && (
-                  <Alert severity="warning" sx={{ mt: 1 }} onClose={() => setPromoError(null)}>
-                    {promoError}
-                  </Alert>
-                )}
-                {promoMessage && (
-                  <Alert severity="success" sx={{ mt: 1 }}>
-                    {promoMessage}
-                  </Alert>
                 )}
               </CardContent>
             </Card>
@@ -615,6 +601,8 @@ const CheckoutPage = () => {
                 })}
               </CardContent>
             </Card>
+
+            <PromoCodeSection checkout={checkout} busy={submitting} onChange={setCheckout} />
           </Stack>
         </Grid>
 
@@ -638,7 +626,7 @@ const CheckoutPage = () => {
               </Box>
               {Number(checkout.discountAmount) > 0 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="success.main">Discount</Typography>
+                  <Typography variant="body2" color="success.main">{checkout.promotionCode ? `Discount (${checkout.promotionCode})` : 'Discount'}</Typography>
                   <Typography variant="body2" color="success.main">-{formatPrice(checkout.discountAmount)}</Typography>
                 </Box>
               )}

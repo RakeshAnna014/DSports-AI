@@ -11,6 +11,7 @@ import com.dsports.identity.domain.model.CustomerName;
 import com.dsports.identity.domain.model.Email;
 import com.dsports.identity.domain.model.User;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public class RegisterUserUseCase {
 
@@ -33,8 +34,10 @@ public class RegisterUserUseCase {
                 .<RegisterUserResult>flatMap(ignored ->
                     Mono.error(new IdentityDomainException(ErrorCode.DUPLICATE_EMAIL,
                             "Email " + command.email() + " is already registered")))
-                .switchIfEmpty(Mono.defer(() -> {
-                    String encodedPassword = passwordEncoder.encode(command.password());
+                .switchIfEmpty(Mono.fromCallable(() -> passwordEncoder.encode(command.password()))
+                        // BCrypt is deliberately slow CPU work: keep it off the event loop.
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(encodedPassword -> {
                     User user = User.register(email, customerName, encodedPassword);
                     return userRepository.save(user)
                             .then(Mono.fromRunnable(() -> {

@@ -1,0 +1,16 @@
+package com.dsports.wishlist.domain.exception;
+
+public enum WishlistErrorCode {
+    GENERIC,
+    WISHLIST_NOT_FOUND,
+    DUPLICATE_WISHLIST,
+    ITEM_NOT_FOUND,
+    PRODUCT_NOT_FOUND,
+    PRODUCT_NOT_ACTIVE,
+    DUPLICATE_WISHLIST_ITEM,
+    INVALID_PRICE,
+    INVALID_USER,
+    OPTIMISTIC_LOCKING_CONFLICT,
+    VALIDATION_ERROR,
+    INTERNAL_ERROR
+}

@@ -120,10 +120,17 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
         if (filter.status() != null && !filter.status().isBlank()) {
             sql.append(" AND status = :status");
         }
+        var terms = searchTerms(filter.q());
+        for (int i = 0; i < terms.size(); i++) {
+            // Every term must appear in the name, description or SKU (case-insensitive).
+            // PostgreSQL's default LIKE escape character is the backslash, which searchTerms() uses.
+            sql.append(" AND (name ILIKE :q").append(i).append(" OR description ILIKE :q").append(i)
+               .append(" OR sku ILIKE :q").append(i).append(")");
+        }
 
         var sortBy = sanitizeSortColumn(filter.sortBy());
         var sortDir = filter.sortDir().equalsIgnoreCase("asc") ? "ASC" : "DESC";
-        sql.append(" ORDER BY ").append(sortBy).append(" ").append(sortDir);
+        sql.append(orderByClause(sortBy, sortDir));
 
         sql.append(" LIMIT :limit OFFSET :offset");
 
@@ -140,6 +147,9 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
         }
         if (filter.status() != null && !filter.status().isBlank()) {
             spec = spec.bind("status", filter.status());
+        }
+        for (int i = 0; i < terms.size(); i++) {
+            spec = spec.bind("q" + i, "%" + terms.get(i) + "%");
         }
 
         return spec
@@ -249,6 +259,27 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
                         )));
     }
 
+    /** Splits the query into at most 6 terms and escapes LIKE wildcards so user input is matched literally. */
+    private static List<String> searchTerms(String q) {
+        if (q == null) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(q.split("\\s+"))
+                .filter(t -> !t.isBlank())
+                .limit(6)
+                .map(t -> t.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"))
+                .toList();
+    }
+
+    /**
+     * ORDER BY clause with {@code id} as the final tie-breaker. Many products share one {@code created_at} (a single migration seeds them), and with
+     * tied sort keys PostgreSQL may order the tied rows differently from one request to the next, so LIMIT/OFFSET paging would return the same product
+     * on two pages and skip another. The primary key makes the order total and the pages stable.
+     */
+    static String orderByClause(String column, String direction) {
+        return " ORDER BY " + column + " " + direction + ", id ASC";
+    }
+
     private String sanitizeSortColumn(String sortBy) {
         return switch (sortBy) {
             case "sku" -> "sku";
@@ -257,7 +288,8 @@ public class ProductR2dbcRepositoryAdapter implements ProductRepository {
             case "created_at" -> "created_at";
             case "updated_at" -> "updated_at";
             case "status" -> "status";
-            default -> throw new IllegalArgumentException("Invalid sort column: " + sortBy);
+            default -> throw new CatalogDomainException(CatalogErrorCode.VALIDATION_ERROR,
+                    "Invalid sort column: " + sortBy + ". Allowed: sku, name, slug, created_at, updated_at, status");
         };
     }
 

@@ -1,5 +1,8 @@
 package com.dsports.catalog.infrastructure.config;
 
+import com.dsports.catalog.application.port.ProductAttributeRepository;
+import com.dsports.catalog.application.usecase.ProductAttributesUseCase;
+import com.dsports.catalog.infrastructure.persistence.repository.ProductAttributeR2dbcRepositoryAdapter;
 import com.dsports.catalog.application.port.BrandRepository;
 import com.dsports.catalog.application.port.CategoryRepository;
 import com.dsports.catalog.application.port.EventPublisher;
@@ -200,6 +203,18 @@ public class CatalogInfrastructureConfiguration {
     @Bean
     public ArchiveProductUseCase archiveProductUseCase(ProductRepository productRepository) {
         return new ArchiveProductUseCase(productRepository);
+    }
+
+    @Bean
+    public ProductAttributeRepository productAttributeRepository(DatabaseClient databaseClient,
+                                                                 TransactionalOperator transactionalOperator) {
+        return new ProductAttributeR2dbcRepositoryAdapter(databaseClient, transactionalOperator);
+    }
+
+    @Bean
+    public ProductAttributesUseCase productAttributesUseCase(ProductRepository productRepository,
+                                                             ProductAttributeRepository productAttributeRepository) {
+        return new ProductAttributesUseCase(productRepository, productAttributeRepository);
     }
 
     @Bean

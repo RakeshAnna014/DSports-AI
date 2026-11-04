@@ -110,4 +110,42 @@ class JwtTokenProviderTest {
         assertThatThrownBy(() -> new JwtTokenProvider(null, ACCESS_EXPIRY, REFRESH_EXPIRY))
                 .isInstanceOf(Exception.class);
     }
+    @Test
+    void shouldNameIssuerAndAudienceInTheToken() {
+        var claims = tokenProvider.validate(tokenProvider.generateAccessToken(testUser));
+
+        assertThat(claims.getIssuer()).isEqualTo(JwtTokenProvider.DEFAULT_ISSUER);
+        assertThat(claims.getAudience()).containsExactly(JwtTokenProvider.DEFAULT_AUDIENCE);
+    }
+
+    @Test
+    void shouldRejectAValidlySignedTokenMintedForAnotherAudience() {
+        var foreign = new JwtTokenProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY, JwtTokenProvider.DEFAULT_ISSUER, "some-other-service");
+        var token = foreign.generateAccessToken(testUser);
+
+        assertThatThrownBy(() -> tokenProvider.validate(token)).isInstanceOf(JwtTokenProvider.JwtValidationException.class);
+    }
+
+    @Test
+    void shouldRejectAValidlySignedTokenFromAnotherIssuer() {
+        var foreign = new JwtTokenProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY, "someone-else", JwtTokenProvider.DEFAULT_AUDIENCE);
+        var token = foreign.generateAccessToken(testUser);
+
+        assertThatThrownBy(() -> tokenProvider.validate(token)).isInstanceOf(JwtTokenProvider.JwtValidationException.class);
+    }
+
+    @Test
+    void shouldRejectATokenWithNoIssuerOrAudienceEvenIfSignedWithTheRightSecret() {
+        var bare = io.jsonwebtoken.Jwts.builder().subject(testUser.getId().value().toString())
+                .expiration(java.util.Date.from(java.time.Instant.now().plusSeconds(600)))
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(java.nio.charset.StandardCharsets.UTF_8))).compact();
+
+        assertThatThrownBy(() -> tokenProvider.validate(bare)).isInstanceOf(JwtTokenProvider.JwtValidationException.class);
+    }
+
+    @Test
+    void shouldRejectBlankIssuerOrAudienceAtStartup() {
+        assertThatThrownBy(() -> new JwtTokenProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY, " ", "aud")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new JwtTokenProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY, "iss", "")).isInstanceOf(IllegalArgumentException.class);
+    }
 }

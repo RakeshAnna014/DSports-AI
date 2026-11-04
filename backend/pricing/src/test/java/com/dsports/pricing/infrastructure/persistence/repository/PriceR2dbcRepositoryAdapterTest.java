@@ -73,7 +73,7 @@ class PriceR2dbcRepositoryAdapterTest {
         var springRepository = new SpringR2dbcPriceRepository() {
             @Override
             public <S extends PriceEntity> Mono<S> save(S entity) {
-                return databaseClient.sql("INSERT INTO prices (id, product_id, mrp, selling_price, currency, " +
+                var spec = databaseClient.sql("INSERT INTO prices (id, product_id, mrp, selling_price, currency, " +
                                 "effective_from, effective_to, status, version, created_at, updated_at) " +
                                 "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) " +
                                 "ON CONFLICT (id) DO UPDATE SET mrp = EXCLUDED.mrp, " +
@@ -87,12 +87,14 @@ class PriceR2dbcRepositoryAdapterTest {
                         .bind("$4", entity.getSellingPrice())
                         .bind("$5", entity.getCurrency())
                         .bind("$6", entity.getEffectiveFrom())
-                        .bind("$7", entity.getEffectiveTo())
                         .bind("$8", entity.getStatus())
                         .bind("$9", entity.getVersion())
                         .bind("$10", entity.getCreatedAt())
-                        .bind("$11", entity.getUpdatedAt())
-                        .fetch()
+                        .bind("$11", entity.getUpdatedAt());
+                spec = entity.getEffectiveTo() != null
+                        ? spec.bind("$7", entity.getEffectiveTo())
+                        : spec.bindNull("$7", java.time.Instant.class);
+                return spec.fetch()
                         .rowsUpdated()
                         .thenReturn(entity);
             }
@@ -356,7 +358,6 @@ class PriceR2dbcRepositoryAdapterTest {
         price1.activate();
         var price2 = Price.create(productId, Money.from(250), Money.from(200),
                 Currency.from("INR"), EffectiveDate.immediate());
-        price2.activate();
 
         repository.save(price1).block();
         repository.save(price2).block();
@@ -368,6 +369,12 @@ class PriceR2dbcRepositoryAdapterTest {
         StepVerifier.create(repository.findById(price1.getId()))
                 .assertNext(found -> assertThat(found.getStatus()).isEqualTo(PriceStatus.ARCHIVED))
                 .verifyComplete();
+
+        // Only one ACTIVE price per product+currency is allowed (uq_price_product_currency_active),
+        // so the replacement can be activated once the previous one has been archived.
+        var replacement = repository.findById(price2.getId()).block();
+        replacement.activate();
+        repository.save(replacement).block();
 
         StepVerifier.create(repository.findById(price2.getId()))
                 .assertNext(found -> assertThat(found.getStatus()).isEqualTo(PriceStatus.ACTIVE))

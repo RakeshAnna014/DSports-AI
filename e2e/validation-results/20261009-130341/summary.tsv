@@ -1,0 +1,14 @@
+env-docker	PASS	0	0	
+env-gemini	PASS	0	0	
+java-build	PASS	0	199	
+java-integration	PASS	0	109	
+stack-backend	PASS	0	22	
+stack-ai	PASS	0	16	
+stack-vite	PASS	0	1	
+api-e2e	FAIL	0	87	exit 0 but success marker /RESULT: 122 passed, 0 failed/ not found
+py-unit	PASS	0	68	
+py-integration	PASS	0	173	
+py-live	FAIL	1	106	exit code 1
+fe-tsc	PASS	0	1	
+fe-build	FAIL	0	1	exit 0 but success marker /built in/ not found
+fe-catalog	FAIL	0	0	exit 0 but success marker /Catalog validation passed/ not found

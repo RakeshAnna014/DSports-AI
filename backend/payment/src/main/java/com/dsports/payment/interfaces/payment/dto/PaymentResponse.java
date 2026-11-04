@@ -17,10 +17,10 @@ public record PaymentResponse(
     @Schema(description = "Payment method") String paymentMethod,
     @Schema(description = "Payment provider") String paymentProvider,
     @Schema(description = "Gateway transaction ID") String transactionId,
-    @Schema(description = "Gateway reference") String gatewayReference,
-    @Schema(description = "Payment status") String status,
+    @Schema(description = "Payment status: CREATED, PENDING, PROCESSING, AUTHORIZED, SUCCESS (captured), PARTIALLY_REFUNDED, REFUNDED, FAILED, CANCELLED") String status,
     @Schema(description = "Failure reason if failed") String failureReason,
-    @Schema(description = "When payment was completed") Instant paidAt,
+    @Schema(description = "When payment was captured") Instant paidAt,
+    @Schema(description = "Total amount refunded so far") BigDecimal refundedAmount,
     @Schema(description = "Version for optimistic locking") int version,
     @Schema(description = "Created timestamp") Instant createdAt,
     @Schema(description = "Updated timestamp") Instant updatedAt
@@ -29,8 +29,8 @@ public record PaymentResponse(
         return new PaymentResponse(
             result.id(), result.paymentReference(), result.orderId(),
             result.amount(), result.currency(), result.paymentMethod(),
-            result.paymentProvider(), result.transactionId(), result.gatewayReference(),
-            result.status(), result.failureReason(), result.paidAt(),
+            result.paymentProvider(), result.transactionId(),
+            result.status(), result.failureReason(), result.paidAt(), result.refundedAmount(),
             result.version(), result.createdAt(), result.updatedAt()
         );
     }

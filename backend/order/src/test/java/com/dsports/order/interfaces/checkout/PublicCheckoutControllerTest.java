@@ -62,7 +62,7 @@ class PublicCheckoutControllerTest {
     private CheckoutResult sampleResult() {
         return new CheckoutResult(
             checkoutId, customerId, cartId, "PENDING", null, null, null,
-            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+            BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO,
             BigDecimal.ZERO, "INR", null, Instant.now().plusSeconds(1800), null,
             0, Instant.now(), Instant.now(), List.of(
                 new CheckoutItemResult(

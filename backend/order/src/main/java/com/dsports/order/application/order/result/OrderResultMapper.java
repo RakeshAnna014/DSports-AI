@@ -25,6 +25,7 @@ public final class OrderResultMapper {
             order.getShippingCharge(),
             order.getTaxAmount(),
             order.getDiscountAmount(),
+            order.getPromotionCode(),
             order.getGrandTotal(),
             order.getCurrency(),
             order.getPlacedAt(),

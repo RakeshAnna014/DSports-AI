@@ -19,3 +19,10 @@ management:
     health:
       show-details: when-authorized
       show-components: when-authorized
+
+# The interactive API documentation lists every route (including the admin ones); it is not served in production.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

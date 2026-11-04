@@ -1,0 +1,14 @@
+{
+  "name": "dsports-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end checks of the running DSports stack (browser journey and API security/lifecycle).",
+  "scripts": {
+    "ui:happy": "node ui-flow.mjs happy",
+    "ui:capture-failure": "node ui-flow.mjs capture-failure",
+    "ui:capture-timeout": "node ui-flow.mjs capture-timeout"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

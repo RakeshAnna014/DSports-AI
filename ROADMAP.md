@@ -2,6 +2,8 @@
 
 # DSports-AI Roadmap
 
+> ⚠️ **Planning document, not a status report.** The tables below mix the original plan with later notes and several are out of date. The verified, as-built status is [docs/STATUS.md](docs/STATUS.md); the documentation index is [docs/README.md](docs/README.md); the 2026-10-05 baseline audit is kept in [docs/baseline/](docs/baseline/README.md).
+
 > **Version:** 1.0.0
 >
 > **Status:** 🚧 In Development
@@ -36,6 +38,18 @@ Future versions will support multiple sports, AI-powered shopping, intelligent r
 | Sprint 3 | ⏳ Pending |
 | Sprint 4 | ⏳ Pending |
 | AI Phase | ⏳ Pending |
+
+> **Current, evidence-based status of every workstream: [docs/STATUS.md](docs/STATUS.md).** The "Phase 4" of the original sketch further down (Customer Support Agent) is delivered as *Phase 3* below; the separate **Phase 4 here is Engineering AI**.
+
+## Delivery matrix of the AI phases actually built (supersedes the original "AI Phase" sketch below; numbering there is historical)
+
+| Phase | Capability | Status | Evidence / where |
+|---|---|---|---|
+| 1 | Customer AI: search, advice, orders, returns, RAG (Python service, ADR-009) | ✅ Implemented and validated | `docs/ai/` |
+| 2 | Inventory Intelligence (forecast, risk, planning; synthetic POC data, ADMIN only; ADR-010) | ✅ Implemented and validated | `docs/ai/phase2/` |
+| 3 | Customer Support and Case Resolution (Java `support` module, confirmed writes; ADR-011) | ✅ Implemented; one held-out miss and no single clean consolidated run are documented | `docs/ai/phase3/` |
+| Mgmt feedback | Ticket lifecycle UI/staff tools, profiles + family, budget-aware recommendations (ADR-012) | ✅ Implemented; evidence upload and SLA/overdue not built | `docs/management-feedback/` |
+| 4 | **Engineering AI**: log monitoring and incident intelligence (ADR-013) | ✅ Implemented with real backend/AI/Postgres logs and a labelled synthetic incident. **Not connected: frontend logs, a central logging platform, CI/CD deployments (manual), metrics/traces** | `docs/ai/phase4/README.md` |
 
 ---
 
@@ -239,6 +253,12 @@ Examples
 
 - Seasonal Stock Prediction
 - Franchise Inventory Planning
+
+---
+
+## Phase 6 (done): Sales & Inventory Planning
+
+Store-level weekly forecasts, targets, approvals, plan vs actual, inventory allocation and scenarios on demonstration store data and live online orders. See docs/ai/phase6/README.md. Next: a real store sales feed, stock-out and promotion history, procurement/transfer APIs.
 
 ---
 

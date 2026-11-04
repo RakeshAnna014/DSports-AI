@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import {
@@ -28,15 +28,21 @@ import {
   HomeOutlined,
 } from '@mui/icons-material';
 import ImageGallery from '@/components/ImageGallery';
+import AiCommerceSearch from '@/features/ai/AiCommerceSearch';
+import { useRecentStore } from '@/store/recentStore';
 import ProductCard from '@/components/ProductCard';
+import ProductReviewsSection from '@/features/reviews/ProductReviewsSection';
+import ScenarioRecommendations from '@/components/products/ScenarioRecommendations';
 import {
   useProductDetail,
+  useProductAttributes,
   useProducts,
   usePrices,
   useInventory,
   useBrands,
   useCategories,
 } from '@/hooks/useCatalog';
+import { getApiErrorMessage } from '@/api/errors';
 import { useCartStore } from '@/store/cartStore';
 import {
   formatPrice,
@@ -45,15 +51,22 @@ import {
   getProductImageUrl,
 } from '@/lib/productUtils';
 
+/** Structured facts shown in the specification table when the catalogue has them (key -> label). */
+const SPEC_ROWS: [string, string][] = [
+  ['subCategory', 'Type'], ['skillLevel', 'Skill level'], ['useCase', 'Best for'], ['material', 'Material'], ['weightClass', 'Weight class'],
+  ['ageGroup', 'Age group'], ['sizeOptions', 'Sizes'], ['surface', 'Surface'], ['playFormat', 'Play format'], ['ballType', 'Ball type'],
+];
+
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const addToCart = useCartStore((s) => s.addItem);
 
   const [quantity, setQuantity] = useState(1);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
+    severity: 'success',
   });
 
   const {
@@ -62,10 +75,16 @@ const ProductDetailPage = () => {
     isError: productError,
     error: productErr,
   } = useProductDetail(id ?? '');
+  const viewProduct = useRecentStore((st) => st.view);
+  useEffect(() => {
+    if (product?.id) viewProduct(product.id);
+  }, [product?.id, viewProduct]);
   const { data: prices = [] } = usePrices(id);
   const { data: inventory = [] } = useInventory(id);
   const { data: brands = [] } = useBrands();
   const { data: categories = [] } = useCategories();
+  const { data: allAttributes = {} } = useProductAttributes();
+  const attrs = allAttributes[id ?? ''] ?? {};
   const brandMap = useMemo(() => new Map(brands.map((b) => [b.id, b.name])), [brands]);
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
 
@@ -86,26 +105,33 @@ const ProductDetailPage = () => {
     [relatedProducts, id],
   );
 
-  const handleAddToCart = () => {
-    if (!product) return;
-    const sellingPrice = price?.sellingPrice ?? 0;
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
-        productId: product.id,
-        name: product.name,
-        price: sellingPrice,
-        imageUrl: getProductImageUrl(
-          product.name,
-          product.images?.map((img) => ({ url: img.url, primary: img.primary })),
-        ),
-      });
+  const handleAddToCart = async (): Promise<boolean> => {
+    if (!product) return false;
+    try {
+      await addToCart(
+        {
+          productId: product.id,
+          name: product.name,
+          price: price?.sellingPrice ?? 0,
+          imageUrl: getProductImageUrl(
+            product.name,
+            product.images?.map((img) => ({ url: img.url, primary: img.primary })),
+          ),
+        },
+        quantity,
+      );
+      setSnackbar({ open: true, message: `${quantity} × ${product.name} added to cart`, severity: 'success' });
+      return true;
+    } catch (err) {
+      setSnackbar({ open: true, message: getApiErrorMessage(err, 'Could not add to cart'), severity: 'error' });
+      return false;
     }
-    setSnackbar({ open: true, message: `${quantity} × ${product.name} added to cart` });
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
-    navigate('/cart');
+  const handleBuyNow = async () => {
+    if (await handleAddToCart()) {
+      navigate('/cart');
+    }
   };
 
   if (!id) {
@@ -318,6 +344,15 @@ const ProductDetailPage = () => {
             </Button>
           </Stack>
 
+          <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'secondary.light', borderRadius: 2 }} data-testid="product-ai">
+            <AiCommerceSearch
+              variant="compact"
+              product={{ productId: product.id, name: product.name }}
+              title="Ask AI about this product"
+              examples={['Tell me more about this product', 'Is it suitable for a beginner?', 'Show me reviews', 'Is there a cheaper alternative?']}
+            />
+          </Box>
+
           {product.description && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" fontWeight={600} gutterBottom>
@@ -329,13 +364,28 @@ const ProductDetailPage = () => {
             </Box>
           )}
 
+          {attrs.features && (
+            <Box sx={{ mb: 3 }} data-testid="product-features">
+              <Typography variant="h6" fontWeight={600} gutterBottom>Highlights</Typography>
+              <Box component="ul" sx={{ m: 0, pl: 2.5, color: 'text.secondary' }}>
+                {attrs.features.split('|').map((f) => <Typography key={f} component="li" variant="body2" sx={{ mb: 0.25 }}>{f.trim()}</Typography>)}
+              </Box>
+            </Box>
+          )}
+
           <Divider sx={{ mb: 3 }} />
 
           <Typography variant="h6" fontWeight={600} gutterBottom>
             Specifications
           </Typography>
-          <Table size="small">
+          <Table size="small" data-testid="product-specs">
             <TableBody>
+              {SPEC_ROWS.filter(([key]) => attrs[key]).map(([key, label]) => (
+                <TableRow key={key}>
+                  <TableCell sx={{ fontWeight: 600, color: 'text.secondary', pl: 0 }}>{label}</TableCell>
+                  <TableCell sx={{ textTransform: ['skillLevel', 'ageGroup'].includes(key) ? 'capitalize' : 'none' }}>{attrs[key].replace(/_/g, ' ')}</TableCell>
+                </TableRow>
+              ))}
               {product.weight != null && (
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600, color: 'text.secondary', pl: 0 }}>
@@ -399,15 +449,19 @@ const ProductDetailPage = () => {
                 <ProductCard
                   product={p}
                   onViewDetails={() => navigate(`/products/${p.id}`)}
-                  onAddToCart={() => {
+                  onAddToCart={async () => {
                     const relatedPrice = prices.find((pr) => pr.productId === p.id);
-                    addToCart({
-                      productId: p.id,
-                      name: p.name,
-                      price: relatedPrice?.sellingPrice ?? 0,
-                      imageUrl: getProductImageUrl(p.name),
-                    });
-                    setSnackbar({ open: true, message: `${p.name} added to cart` });
+                    try {
+                      await addToCart({
+                        productId: p.id,
+                        name: p.name,
+                        price: relatedPrice?.sellingPrice ?? 0,
+                        imageUrl: getProductImageUrl(p.name),
+                      });
+                      setSnackbar({ open: true, message: `${p.name} added to cart`, severity: 'success' });
+                    } catch (err) {
+                      setSnackbar({ open: true, message: getApiErrorMessage(err, 'Could not add to cart'), severity: 'error' });
+                    }
                   }}
                 />
               </Grid>
@@ -416,6 +470,10 @@ const ProductDetailPage = () => {
         </Box>
       )}
 
+      <ScenarioRecommendations productId={id} productName={product.name} />
+
+      <ProductReviewsSection productId={id} />
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -423,9 +481,9 @@ const ProductDetailPage = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          severity="success"
+          severity={snackbar.severity}
           variant="filled"
-          icon={<ShoppingCartCheckoutOutlined fontSize="small" />}
+          icon={snackbar.severity === 'success' ? <ShoppingCartCheckoutOutlined fontSize="small" /> : undefined}
           onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         >
           {snackbar.message}

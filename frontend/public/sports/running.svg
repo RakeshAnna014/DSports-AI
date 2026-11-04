@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img" aria-label="Running"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BE123C"/><stop offset="1" stop-color="#FDA4AF"/></linearGradient><linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset="1" stop-color="#C99A58"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/><circle cx="470" cy="80" r="170" fill="#FFFFFF" opacity=".10"/><circle cx="60" cy="380" r="150" fill="#000000" opacity=".12"/><g transform="translate(-60 40) rotate(-12 200 200) scale(0.78)" opacity="1">
+      <path d="M58 262Q58 244 80 244L152 244Q178 230 218 230L304 238Q348 244 348 264L348 272Q348 282 336 282L74 282Q58 282 58 270Z" fill="#0B1426"/>
+      <path d="M58 270H348" stroke="#B8F23C" stroke-width="5"/>
+      <path d="M82 244L92 170Q95 148 118 148L152 150Q168 176 204 182Q252 188 304 216Q340 232 344 246Z" fill="#2563EB"/>
+      <path d="M118 148L152 150L160 176L112 170Z" fill="#1B4AB0"/>
+      <path d="M170 186l24 -10M184 198l24 -10M198 210l24 -10M212 220l24 -10" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+      <path d="M92 226Q190 214 330 242" stroke="#B8F23C" stroke-width="12" fill="none" stroke-linecap="round"/>
+      </g><g transform="translate(250 70) rotate(10 200 200) scale(0.6)" opacity="0.92"><path d="M160 36H240L248 120H152Z" fill="#0B1426"/><path d="M152 280H248L240 364H160Z" fill="#0B1426"/>
+      <path d="M168 54H232M168 72H232M168 90H232M168 310H232M168 328H232M168 346H232" stroke="#858992" stroke-width="3"/>
+      <circle cx="200" cy="200" r="92" fill="#FFFFFF"/><circle cx="200" cy="200" r="76" fill="#0B1426"/>
+      <circle cx="200" cy="200" r="76" fill="none" stroke="#BE123C" stroke-width="5"/>
+      <path d="M200 200V148M200 200L238 222" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/><circle cx="200" cy="200" r="7" fill="#BE123C"/>
+      <path d="M140 200h14M246 200h14M200 124v14M200 262v14" stroke="#94A3B8" stroke-width="4"/>
+      <text x="200" y="250" font-size="16" font-family="Arial" font-weight="700" text-anchor="middle" fill="#BE123C">GPS</text></g><g transform="translate(140 150) rotate(0 200 200) scale(0.5)" opacity="0.92"><rect x="162" y="62" width="76" height="40" rx="12" fill="#0B1426"/><rect x="178" y="40" width="44" height="30" rx="10" fill="#BE123C"/>
+      <path d="M156 106Q156 96 170 96H230Q244 96 244 106V318Q244 338 224 338H176Q156 338 156 318Z" fill="#2563EB" opacity=".95"/>
+      <rect x="156" y="170" width="88" height="86" fill="#FFFFFF" opacity=".92"/>
+      <path d="M170 200h60M170 220h40" stroke="#0B1426" stroke-width="6" stroke-linecap="round"/>
+      <path d="M170 110V320" stroke="#FFFFFF" stroke-width="6" opacity=".35"/></g></svg>

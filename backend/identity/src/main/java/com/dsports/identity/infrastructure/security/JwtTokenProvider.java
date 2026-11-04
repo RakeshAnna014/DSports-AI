@@ -22,14 +22,29 @@ public class JwtTokenProvider implements TokenProvider {
     private final SecretKey secretKey;
     private final Duration accessTokenExpiration;
     private final Duration refreshTokenExpiration;
+    private final String issuer;
+    private final String audience;
+
+    public static final String DEFAULT_ISSUER = "dsports";
+    public static final String DEFAULT_AUDIENCE = "dsports-api";
 
     public JwtTokenProvider(String secret, Duration accessTokenExpiration, Duration refreshTokenExpiration) {
+        this(secret, accessTokenExpiration, refreshTokenExpiration, DEFAULT_ISSUER, DEFAULT_AUDIENCE);
+    }
+
+    /** Access tokens name their issuer and audience, and both are required on validation: a validly signed token minted for another service is refused. */
+    public JwtTokenProvider(String secret, Duration accessTokenExpiration, Duration refreshTokenExpiration, String issuer, String audience) {
         if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("JWT secret must be at least 256 bits (32 characters)");
         }
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        if (issuer == null || issuer.isBlank() || audience == null || audience.isBlank()) {
+            throw new IllegalArgumentException("JWT issuer and audience must not be blank");
+        }
+        this.issuer = issuer;
+        this.audience = audience;
     }
 
     public String generateAccessToken(User user) {
@@ -40,6 +55,8 @@ public class JwtTokenProvider implements TokenProvider {
 
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
+                .issuer(issuer)
+                .audience().add(audience).and()
                 .subject(user.getId().value().toString())
                 .claim("email", user.getEmail().value())
                 .claim("roles", roles)
@@ -65,6 +82,8 @@ public class JwtTokenProvider implements TokenProvider {
         try {
             return Jwts.parser()
                     .verifyWith(secretKey)
+                    .requireIssuer(issuer)
+                    .requireAudience(audience)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();

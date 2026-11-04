@@ -6,9 +6,11 @@ import reactor.core.publisher.Mono;
 
 public interface PaymentGateway {
     Mono<GatewayResult> initiatePayment(InitiatePaymentRequest request);
+    /** Idempotent: capturing an already captured authorization returns the original capture. */
     Mono<GatewayResult> capturePayment(String gatewayReference);
     Mono<GatewayResult> cancelPayment(String gatewayReference);
-    Mono<GatewayResult> refundPayment(String gatewayReference, Money amount);
+    /** Idempotent on {@code idempotencyKey}: repeating a refund request never pays out twice. */
+    Mono<GatewayResult> refundPayment(String gatewayReference, Money amount, String idempotencyKey);
     Mono<GatewayStatus> getPaymentStatus(String gatewayReference);
 
     record InitiatePaymentRequest(

@@ -1,159 +1,48 @@
-import { useEffect, useState } from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Container,
-  Box,
-  Button,
-  IconButton,
-  Badge,
-  Avatar,
-  Menu,
-  MenuItem,
-  Divider,
-  ListItemIcon,
-} from '@mui/material';
-import {
-  ShoppingCartOutlined,
-  PersonOutline,
-  ReceiptLongOutlined,
-  Logout,
-} from '@mui/icons-material';
-import {
-  Link as MuiLink,
-} from '@mui/material';
-import { Outlet, Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Box, Container } from '@mui/material';
+import { Outlet, useLocation } from 'react-router-dom';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import MobileNavigation from '@/components/layout/MobileNavigation';
+import CartDrawer from '@/components/cart/CartDrawer';
+import AddedToCartPanel from '@/components/cart/AddedToCartPanel';
+import AssistantLauncher from '@/features/ai/AssistantLauncher';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
+
+/** Full-bleed pages (the dark hero) draw their own width; every other page sits in a standard container. */
+const FULL_BLEED = new Set(['/']);
 
 const MainLayout = () => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout, hydrate } = useAuthStore();
-  const totalCartItems = useCartStore((s) => s.totalItems);
+  const { pathname } = useLocation();
+  const { isAuthenticated, hydrate } = useAuthStore();
   const refreshCart = useCartStore((s) => s.refreshCart);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const refreshWishlist = useWishlistStore((s) => s.refreshWishlist);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshCart();
-    }
-  }, [isAuthenticated, refreshCart]);
+    refreshCart();                       // guests too: the cart store restores a guest's local cart
+    if (isAuthenticated) refreshWishlist();
+  }, [isAuthenticated, refreshCart, refreshWishlist]);
 
-  const handleLogout = async () => {
-    setAnchorEl(null);
-    await logout();
-    navigate('/');
-  };
-
+  const bleed = FULL_BLEED.has(pathname);
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="sticky" color="inherit">
-        <Toolbar>
-          <MuiLink
-            component={RouterLink}
-            to="/"
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: 'primary.main',
-              textDecoration: 'none',
-              mr: 4,
-              cursor: 'pointer',
-            }}
-          >
-            DSports-AI
-          </MuiLink>
-
-          <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
-            <Button color="inherit" component={RouterLink} to="/">
-              Home
-            </Button>
-            <Button color="inherit" component={RouterLink} to="/products">
-              Products
-            </Button>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <IconButton color="inherit" aria-label="cart" onClick={() => navigate('/cart')}>
-              <Badge badgeContent={totalCartItems} color="secondary">
-                <ShoppingCartOutlined />
-              </Badge>
-            </IconButton>
-
-            {isAuthenticated && user ? (
-              <>
-                <IconButton
-                  onClick={(e) => setAnchorEl(e.currentTarget)}
-                  size="small"
-                  sx={{ ml: 1 }}
-                >
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                    <PersonOutline />
-                  </Avatar>
-                </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={() => setAnchorEl(null)}
-                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                >
-                  <MenuItem disabled>
-                    <Typography variant="body2" color="text.secondary">
-                      {user.email}
-                    </Typography>
-                  </MenuItem>
-                  <Divider />
-                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/orders'); }}>
-                    <ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>
-                    My Orders
-                  </MenuItem>
-                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/payments'); }}>
-                    <ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>
-                    Payments
-                  </MenuItem>
-                  <MenuItem onClick={() => { setAnchorEl(null); navigate('/profile'); }}>
-                    <ListItemIcon><PersonOutline fontSize="small" /></ListItemIcon>
-                    Profile
-                  </MenuItem>
-                  <MenuItem onClick={handleLogout}>
-                    <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
-                    Sign Out
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                component={RouterLink}
-                to="/login"
-              >
-                Sign In
-              </Button>
-            )}
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Container component="main" maxWidth="lg" sx={{ flexGrow: 1, py: 3 }}>
-        <Outlet />
-      </Container>
-
-      <Box
-        component="footer"
-        sx={{ py: 2, textAlign: 'center', bgcolor: 'grey.100' }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          &copy; {new Date().getFullYear()} DSports-AI. All rights reserved.
-        </Typography>
-      </Box>
+      <Header />
+      {bleed ? (
+        <Box component="main" sx={{ flexGrow: 1 }}><Outlet /></Box>
+      ) : (
+        <Container component="main" maxWidth="lg" sx={{ flexGrow: 1, py: { xs: 2, md: 3.5 } }}><Outlet /></Container>
+      )}
+      <CartDrawer />
+      <AddedToCartPanel />
+      <AssistantLauncher />
+      <Footer />
+      <MobileNavigation />
     </Box>
   );
 };

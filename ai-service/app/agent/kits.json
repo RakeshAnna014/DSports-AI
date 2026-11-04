@@ -1,0 +1,480 @@
+{
+ "kits": {
+  "Cricket": {
+   "phrase": "cricket kit",
+   "roles": [
+    [
+     "bat",
+     "Bat"
+    ],
+    [
+     "batting-gloves",
+     "Gloves"
+    ],
+    [
+     "batting-pads",
+     "Gloves"
+    ],
+    [
+     "helmet",
+     "Helmet"
+    ],
+    [
+     "kit-bag",
+     "Kit Bag"
+    ],
+    [
+     "cricket-shoes",
+     "Shoes"
+    ],
+    [
+     "arm-guard",
+     "Accessories"
+    ],
+    [
+     "thigh-guard",
+     "Accessories"
+    ],
+    [
+     "ball",
+     "Ball"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Football": {
+   "phrase": "football kit",
+   "roles": [
+    [
+     "football-boots",
+     "Shoes"
+    ],
+    [
+     "ball",
+     "Ball"
+    ],
+    [
+     "shin-guards",
+     "Accessories"
+    ],
+    [
+     "football-socks",
+     "Accessories"
+    ],
+    [
+     "gk-gloves",
+     "Gloves"
+    ],
+    [
+     "kit-bag",
+     "Kit Bag"
+    ],
+    [
+     "jersey",
+     "Jersey"
+    ],
+    [
+     "cones",
+     "Equipment"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Basketball": {
+   "phrase": "basketball kit",
+   "roles": [
+    [
+     "ball",
+     "Ball"
+    ],
+    [
+     "shoes",
+     "Shoes"
+    ],
+    [
+     "jersey",
+     "Jersey"
+    ],
+    [
+     "ankle-support",
+     "Accessories"
+    ],
+    [
+     "kit-bag",
+     "Kit Bag"
+    ],
+    [
+     "compression",
+     "Jersey"
+    ],
+    [
+     "sleeve",
+     "Accessories"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Tennis": {
+   "phrase": "tennis kit",
+   "roles": [
+    [
+     "racquet",
+     "Bat"
+    ],
+    [
+     "balls",
+     "Ball"
+    ],
+    [
+     "shoes",
+     "Shoes"
+    ],
+    [
+     "kit-bag",
+     "Kit Bag"
+    ],
+    [
+     "overgrip",
+     "Accessories"
+    ],
+    [
+     "wristband",
+     "Accessories"
+    ],
+    [
+     "cap",
+     "Accessories"
+    ],
+    [
+     "shorts",
+     "Jersey"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Badminton": {
+   "phrase": "badminton kit",
+   "roles": [
+    [
+     "racquet",
+     "Bat"
+    ],
+    [
+     "shuttlecock",
+     "Ball"
+    ],
+    [
+     "grip",
+     "Accessories"
+    ],
+    [
+     "shoes",
+     "Shoes"
+    ],
+    [
+     "kit-bag",
+     "Kit Bag"
+    ],
+    [
+     "net",
+     "Accessories"
+    ],
+    [
+     "shorts",
+     "Jersey"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Running": {
+   "phrase": "running routine",
+   "roles": [
+    [
+     "running-shoes",
+     "Shoes"
+    ],
+    [
+     "running-socks",
+     "Accessories"
+    ],
+    [
+     "hydration",
+     "Accessories"
+    ],
+    [
+     "running-belt",
+     "Accessories"
+    ],
+    [
+     "running-tshirt",
+     "Jersey"
+    ],
+    [
+     "running-shorts",
+     "Jersey"
+    ],
+    [
+     "fitness-watch",
+     "Wearables"
+    ],
+    [
+     "compression-sleeves",
+     "Accessories"
+    ]
+   ],
+   "aliases": {
+    "trail-shoes": "running-shoes"
+   }
+  },
+  "Fitness": {
+   "phrase": "home gym",
+   "roles": [
+    [
+     "dumbbells",
+     "Equipment"
+    ],
+    [
+     "resistance-bands",
+     "Equipment"
+    ],
+    [
+     "yoga-mat",
+     "Equipment"
+    ],
+    [
+     "gym-gloves",
+     "Gloves"
+    ],
+    [
+     "skipping-rope",
+     "Equipment"
+    ],
+    [
+     "foam-roller",
+     "Equipment"
+    ],
+    [
+     "training-shoes",
+     "Shoes"
+    ],
+    [
+     "gym-bag",
+     "Kit Bag"
+    ],
+    [
+     "kettlebell",
+     "Equipment"
+    ],
+    [
+     "weight-plates",
+     "Equipment"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Swimming": {
+   "phrase": "swim kit",
+   "roles": [
+    [
+     "goggles",
+     "Accessories"
+    ],
+    [
+     "swim-cap",
+     "Accessories"
+    ],
+    [
+     "swimsuit",
+     "Jersey"
+    ],
+    [
+     "kickboard",
+     "Equipment"
+    ],
+    [
+     "pull-buoy",
+     "Equipment"
+    ],
+    [
+     "fins",
+     "Equipment"
+    ],
+    [
+     "waterproof-bag",
+     "Kit Bag"
+    ]
+   ],
+   "aliases": {
+    "swim-shorts": "swimsuit",
+    "goggles-competition": "goggles"
+   }
+  },
+  "Cycling": {
+   "phrase": "cycling kit",
+   "roles": [
+    [
+     "road-bike",
+     "Bike"
+    ],
+    [
+     "cycling-helmet",
+     "Helmet"
+    ],
+    [
+     "cycling-gloves",
+     "Gloves"
+    ],
+    [
+     "cycling-jersey",
+     "Jersey"
+    ],
+    [
+     "cycling-shorts",
+     "Jersey"
+    ],
+    [
+     "bike-bottle",
+     "Accessories"
+    ],
+    [
+     "bike-light",
+     "Accessories"
+    ],
+    [
+     "cycling-glasses",
+     "Accessories"
+    ],
+    [
+     "saddle-bag",
+     "Kit Bag"
+    ]
+   ],
+   "aliases": {
+    "mountain-bike": "road-bike"
+   }
+  },
+  "Table Tennis": {
+   "phrase": "table tennis kit",
+   "roles": [
+    [
+     "tt-bat",
+     "Bat"
+    ],
+    [
+     "tt-balls",
+     "Ball"
+    ],
+    [
+     "tt-table",
+     "Equipment"
+    ],
+    [
+     "tt-net",
+     "Accessories"
+    ],
+    [
+     "grip-tape",
+     "Accessories"
+    ],
+    [
+     "tt-shoes",
+     "Shoes"
+    ],
+    [
+     "tt-case",
+     "Kit Bag"
+    ]
+   ],
+   "aliases": {}
+  },
+  "Volleyball": {
+   "phrase": "volleyball kit",
+   "roles": [
+    [
+     "ball",
+     "Ball"
+    ],
+    [
+     "shoes",
+     "Shoes"
+    ],
+    [
+     "knee-pads",
+     "Accessories"
+    ],
+    [
+     "jersey",
+     "Jersey"
+    ],
+    [
+     "shorts",
+     "Jersey"
+    ],
+    [
+     "ball-bag",
+     "Kit Bag"
+    ],
+    [
+     "net",
+     "Accessories"
+    ],
+    [
+     "arm-sleeves",
+     "Accessories"
+    ]
+   ],
+   "aliases": {}
+  }
+ },
+ "crossSport": [
+  {
+   "fromSport": "Running",
+   "fromRole": "running-shoes",
+   "toSport": "Fitness",
+   "toRole": "gym-bag",
+   "why": "Related sport: many runners add strength sessions, and a gym bag keeps kit together"
+  },
+  {
+   "fromSport": "Running",
+   "fromRole": "running-shoes",
+   "toSport": "Fitness",
+   "toRole": "resistance-bands",
+   "why": "Related sport: resistance-band work supports running strength"
+  },
+  {
+   "fromSport": "Running",
+   "fromRole": "fitness-watch",
+   "toSport": "Cycling",
+   "toRole": "bike-bottle",
+   "why": "Related sport: a GPS watch also tracks rides, and a bottle is essential on long ones"
+  },
+  {
+   "fromSport": "Cricket",
+   "fromRole": "bat",
+   "toSport": "Fitness",
+   "toRole": "resistance-bands",
+   "why": "Related sport: off-season conditioning for batters"
+  },
+  {
+   "fromSport": "Football",
+   "fromRole": "football-boots",
+   "toSport": "Running",
+   "toRole": "running-socks",
+   "why": "Related sport: training runs add mileage, so good socks help"
+  },
+  {
+   "fromSport": "Swimming",
+   "fromRole": "goggles",
+   "toSport": "Fitness",
+   "toRole": "foam-roller",
+   "why": "Related sport: recovery work after training sessions"
+  },
+  {
+   "fromSport": "Fitness",
+   "fromRole": "dumbbells",
+   "toSport": "Running",
+   "toRole": "fitness-watch",
+   "why": "Related sport: track workouts and heart rate"
+  }
+ ]
+}

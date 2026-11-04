@@ -41,3 +41,11 @@ Thumbs.db
 # ==========================
 .env
 .env.*
+# templates carry placeholders only and must be shareable
+!.env.example
+!**/.env.example
+# Local artefacts
+scratch_shots/
+*.stackdump
+**/credentials*.json
+**/*service-account*.json

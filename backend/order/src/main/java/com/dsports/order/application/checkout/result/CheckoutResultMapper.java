@@ -21,6 +21,7 @@ public final class CheckoutResultMapper {
             delivery != null ? delivery.name() : null,
             checkout.getDeliveryCharge(),
             checkout.getDiscountAmount(),
+            checkout.getPromotionCode(),
             checkout.getSubtotal(),
             checkout.getTaxAmount(),
             checkout.getTotalAmount(),

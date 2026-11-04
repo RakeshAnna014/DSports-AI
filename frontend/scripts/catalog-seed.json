@@ -1,0 +1,2295 @@
+{
+ "products": [
+  {
+   "id": "00000000-0000-0000-0000-000000001001",
+   "sku": "CR-BAT-MRF-001",
+   "name": "MRF Cricket Bat - Virgin",
+   "brand": "MRF",
+   "sport": "Cricket",
+   "category": "Bat",
+   "kitRole": "bat",
+   "mrp": 7999,
+   "price": 6499,
+   "discountPercent": 19,
+   "images": [
+    "/products/cricket/mrf-cricket-bat-virgin-1.svg",
+    "/products/cricket/mrf-cricket-bat-virgin-2.svg",
+    "/products/cricket/mrf-cricket-bat-virgin-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001002",
+   "sku": "CR-BAT-SS-002",
+   "name": "SS Cricket Bat - Prime",
+   "brand": "SS",
+   "sport": "Cricket",
+   "category": "Bat",
+   "kitRole": "bat",
+   "mrp": 8999,
+   "price": 7499,
+   "discountPercent": 17,
+   "images": [
+    "/products/cricket/ss-cricket-bat-prime-1.svg",
+    "/products/cricket/ss-cricket-bat-prime-2.svg",
+    "/products/cricket/ss-cricket-bat-prime-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001003",
+   "sku": "CR-BAT-SG-003",
+   "name": "SG Cricket Bat - Test",
+   "brand": "SG",
+   "sport": "Cricket",
+   "category": "Bat",
+   "kitRole": "bat",
+   "mrp": 14999,
+   "price": 11999,
+   "discountPercent": 20,
+   "images": [
+    "/products/cricket/sg-cricket-bat-test-1.svg",
+    "/products/cricket/sg-cricket-bat-test-2.svg",
+    "/products/cricket/sg-cricket-bat-test-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001004",
+   "sku": "CR-BALL-KOOK-004",
+   "name": "Kookaburra Cricket Ball - Red",
+   "brand": "Kookaburra",
+   "sport": "Cricket",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 2499,
+   "price": 2199,
+   "discountPercent": 12,
+   "images": [
+    "/products/cricket/kookaburra-cricket-ball-red-1.svg",
+    "/products/cricket/kookaburra-cricket-ball-red-2.svg",
+    "/products/cricket/kookaburra-cricket-ball-red-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001005",
+   "sku": "CR-BALL-SG-005",
+   "name": "SG Cricket Ball - White",
+   "brand": "SG",
+   "sport": "Cricket",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 1999,
+   "price": 1699,
+   "discountPercent": 15,
+   "images": [
+    "/products/cricket/sg-cricket-ball-white-1.svg",
+    "/products/cricket/sg-cricket-ball-white-2.svg",
+    "/products/cricket/sg-cricket-ball-white-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001006",
+   "sku": "CR-GLOV-MRF-006",
+   "name": "MRF Cricket Gloves - Pro",
+   "brand": "MRF",
+   "sport": "Cricket",
+   "category": "Gloves",
+   "kitRole": "batting-gloves",
+   "mrp": 3999,
+   "price": 3299,
+   "discountPercent": 18,
+   "images": [
+    "/products/cricket/mrf-cricket-gloves-pro-1.svg",
+    "/products/cricket/mrf-cricket-gloves-pro-2.svg",
+    "/products/cricket/mrf-cricket-gloves-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001007",
+   "sku": "CR-HELM-SS-007",
+   "name": "SS Cricket Helmet - Elite",
+   "brand": "SS",
+   "sport": "Cricket",
+   "category": "Helmet",
+   "kitRole": "helmet",
+   "mrp": 5499,
+   "price": 4799,
+   "discountPercent": 13,
+   "images": [
+    "/products/cricket/ss-cricket-helmet-elite-1.svg",
+    "/products/cricket/ss-cricket-helmet-elite-2.svg",
+    "/products/cricket/ss-cricket-helmet-elite-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001008",
+   "sku": "CR-PADS-GN-008",
+   "name": "Gray Nicolls Cricket Pads - Pro",
+   "brand": "Gray Nicolls",
+   "sport": "Cricket",
+   "category": "Gloves",
+   "kitRole": "batting-pads",
+   "mrp": 5999,
+   "price": 5499,
+   "discountPercent": 8,
+   "images": [
+    "/products/cricket/gray-nicolls-cricket-pads-pro-1.svg",
+    "/products/cricket/gray-nicolls-cricket-pads-pro-2.svg",
+    "/products/cricket/gray-nicolls-cricket-pads-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001009",
+   "sku": "CR-SHOE-DSC-009",
+   "name": "DSC Cricket Shoes - Spikes",
+   "brand": "DSC",
+   "sport": "Cricket",
+   "category": "Shoes",
+   "kitRole": "cricket-shoes",
+   "mrp": 4999,
+   "price": 4299,
+   "discountPercent": 14,
+   "images": [
+    "/products/cricket/dsc-cricket-shoes-spikes-1.svg",
+    "/products/cricket/dsc-cricket-shoes-spikes-2.svg",
+    "/products/cricket/dsc-cricket-shoes-spikes-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001010",
+   "sku": "CR-BAG-SPAR-010",
+   "name": "Spartan Cricket Kit Bag - Deluxe",
+   "brand": "Spartan",
+   "sport": "Cricket",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 3499,
+   "price": 2999,
+   "discountPercent": 14,
+   "images": [
+    "/products/cricket/spartan-cricket-kit-bag-deluxe-1.svg",
+    "/products/cricket/spartan-cricket-kit-bag-deluxe-2.svg",
+    "/products/cricket/spartan-cricket-kit-bag-deluxe-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001011",
+   "sku": "CR-JER-ADI-011",
+   "name": "Adidas Cricket Jersey - India",
+   "brand": "Adidas",
+   "sport": "Cricket",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/cricket/adidas-cricket-jersey-india-1.svg",
+    "/products/cricket/adidas-cricket-jersey-india-2.svg",
+    "/products/cricket/adidas-cricket-jersey-india-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001012",
+   "sku": "CR-JER-NIKE-012",
+   "name": "Nike Cricket Jersey - Australia",
+   "brand": "Nike",
+   "sport": "Cricket",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/cricket/nike-cricket-jersey-australia-1.svg",
+    "/products/cricket/nike-cricket-jersey-australia-2.svg",
+    "/products/cricket/nike-cricket-jersey-australia-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001013",
+   "sku": "CR-JER-PUMA-013",
+   "name": "Puma Cricket Jersey - England",
+   "brand": "Puma",
+   "sport": "Cricket",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/cricket/puma-cricket-jersey-england-1.svg",
+    "/products/cricket/puma-cricket-jersey-england-2.svg",
+    "/products/cricket/puma-cricket-jersey-england-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001014",
+   "sku": "CR-ACC-KOOK-014",
+   "name": "Kookaburra Cricket Accessories Kit",
+   "brand": "Kookaburra",
+   "sport": "Cricket",
+   "category": "Accessories",
+   "kitRole": "accessory-kit",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/cricket/kookaburra-cricket-accessories-kit-1.svg",
+    "/products/cricket/kookaburra-cricket-accessories-kit-2.svg",
+    "/products/cricket/kookaburra-cricket-accessories-kit-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001015",
+   "sku": "CR-BALL-SG-015",
+   "name": "SG Cricket Practice Ball Set",
+   "brand": "SG",
+   "sport": "Cricket",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/cricket/sg-cricket-practice-ball-set-1.svg",
+    "/products/cricket/sg-cricket-practice-ball-set-2.svg",
+    "/products/cricket/sg-cricket-practice-ball-set-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001016",
+   "sku": "FB-BALL-NIKE-016",
+   "name": "Nike Football - Premier League",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 7499,
+   "price": 6499,
+   "discountPercent": 13,
+   "images": [
+    "/products/football/nike-football-premier-league-1.svg",
+    "/products/football/nike-football-premier-league-2.svg",
+    "/products/football/nike-football-premier-league-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001017",
+   "sku": "FB-BALL-ADI-017",
+   "name": "Adidas Football - Champions League",
+   "brand": "Adidas",
+   "sport": "Football",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 8499,
+   "price": 7499,
+   "discountPercent": 12,
+   "images": [
+    "/products/football/adidas-football-champions-league-1.svg",
+    "/products/football/adidas-football-champions-league-2.svg",
+    "/products/football/adidas-football-champions-league-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001018",
+   "sku": "FB-BOOT-PUMA-018",
+   "name": "Puma Football Boots - Speed",
+   "brand": "Puma",
+   "sport": "Football",
+   "category": "Shoes",
+   "kitRole": "football-boots",
+   "mrp": 12999,
+   "price": 9999,
+   "discountPercent": 23,
+   "images": [
+    "/products/football/puma-football-boots-speed-1.svg",
+    "/products/football/puma-football-boots-speed-2.svg",
+    "/products/football/puma-football-boots-speed-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001019",
+   "sku": "FB-JER-NIKE-019",
+   "name": "Nike Football Jersey - Brazil",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 3999,
+   "price": 3299,
+   "discountPercent": 18,
+   "images": [
+    "/products/football/nike-football-jersey-brazil-1.svg",
+    "/products/football/nike-football-jersey-brazil-2.svg",
+    "/products/football/nike-football-jersey-brazil-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001020",
+   "sku": "FB-GLOV-ADI-020",
+   "name": "Adidas Football Gloves - Goalkeeper",
+   "brand": "Adidas",
+   "sport": "Football",
+   "category": "Gloves",
+   "kitRole": "gk-gloves",
+   "mrp": 2999,
+   "price": 2499,
+   "discountPercent": 17,
+   "images": [
+    "/products/football/adidas-football-gloves-goalkeeper-1.svg",
+    "/products/football/adidas-football-gloves-goalkeeper-2.svg",
+    "/products/football/adidas-football-gloves-goalkeeper-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001021",
+   "sku": "FB-SHIN-NIKE-021",
+   "name": "Nike Football Shin Guards",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Accessories",
+   "kitRole": "shin-guards",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/football/nike-football-shin-guards-1.svg",
+    "/products/football/nike-football-shin-guards-2.svg",
+    "/products/football/nike-football-shin-guards-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001022",
+   "sku": "FB-BAG-PUMA-022",
+   "name": "Puma Football Kit Bag",
+   "brand": "Puma",
+   "sport": "Football",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 2999,
+   "price": 2499,
+   "discountPercent": 17,
+   "images": [
+    "/products/football/puma-football-kit-bag-1.svg",
+    "/products/football/puma-football-kit-bag-2.svg",
+    "/products/football/puma-football-kit-bag-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001023",
+   "sku": "FB-SOCK-ADI-023",
+   "name": "Adidas Football Socks",
+   "brand": "Adidas",
+   "sport": "Football",
+   "category": "Accessories",
+   "kitRole": "football-socks",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/football/adidas-football-socks-1.svg",
+    "/products/football/adidas-football-socks-2.svg",
+    "/products/football/adidas-football-socks-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001024",
+   "sku": "FB-VEST-NIKE-024",
+   "name": "Nike Football Training Vest",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/football/nike-football-training-vest-1.svg",
+    "/products/football/nike-football-training-vest-2.svg",
+    "/products/football/nike-football-training-vest-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001025",
+   "sku": "FB-BALL-PUMA-025",
+   "name": "Puma Football - Match Ball",
+   "brand": "Puma",
+   "sport": "Football",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 5999,
+   "price": 4999,
+   "discountPercent": 17,
+   "images": [
+    "/products/football/puma-football-match-ball-1.svg",
+    "/products/football/puma-football-match-ball-2.svg",
+    "/products/football/puma-football-match-ball-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001026",
+   "sku": "BD-RACK-SPAR-026",
+   "name": "Spartan Badminton Racket - Pro",
+   "brand": "Spartan",
+   "sport": "Badminton",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 3999,
+   "price": 3299,
+   "discountPercent": 18,
+   "images": [
+    "/products/badminton/spartan-badminton-racket-pro-1.svg",
+    "/products/badminton/spartan-badminton-racket-pro-2.svg",
+    "/products/badminton/spartan-badminton-racket-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001027",
+   "sku": "BD-SHOE-ADI-027",
+   "name": "Adidas Badminton Shoes - Court",
+   "brand": "Adidas",
+   "sport": "Badminton",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 4999,
+   "price": 4299,
+   "discountPercent": 14,
+   "images": [
+    "/products/badminton/adidas-badminton-shoes-court-1.svg",
+    "/products/badminton/adidas-badminton-shoes-court-2.svg",
+    "/products/badminton/adidas-badminton-shoes-court-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001028",
+   "sku": "BD-SHRT-NIKE-028",
+   "name": "Nike Badminton Shorts",
+   "brand": "Nike",
+   "sport": "Badminton",
+   "category": "Jersey",
+   "kitRole": "shorts",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/badminton/nike-badminton-shorts-1.svg",
+    "/products/badminton/nike-badminton-shorts-2.svg",
+    "/products/badminton/nike-badminton-shorts-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001029",
+   "sku": "BD-BAG-PUMA-029",
+   "name": "Puma Badminton Kit Bag",
+   "brand": "Puma",
+   "sport": "Badminton",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 2499,
+   "price": 1999,
+   "discountPercent": 20,
+   "images": [
+    "/products/badminton/puma-badminton-kit-bag-1.svg",
+    "/products/badminton/puma-badminton-kit-bag-2.svg",
+    "/products/badminton/puma-badminton-kit-bag-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001030",
+   "sku": "BD-SHTL-SPAR-030",
+   "name": "Spartan Shuttlecock - Tube",
+   "brand": "Spartan",
+   "sport": "Badminton",
+   "category": "Ball",
+   "kitRole": "shuttlecock",
+   "mrp": 899,
+   "price": 749,
+   "discountPercent": 17,
+   "images": [
+    "/products/badminton/spartan-shuttlecock-tube-1.svg",
+    "/products/badminton/spartan-shuttlecock-tube-2.svg",
+    "/products/badminton/spartan-shuttlecock-tube-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001031",
+   "sku": "BD-GRIP-ADI-031",
+   "name": "Adidas Badminton Grip - Pro",
+   "brand": "Adidas",
+   "sport": "Badminton",
+   "category": "Accessories",
+   "kitRole": "grip",
+   "mrp": 399,
+   "price": 299,
+   "discountPercent": 25,
+   "images": [
+    "/products/badminton/adidas-badminton-grip-pro-1.svg",
+    "/products/badminton/adidas-badminton-grip-pro-2.svg",
+    "/products/badminton/adidas-badminton-grip-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001032",
+   "sku": "BD-RACK-NIKE-032",
+   "name": "Nike Badminton Racket - Junior",
+   "brand": "Nike",
+   "sport": "Badminton",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 2499,
+   "price": 1999,
+   "discountPercent": 20,
+   "images": [
+    "/products/badminton/nike-badminton-racket-junior-1.svg",
+    "/products/badminton/nike-badminton-racket-junior-2.svg",
+    "/products/badminton/nike-badminton-racket-junior-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001033",
+   "sku": "BD-NET-PUMA-033",
+   "name": "Puma Badminton Net Set",
+   "brand": "Puma",
+   "sport": "Badminton",
+   "category": "Accessories",
+   "kitRole": "net",
+   "mrp": 3999,
+   "price": 3299,
+   "discountPercent": 18,
+   "images": [
+    "/products/badminton/puma-badminton-net-set-1.svg",
+    "/products/badminton/puma-badminton-net-set-2.svg",
+    "/products/badminton/puma-badminton-net-set-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001034",
+   "sku": "BK-BALL-NIKE-034",
+   "name": "Nike Basketball - Indoor",
+   "brand": "Nike",
+   "sport": "Basketball",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 3499,
+   "price": 2999,
+   "discountPercent": 14,
+   "images": [
+    "/products/basketball/nike-basketball-indoor-1.svg",
+    "/products/basketball/nike-basketball-indoor-2.svg",
+    "/products/basketball/nike-basketball-indoor-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001035",
+   "sku": "BK-SHOE-ADI-035",
+   "name": "Adidas Basketball Shoes - High Top",
+   "brand": "Adidas",
+   "sport": "Basketball",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 8999,
+   "price": 7499,
+   "discountPercent": 17,
+   "images": [
+    "/products/basketball/adidas-basketball-shoes-high-top-1.svg",
+    "/products/basketball/adidas-basketball-shoes-high-top-2.svg",
+    "/products/basketball/adidas-basketball-shoes-high-top-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001036",
+   "sku": "BK-JER-PUMA-036",
+   "name": "Puma Basketball Jersey - Home",
+   "brand": "Puma",
+   "sport": "Basketball",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 2499,
+   "price": 1999,
+   "discountPercent": 20,
+   "images": [
+    "/products/basketball/puma-basketball-jersey-home-1.svg",
+    "/products/basketball/puma-basketball-jersey-home-2.svg",
+    "/products/basketball/puma-basketball-jersey-home-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001037",
+   "sku": "BK-SHRT-NIKE-037",
+   "name": "Nike Basketball Shorts",
+   "brand": "Nike",
+   "sport": "Basketball",
+   "category": "Jersey",
+   "kitRole": "shorts",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/basketball/nike-basketball-shorts-1.svg",
+    "/products/basketball/nike-basketball-shorts-2.svg",
+    "/products/basketball/nike-basketball-shorts-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001038",
+   "sku": "BK-ACC-ADI-038",
+   "name": "Adidas Basketball Accessories",
+   "brand": "Adidas",
+   "sport": "Basketball",
+   "category": "Accessories",
+   "kitRole": "accessory",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/basketball/adidas-basketball-accessories-1.svg",
+    "/products/basketball/adidas-basketball-accessories-2.svg",
+    "/products/basketball/adidas-basketball-accessories-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001039",
+   "sku": "TN-RACK-NIKE-039",
+   "name": "Nike Tennis Racket - Pro",
+   "brand": "Nike",
+   "sport": "Tennis",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 12999,
+   "price": 10999,
+   "discountPercent": 15,
+   "images": [
+    "/products/tennis/nike-tennis-racket-pro-1.svg",
+    "/products/tennis/nike-tennis-racket-pro-2.svg",
+    "/products/tennis/nike-tennis-racket-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001040",
+   "sku": "TN-SHOE-ADI-040",
+   "name": "Adidas Tennis Shoes - Clay Court",
+   "brand": "Adidas",
+   "sport": "Tennis",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 6999,
+   "price": 5999,
+   "discountPercent": 14,
+   "images": [
+    "/products/tennis/adidas-tennis-shoes-clay-court-1.svg",
+    "/products/tennis/adidas-tennis-shoes-clay-court-2.svg",
+    "/products/tennis/adidas-tennis-shoes-clay-court-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001041",
+   "sku": "TN-BALL-PUMA-041",
+   "name": "Puma Tennis Balls - Can",
+   "brand": "Puma",
+   "sport": "Tennis",
+   "category": "Ball",
+   "kitRole": "balls",
+   "mrp": 899,
+   "price": 749,
+   "discountPercent": 17,
+   "images": [
+    "/products/tennis/puma-tennis-balls-can-1.svg",
+    "/products/tennis/puma-tennis-balls-can-2.svg",
+    "/products/tennis/puma-tennis-balls-can-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001042",
+   "sku": "TN-JER-NIKE-042",
+   "name": "Nike Tennis Jersey - Dri-FIT",
+   "brand": "Nike",
+   "sport": "Tennis",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 2999,
+   "price": 2499,
+   "discountPercent": 17,
+   "images": [
+    "/products/tennis/nike-tennis-jersey-dri-fit-1.svg",
+    "/products/tennis/nike-tennis-jersey-dri-fit-2.svg",
+    "/products/tennis/nike-tennis-jersey-dri-fit-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001043",
+   "sku": "TN-CAP-ADI-043",
+   "name": "Adidas Tennis Cap",
+   "brand": "Adidas",
+   "sport": "Tennis",
+   "category": "Accessories",
+   "kitRole": "cap",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/tennis/adidas-tennis-cap-1.svg",
+    "/products/tennis/adidas-tennis-cap-2.svg",
+    "/products/tennis/adidas-tennis-cap-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001044",
+   "sku": "TN-WRIS-PUMA-044",
+   "name": "Puma Tennis Wristband",
+   "brand": "Puma",
+   "sport": "Tennis",
+   "category": "Accessories",
+   "kitRole": "wristband",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/tennis/puma-tennis-wristband-1.svg",
+    "/products/tennis/puma-tennis-wristband-2.svg",
+    "/products/tennis/puma-tennis-wristband-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001045",
+   "sku": "TN-BAG-NIKE-045",
+   "name": "Nike Tennis Kit Bag",
+   "brand": "Nike",
+   "sport": "Tennis",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 3999,
+   "price": 3299,
+   "discountPercent": 18,
+   "images": [
+    "/products/tennis/nike-tennis-kit-bag-1.svg",
+    "/products/tennis/nike-tennis-kit-bag-2.svg",
+    "/products/tennis/nike-tennis-kit-bag-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001046",
+   "sku": "VB-BALL-NIKE-046",
+   "name": "Nike Volleyball - Indoor",
+   "brand": "Nike",
+   "sport": "Volleyball",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 2999,
+   "price": 2499,
+   "discountPercent": 17,
+   "images": [
+    "/products/volleyball/nike-volleyball-indoor-1.svg",
+    "/products/volleyball/nike-volleyball-indoor-2.svg",
+    "/products/volleyball/nike-volleyball-indoor-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001047",
+   "sku": "VB-SHOE-ADI-047",
+   "name": "Adidas Volleyball Shoes - Court",
+   "brand": "Adidas",
+   "sport": "Volleyball",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 5499,
+   "price": 4799,
+   "discountPercent": 13,
+   "images": [
+    "/products/volleyball/adidas-volleyball-shoes-court-1.svg",
+    "/products/volleyball/adidas-volleyball-shoes-court-2.svg",
+    "/products/volleyball/adidas-volleyball-shoes-court-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001048",
+   "sku": "VB-JER-PUMA-048",
+   "name": "Puma Volleyball Jersey",
+   "brand": "Puma",
+   "sport": "Volleyball",
+   "category": "Jersey",
+   "kitRole": "jersey",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/volleyball/puma-volleyball-jersey-1.svg",
+    "/products/volleyball/puma-volleyball-jersey-2.svg",
+    "/products/volleyball/puma-volleyball-jersey-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001049",
+   "sku": "VB-KNEE-NIKE-049",
+   "name": "Nike Volleyball Knee Pads",
+   "brand": "Nike",
+   "sport": "Volleyball",
+   "category": "Accessories",
+   "kitRole": "knee-pads",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/volleyball/nike-volleyball-knee-pads-1.svg",
+    "/products/volleyball/nike-volleyball-knee-pads-2.svg",
+    "/products/volleyball/nike-volleyball-knee-pads-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001050",
+   "sku": "VB-SHRT-ADI-050",
+   "name": "Adidas Volleyball Shorts",
+   "brand": "Adidas",
+   "sport": "Volleyball",
+   "category": "Jersey",
+   "kitRole": "shorts",
+   "mrp": 1799,
+   "price": 1399,
+   "discountPercent": 22,
+   "images": [
+    "/products/volleyball/adidas-volleyball-shorts-1.svg",
+    "/products/volleyball/adidas-volleyball-shorts-2.svg",
+    "/products/volleyball/adidas-volleyball-shorts-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001051",
+   "sku": "CR-ARM-SG-051",
+   "name": "SG Cricket Arm Guard - Pro",
+   "brand": "SG",
+   "sport": "Cricket",
+   "category": "Accessories",
+   "kitRole": "arm-guard",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/cricket/sg-cricket-arm-guard-pro-1.svg",
+    "/products/cricket/sg-cricket-arm-guard-pro-2.svg",
+    "/products/cricket/sg-cricket-arm-guard-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001052",
+   "sku": "CR-THG-SS-052",
+   "name": "SS Cricket Thigh Guard - Elite",
+   "brand": "SS",
+   "sport": "Cricket",
+   "category": "Accessories",
+   "kitRole": "thigh-guard",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/cricket/ss-cricket-thigh-guard-elite-1.svg",
+    "/products/cricket/ss-cricket-thigh-guard-elite-2.svg",
+    "/products/cricket/ss-cricket-thigh-guard-elite-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001053",
+   "sku": "CR-WKG-GN-053",
+   "name": "Gray Nicolls Wicket Keeping Gloves - Pro",
+   "brand": "Gray Nicolls",
+   "sport": "Cricket",
+   "category": "Gloves",
+   "kitRole": "wk-gloves",
+   "mrp": 3999,
+   "price": 3199,
+   "discountPercent": 20,
+   "images": [
+    "/products/cricket/gray-nicolls-wicket-keeping-gloves-pro-1.svg",
+    "/products/cricket/gray-nicolls-wicket-keeping-gloves-pro-2.svg",
+    "/products/cricket/gray-nicolls-wicket-keeping-gloves-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001054",
+   "sku": "CR-SHOE-SG-054",
+   "name": "SG Cricket Shoes - Rubber Studs",
+   "brand": "SG",
+   "sport": "Cricket",
+   "category": "Shoes",
+   "kitRole": "cricket-shoes",
+   "mrp": 2999,
+   "price": 2299,
+   "discountPercent": 23,
+   "images": [
+    "/products/cricket/sg-cricket-shoes-rubber-studs-1.svg",
+    "/products/cricket/sg-cricket-shoes-rubber-studs-2.svg",
+    "/products/cricket/sg-cricket-shoes-rubber-studs-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001055",
+   "sku": "FB-BOOT-NIV-055",
+   "name": "Nivia Football Boots - Dominator",
+   "brand": "Nivia",
+   "sport": "Football",
+   "category": "Shoes",
+   "kitRole": "football-boots",
+   "mrp": 3499,
+   "price": 2499,
+   "discountPercent": 29,
+   "images": [
+    "/products/football/nivia-football-boots-dominator-1.svg",
+    "/products/football/nivia-football-boots-dominator-2.svg",
+    "/products/football/nivia-football-boots-dominator-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001056",
+   "sku": "FB-BOOT-ADI-056",
+   "name": "Adidas Football Boots - Control",
+   "brand": "Adidas",
+   "sport": "Football",
+   "category": "Shoes",
+   "kitRole": "football-boots",
+   "mrp": 7999,
+   "price": 6499,
+   "discountPercent": 19,
+   "images": [
+    "/products/football/adidas-football-boots-control-1.svg",
+    "/products/football/adidas-football-boots-control-2.svg",
+    "/products/football/adidas-football-boots-control-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001057",
+   "sku": "FB-BOOT-NIK-057",
+   "name": "Nike Football Boots - Elite Pro",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Shoes",
+   "kitRole": "football-boots",
+   "mrp": 14999,
+   "price": 12499,
+   "discountPercent": 17,
+   "images": [
+    "/products/football/nike-football-boots-elite-pro-1.svg",
+    "/products/football/nike-football-boots-elite-pro-2.svg",
+    "/products/football/nike-football-boots-elite-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001058",
+   "sku": "FB-SHIN-NIV-058",
+   "name": "Nivia Football Shin Guards - Ranger",
+   "brand": "Nivia",
+   "sport": "Football",
+   "category": "Accessories",
+   "kitRole": "shin-guards",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/football/nivia-football-shin-guards-ranger-1.svg",
+    "/products/football/nivia-football-shin-guards-ranger-2.svg",
+    "/products/football/nivia-football-shin-guards-ranger-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001059",
+   "sku": "FB-CONE-DEC-059",
+   "name": "Decathlon Training Cones Set (20)",
+   "brand": "Decathlon",
+   "sport": "Football",
+   "category": "Equipment",
+   "kitRole": "cones",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/football/decathlon-training-cones-set-20-1.svg",
+    "/products/football/decathlon-training-cones-set-20-2.svg",
+    "/products/football/decathlon-training-cones-set-20-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001060",
+   "sku": "FB-GOAL-NIV-060",
+   "name": "Nivia Football Goal Post - Junior",
+   "brand": "Nivia",
+   "sport": "Football",
+   "category": "Equipment",
+   "kitRole": "goal",
+   "mrp": 6999,
+   "price": 5499,
+   "discountPercent": 21,
+   "images": [
+    "/products/football/nivia-football-goal-post-junior-1.svg",
+    "/products/football/nivia-football-goal-post-junior-2.svg",
+    "/products/football/nivia-football-goal-post-junior-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001061",
+   "sku": "FB-BAG-ADI-061",
+   "name": "Adidas Football Backpack - Starter",
+   "brand": "Adidas",
+   "sport": "Football",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 2499,
+   "price": 1999,
+   "discountPercent": 20,
+   "images": [
+    "/products/football/adidas-football-backpack-starter-1.svg",
+    "/products/football/adidas-football-backpack-starter-2.svg",
+    "/products/football/adidas-football-backpack-starter-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001062",
+   "sku": "FB-SHRT-NIK-062",
+   "name": "Nike Football Training Shorts",
+   "brand": "Nike",
+   "sport": "Football",
+   "category": "Jersey",
+   "kitRole": "shorts",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/football/nike-football-training-shorts-1.svg",
+    "/products/football/nike-football-training-shorts-2.svg",
+    "/products/football/nike-football-training-shorts-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001063",
+   "sku": "BK-BALL-COS-063",
+   "name": "Cosco Basketball - Outdoor Rubber",
+   "brand": "Cosco",
+   "sport": "Basketball",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 1499,
+   "price": 1199,
+   "discountPercent": 20,
+   "images": [
+    "/products/basketball/cosco-basketball-outdoor-rubber-1.svg",
+    "/products/basketball/cosco-basketball-outdoor-rubber-2.svg",
+    "/products/basketball/cosco-basketball-outdoor-rubber-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001064",
+   "sku": "BK-SHOE-NIK-064",
+   "name": "Nike Basketball Shoes - Court Vision",
+   "brand": "Nike",
+   "sport": "Basketball",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 6999,
+   "price": 5499,
+   "discountPercent": 21,
+   "images": [
+    "/products/basketball/nike-basketball-shoes-court-vision-1.svg",
+    "/products/basketball/nike-basketball-shoes-court-vision-2.svg",
+    "/products/basketball/nike-basketball-shoes-court-vision-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001065",
+   "sku": "BK-COMP-UAR-065",
+   "name": "Under Armour Compression Shorts",
+   "brand": "Under Armour",
+   "sport": "Basketball",
+   "category": "Jersey",
+   "kitRole": "compression",
+   "mrp": 1999,
+   "price": 1599,
+   "discountPercent": 20,
+   "images": [
+    "/products/basketball/under-armour-compression-shorts-1.svg",
+    "/products/basketball/under-armour-compression-shorts-2.svg",
+    "/products/basketball/under-armour-compression-shorts-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001066",
+   "sku": "BK-ANK-NIV-066",
+   "name": "Nivia Basketball Ankle Support",
+   "brand": "Nivia",
+   "sport": "Basketball",
+   "category": "Accessories",
+   "kitRole": "ankle-support",
+   "mrp": 899,
+   "price": 699,
+   "discountPercent": 22,
+   "images": [
+    "/products/basketball/nivia-basketball-ankle-support-1.svg",
+    "/products/basketball/nivia-basketball-ankle-support-2.svg",
+    "/products/basketball/nivia-basketball-ankle-support-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001067",
+   "sku": "BK-BAG-NIK-067",
+   "name": "Nike Basketball Backpack",
+   "brand": "Nike",
+   "sport": "Basketball",
+   "category": "Kit Bag",
+   "kitRole": "kit-bag",
+   "mrp": 3299,
+   "price": 2599,
+   "discountPercent": 21,
+   "images": [
+    "/products/basketball/nike-basketball-backpack-1.svg",
+    "/products/basketball/nike-basketball-backpack-2.svg",
+    "/products/basketball/nike-basketball-backpack-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001068",
+   "sku": "BK-SLV-NIK-068",
+   "name": "Nike Basketball Shooting Sleeve",
+   "brand": "Nike",
+   "sport": "Basketball",
+   "category": "Accessories",
+   "kitRole": "sleeve",
+   "mrp": 999,
+   "price": 749,
+   "discountPercent": 25,
+   "images": [
+    "/products/basketball/nike-basketball-shooting-sleeve-1.svg",
+    "/products/basketball/nike-basketball-shooting-sleeve-2.svg",
+    "/products/basketball/nike-basketball-shooting-sleeve-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001069",
+   "sku": "TN-RACK-WIL-069",
+   "name": "Wilson Tennis Racquet - Beginner 27in",
+   "brand": "Wilson",
+   "sport": "Tennis",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 4999,
+   "price": 3799,
+   "discountPercent": 24,
+   "images": [
+    "/products/tennis/wilson-tennis-racquet-beginner-27in-1.svg",
+    "/products/tennis/wilson-tennis-racquet-beginner-27in-2.svg",
+    "/products/tennis/wilson-tennis-racquet-beginner-27in-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001070",
+   "sku": "TN-RACK-HED-070",
+   "name": "Head Tennis Racquet - Performance",
+   "brand": "Head",
+   "sport": "Tennis",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 12999,
+   "price": 10499,
+   "discountPercent": 19,
+   "images": [
+    "/products/tennis/head-tennis-racquet-performance-1.svg",
+    "/products/tennis/head-tennis-racquet-performance-2.svg",
+    "/products/tennis/head-tennis-racquet-performance-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001071",
+   "sku": "TN-BALL-WIL-071",
+   "name": "Wilson Tennis Balls - Pack of 3",
+   "brand": "Wilson",
+   "sport": "Tennis",
+   "category": "Ball",
+   "kitRole": "balls",
+   "mrp": 799,
+   "price": 649,
+   "discountPercent": 19,
+   "images": [
+    "/products/tennis/wilson-tennis-balls-pack-of-3-1.svg",
+    "/products/tennis/wilson-tennis-balls-pack-of-3-2.svg",
+    "/products/tennis/wilson-tennis-balls-pack-of-3-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001072",
+   "sku": "TN-GRIP-YON-072",
+   "name": "Yonex Tennis Overgrip - Pack of 3",
+   "brand": "Yonex",
+   "sport": "Tennis",
+   "category": "Accessories",
+   "kitRole": "overgrip",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/tennis/yonex-tennis-overgrip-pack-of-3-1.svg",
+    "/products/tennis/yonex-tennis-overgrip-pack-of-3-2.svg",
+    "/products/tennis/yonex-tennis-overgrip-pack-of-3-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001073",
+   "sku": "TN-SHRT-NIK-073",
+   "name": "Nike Tennis Shorts - Court",
+   "brand": "Nike",
+   "sport": "Tennis",
+   "category": "Jersey",
+   "kitRole": "shorts",
+   "mrp": 2499,
+   "price": 1799,
+   "discountPercent": 28,
+   "images": [
+    "/products/tennis/nike-tennis-shorts-court-1.svg",
+    "/products/tennis/nike-tennis-shorts-court-2.svg",
+    "/products/tennis/nike-tennis-shorts-court-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001074",
+   "sku": "TN-DAMP-BAB-074",
+   "name": "Babolat String Dampener Kit",
+   "brand": "Babolat",
+   "sport": "Tennis",
+   "category": "Accessories",
+   "kitRole": "string-kit",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/tennis/babolat-string-dampener-kit-1.svg",
+    "/products/tennis/babolat-string-dampener-kit-2.svg",
+    "/products/tennis/babolat-string-dampener-kit-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001075",
+   "sku": "BD-RACK-YON-075",
+   "name": "Yonex Badminton Racquet - Intermediate",
+   "brand": "Yonex",
+   "sport": "Badminton",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 5999,
+   "price": 4799,
+   "discountPercent": 20,
+   "images": [
+    "/products/badminton/yonex-badminton-racquet-intermediate-1.svg",
+    "/products/badminton/yonex-badminton-racquet-intermediate-2.svg",
+    "/products/badminton/yonex-badminton-racquet-intermediate-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001076",
+   "sku": "BD-RACK-LIN-076",
+   "name": "Li-Ning Badminton Racquet - Lightweight Beginner",
+   "brand": "Li-Ning",
+   "sport": "Badminton",
+   "category": "Bat",
+   "kitRole": "racquet",
+   "mrp": 2499,
+   "price": 1799,
+   "discountPercent": 28,
+   "images": [
+    "/products/badminton/li-ning-badminton-racquet-lightweight-beginner-1.svg",
+    "/products/badminton/li-ning-badminton-racquet-lightweight-beginner-2.svg",
+    "/products/badminton/li-ning-badminton-racquet-lightweight-beginner-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001077",
+   "sku": "BD-SHTL-YON-077",
+   "name": "Yonex Feather Shuttlecock - Tube of 12",
+   "brand": "Yonex",
+   "sport": "Badminton",
+   "category": "Ball",
+   "kitRole": "shuttlecock",
+   "mrp": 2499,
+   "price": 1999,
+   "discountPercent": 20,
+   "images": [
+    "/products/badminton/yonex-feather-shuttlecock-tube-of-12-1.svg",
+    "/products/badminton/yonex-feather-shuttlecock-tube-of-12-2.svg",
+    "/products/badminton/yonex-feather-shuttlecock-tube-of-12-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001078",
+   "sku": "BD-SHOE-YON-078",
+   "name": "Yonex Badminton Shoes - Cushion",
+   "brand": "Yonex",
+   "sport": "Badminton",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 5499,
+   "price": 4299,
+   "discountPercent": 22,
+   "images": [
+    "/products/badminton/yonex-badminton-shoes-cushion-1.svg",
+    "/products/badminton/yonex-badminton-shoes-cushion-2.svg",
+    "/products/badminton/yonex-badminton-shoes-cushion-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001079",
+   "sku": "BD-TEE-LIN-079",
+   "name": "Li-Ning Badminton T-Shirt - Dry Fit",
+   "brand": "Li-Ning",
+   "sport": "Badminton",
+   "category": "Jersey",
+   "kitRole": "tshirt",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/badminton/li-ning-badminton-t-shirt-dry-fit-1.svg",
+    "/products/badminton/li-ning-badminton-t-shirt-dry-fit-2.svg",
+    "/products/badminton/li-ning-badminton-t-shirt-dry-fit-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001080",
+   "sku": "BD-WRST-YON-080",
+   "name": "Yonex Wristband - Pair",
+   "brand": "Yonex",
+   "sport": "Badminton",
+   "category": "Accessories",
+   "kitRole": "wristband",
+   "mrp": 499,
+   "price": 399,
+   "discountPercent": 20,
+   "images": [
+    "/products/badminton/yonex-wristband-pair-1.svg",
+    "/products/badminton/yonex-wristband-pair-2.svg",
+    "/products/badminton/yonex-wristband-pair-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001081",
+   "sku": "RN-SHOE-ASI-081",
+   "name": "Asics Running Shoes - Daily Trainer",
+   "brand": "Asics",
+   "sport": "Running",
+   "category": "Shoes",
+   "kitRole": "running-shoes",
+   "mrp": 6999,
+   "price": 5499,
+   "discountPercent": 21,
+   "images": [
+    "/products/running/asics-running-shoes-daily-trainer-1.svg",
+    "/products/running/asics-running-shoes-daily-trainer-2.svg",
+    "/products/running/asics-running-shoes-daily-trainer-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001082",
+   "sku": "RN-SHOE-NIK-082",
+   "name": "Nike Running Shoes - Long Distance",
+   "brand": "Nike",
+   "sport": "Running",
+   "category": "Shoes",
+   "kitRole": "running-shoes",
+   "mrp": 11999,
+   "price": 9499,
+   "discountPercent": 21,
+   "images": [
+    "/products/running/nike-running-shoes-long-distance-1.svg",
+    "/products/running/nike-running-shoes-long-distance-2.svg",
+    "/products/running/nike-running-shoes-long-distance-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001083",
+   "sku": "RN-SHOE-ADI-083",
+   "name": "Adidas Running Shoes - Cushion Plus",
+   "brand": "Adidas",
+   "sport": "Running",
+   "category": "Shoes",
+   "kitRole": "running-shoes",
+   "mrp": 5999,
+   "price": 4699,
+   "discountPercent": 22,
+   "images": [
+    "/products/running/adidas-running-shoes-cushion-plus-1.svg",
+    "/products/running/adidas-running-shoes-cushion-plus-2.svg",
+    "/products/running/adidas-running-shoes-cushion-plus-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001084",
+   "sku": "RN-SHOE-PUM-084",
+   "name": "Puma Trail Running Shoes - Grip",
+   "brand": "Puma",
+   "sport": "Running",
+   "category": "Shoes",
+   "kitRole": "trail-shoes",
+   "mrp": 8499,
+   "price": 6499,
+   "discountPercent": 24,
+   "images": [
+    "/products/running/puma-trail-running-shoes-grip-1.svg",
+    "/products/running/puma-trail-running-shoes-grip-2.svg",
+    "/products/running/puma-trail-running-shoes-grip-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001085",
+   "sku": "RN-TEE-NIK-085",
+   "name": "Nike Running T-Shirt - Dri-FIT",
+   "brand": "Nike",
+   "sport": "Running",
+   "category": "Jersey",
+   "kitRole": "running-tshirt",
+   "mrp": 1799,
+   "price": 1399,
+   "discountPercent": 22,
+   "images": [
+    "/products/running/nike-running-t-shirt-dri-fit-1.svg",
+    "/products/running/nike-running-t-shirt-dri-fit-2.svg",
+    "/products/running/nike-running-t-shirt-dri-fit-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001086",
+   "sku": "RN-SHRT-ADI-086",
+   "name": "Adidas Running Shorts - Lightweight",
+   "brand": "Adidas",
+   "sport": "Running",
+   "category": "Jersey",
+   "kitRole": "running-shorts",
+   "mrp": 1599,
+   "price": 1199,
+   "discountPercent": 25,
+   "images": [
+    "/products/running/adidas-running-shorts-lightweight-1.svg",
+    "/products/running/adidas-running-shorts-lightweight-2.svg",
+    "/products/running/adidas-running-shorts-lightweight-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001087",
+   "sku": "RN-SOCK-PUM-087",
+   "name": "Puma Running Socks - Pack of 3",
+   "brand": "Puma",
+   "sport": "Running",
+   "category": "Accessories",
+   "kitRole": "running-socks",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/running/puma-running-socks-pack-of-3-1.svg",
+    "/products/running/puma-running-socks-pack-of-3-2.svg",
+    "/products/running/puma-running-socks-pack-of-3-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001088",
+   "sku": "RN-BTL-DEC-088",
+   "name": "Decathlon Hydration Bottle - 750 ml",
+   "brand": "Decathlon",
+   "sport": "Running",
+   "category": "Accessories",
+   "kitRole": "hydration",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/running/decathlon-hydration-bottle-750-ml-1.svg",
+    "/products/running/decathlon-hydration-bottle-750-ml-2.svg",
+    "/products/running/decathlon-hydration-bottle-750-ml-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001089",
+   "sku": "RN-BELT-DEC-089",
+   "name": "Decathlon Running Belt - Phone & Keys",
+   "brand": "Decathlon",
+   "sport": "Running",
+   "category": "Accessories",
+   "kitRole": "running-belt",
+   "mrp": 999,
+   "price": 749,
+   "discountPercent": 25,
+   "images": [
+    "/products/running/decathlon-running-belt-phone-keys-1.svg",
+    "/products/running/decathlon-running-belt-phone-keys-2.svg",
+    "/products/running/decathlon-running-belt-phone-keys-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001090",
+   "sku": "RN-WATCH-GAR-090",
+   "name": "Garmin Running Watch - GPS",
+   "brand": "Garmin",
+   "sport": "Running",
+   "category": "Wearables",
+   "kitRole": "fitness-watch",
+   "mrp": 19999,
+   "price": 16999,
+   "discountPercent": 15,
+   "images": [
+    "/products/running/garmin-running-watch-gps-1.svg",
+    "/products/running/garmin-running-watch-gps-2.svg",
+    "/products/running/garmin-running-watch-gps-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001091",
+   "sku": "RN-SLV-UAR-091",
+   "name": "Under Armour Compression Sleeves - Pair",
+   "brand": "Under Armour",
+   "sport": "Running",
+   "category": "Accessories",
+   "kitRole": "compression-sleeves",
+   "mrp": 1499,
+   "price": 1099,
+   "discountPercent": 27,
+   "images": [
+    "/products/running/under-armour-compression-sleeves-pair-1.svg",
+    "/products/running/under-armour-compression-sleeves-pair-2.svg",
+    "/products/running/under-armour-compression-sleeves-pair-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001092",
+   "sku": "FT-DUMB-DEC-092",
+   "name": "Decathlon Dumbbell Set - 2 x 5 kg",
+   "brand": "Decathlon",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "dumbbells",
+   "mrp": 2999,
+   "price": 2399,
+   "discountPercent": 20,
+   "images": [
+    "/products/fitness/decathlon-dumbbell-set-2-x-5-kg-1.svg",
+    "/products/fitness/decathlon-dumbbell-set-2-x-5-kg-2.svg",
+    "/products/fitness/decathlon-dumbbell-set-2-x-5-kg-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001093",
+   "sku": "FT-KETT-COS-093",
+   "name": "Cosco Kettlebell - 12 kg",
+   "brand": "Cosco",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "kettlebell",
+   "mrp": 2799,
+   "price": 2199,
+   "discountPercent": 21,
+   "images": [
+    "/products/fitness/cosco-kettlebell-12-kg-1.svg",
+    "/products/fitness/cosco-kettlebell-12-kg-2.svg",
+    "/products/fitness/cosco-kettlebell-12-kg-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001094",
+   "sku": "FT-BAND-DEC-094",
+   "name": "Decathlon Resistance Bands - Set of 5",
+   "brand": "Decathlon",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "resistance-bands",
+   "mrp": 1499,
+   "price": 1099,
+   "discountPercent": 27,
+   "images": [
+    "/products/fitness/decathlon-resistance-bands-set-of-5-1.svg",
+    "/products/fitness/decathlon-resistance-bands-set-of-5-2.svg",
+    "/products/fitness/decathlon-resistance-bands-set-of-5-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001095",
+   "sku": "FT-MAT-REE-095",
+   "name": "Reebok Yoga Mat - 6 mm",
+   "brand": "Reebok",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "yoga-mat",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/fitness/reebok-yoga-mat-6-mm-1.svg",
+    "/products/fitness/reebok-yoga-mat-6-mm-2.svg",
+    "/products/fitness/reebok-yoga-mat-6-mm-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001096",
+   "sku": "FT-GLOV-NIV-096",
+   "name": "Nivia Gym Gloves - Padded",
+   "brand": "Nivia",
+   "sport": "Fitness",
+   "category": "Gloves",
+   "kitRole": "gym-gloves",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/fitness/nivia-gym-gloves-padded-1.svg",
+    "/products/fitness/nivia-gym-gloves-padded-2.svg",
+    "/products/fitness/nivia-gym-gloves-padded-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001097",
+   "sku": "FT-ROPE-NIV-097",
+   "name": "Nivia Skipping Rope - Speed",
+   "brand": "Nivia",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "skipping-rope",
+   "mrp": 499,
+   "price": 349,
+   "discountPercent": 30,
+   "images": [
+    "/products/fitness/nivia-skipping-rope-speed-1.svg",
+    "/products/fitness/nivia-skipping-rope-speed-2.svg",
+    "/products/fitness/nivia-skipping-rope-speed-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001098",
+   "sku": "FT-ROLL-COS-098",
+   "name": "Cosco Foam Roller - 45 cm",
+   "brand": "Cosco",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "foam-roller",
+   "mrp": 1299,
+   "price": 949,
+   "discountPercent": 27,
+   "images": [
+    "/products/fitness/cosco-foam-roller-45-cm-1.svg",
+    "/products/fitness/cosco-foam-roller-45-cm-2.svg",
+    "/products/fitness/cosco-foam-roller-45-cm-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001099",
+   "sku": "FT-PLAT-DEC-099",
+   "name": "Decathlon Weight Plates - Pair 2 x 10 kg",
+   "brand": "Decathlon",
+   "sport": "Fitness",
+   "category": "Equipment",
+   "kitRole": "weight-plates",
+   "mrp": 4999,
+   "price": 3999,
+   "discountPercent": 20,
+   "images": [
+    "/products/fitness/decathlon-weight-plates-pair-2-x-10-kg-1.svg",
+    "/products/fitness/decathlon-weight-plates-pair-2-x-10-kg-2.svg",
+    "/products/fitness/decathlon-weight-plates-pair-2-x-10-kg-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001100",
+   "sku": "FT-SHOE-REE-100",
+   "name": "Reebok Training Shoes - Cross Trainer",
+   "brand": "Reebok",
+   "sport": "Fitness",
+   "category": "Shoes",
+   "kitRole": "training-shoes",
+   "mrp": 5999,
+   "price": 4599,
+   "discountPercent": 23,
+   "images": [
+    "/products/fitness/reebok-training-shoes-cross-trainer-1.svg",
+    "/products/fitness/reebok-training-shoes-cross-trainer-2.svg",
+    "/products/fitness/reebok-training-shoes-cross-trainer-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001101",
+   "sku": "FT-BAG-PUM-101",
+   "name": "Puma Gym Bag - Duffel",
+   "brand": "Puma",
+   "sport": "Fitness",
+   "category": "Kit Bag",
+   "kitRole": "gym-bag",
+   "mrp": 2499,
+   "price": 1899,
+   "discountPercent": 24,
+   "images": [
+    "/products/fitness/puma-gym-bag-duffel-1.svg",
+    "/products/fitness/puma-gym-bag-duffel-2.svg",
+    "/products/fitness/puma-gym-bag-duffel-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001102",
+   "sku": "SW-GOGL-SPE-102",
+   "name": "Speedo Swimming Goggles - Anti-Fog",
+   "brand": "Speedo",
+   "sport": "Swimming",
+   "category": "Accessories",
+   "kitRole": "goggles",
+   "mrp": 999,
+   "price": 749,
+   "discountPercent": 25,
+   "images": [
+    "/products/swimming/speedo-swimming-goggles-anti-fog-1.svg",
+    "/products/swimming/speedo-swimming-goggles-anti-fog-2.svg",
+    "/products/swimming/speedo-swimming-goggles-anti-fog-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001103",
+   "sku": "SW-GOGL-ARE-103",
+   "name": "Arena Swimming Goggles - Competition",
+   "brand": "Arena",
+   "sport": "Swimming",
+   "category": "Accessories",
+   "kitRole": "goggles-competition",
+   "mrp": 2499,
+   "price": 1899,
+   "discountPercent": 24,
+   "images": [
+    "/products/swimming/arena-swimming-goggles-competition-1.svg",
+    "/products/swimming/arena-swimming-goggles-competition-2.svg",
+    "/products/swimming/arena-swimming-goggles-competition-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001104",
+   "sku": "SW-CAP-ARE-104",
+   "name": "Arena Swim Cap - Silicone",
+   "brand": "Arena",
+   "sport": "Swimming",
+   "category": "Accessories",
+   "kitRole": "swim-cap",
+   "mrp": 499,
+   "price": 349,
+   "discountPercent": 30,
+   "images": [
+    "/products/swimming/arena-swim-cap-silicone-1.svg",
+    "/products/swimming/arena-swim-cap-silicone-2.svg",
+    "/products/swimming/arena-swim-cap-silicone-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001105",
+   "sku": "SW-JAM-SPE-105",
+   "name": "Speedo Swim Shorts - Jammer",
+   "brand": "Speedo",
+   "sport": "Swimming",
+   "category": "Jersey",
+   "kitRole": "swim-shorts",
+   "mrp": 1799,
+   "price": 1399,
+   "discountPercent": 22,
+   "images": [
+    "/products/swimming/speedo-swim-shorts-jammer-1.svg",
+    "/products/swimming/speedo-swim-shorts-jammer-2.svg",
+    "/products/swimming/speedo-swim-shorts-jammer-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001106",
+   "sku": "SW-SUIT-ARE-106",
+   "name": "Arena Swimsuit - One Piece",
+   "brand": "Arena",
+   "sport": "Swimming",
+   "category": "Jersey",
+   "kitRole": "swimsuit",
+   "mrp": 2299,
+   "price": 1799,
+   "discountPercent": 22,
+   "images": [
+    "/products/swimming/arena-swimsuit-one-piece-1.svg",
+    "/products/swimming/arena-swimsuit-one-piece-2.svg",
+    "/products/swimming/arena-swimsuit-one-piece-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001107",
+   "sku": "SW-KICK-SPE-107",
+   "name": "Speedo Kickboard",
+   "brand": "Speedo",
+   "sport": "Swimming",
+   "category": "Equipment",
+   "kitRole": "kickboard",
+   "mrp": 899,
+   "price": 699,
+   "discountPercent": 22,
+   "images": [
+    "/products/swimming/speedo-kickboard-1.svg",
+    "/products/swimming/speedo-kickboard-2.svg",
+    "/products/swimming/speedo-kickboard-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001108",
+   "sku": "SW-BUOY-ARE-108",
+   "name": "Arena Pull Buoy",
+   "brand": "Arena",
+   "sport": "Swimming",
+   "category": "Equipment",
+   "kitRole": "pull-buoy",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/swimming/arena-pull-buoy-1.svg",
+    "/products/swimming/arena-pull-buoy-2.svg",
+    "/products/swimming/arena-pull-buoy-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001109",
+   "sku": "SW-FINS-SPE-109",
+   "name": "Speedo Swimming Fins - Short Blade",
+   "brand": "Speedo",
+   "sport": "Swimming",
+   "category": "Equipment",
+   "kitRole": "fins",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/swimming/speedo-swimming-fins-short-blade-1.svg",
+    "/products/swimming/speedo-swimming-fins-short-blade-2.svg",
+    "/products/swimming/speedo-swimming-fins-short-blade-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001110",
+   "sku": "SW-BAG-DEC-110",
+   "name": "Decathlon Waterproof Bag - 20 L",
+   "brand": "Decathlon",
+   "sport": "Swimming",
+   "category": "Kit Bag",
+   "kitRole": "waterproof-bag",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/swimming/decathlon-waterproof-bag-20-l-1.svg",
+    "/products/swimming/decathlon-waterproof-bag-20-l-2.svg",
+    "/products/swimming/decathlon-waterproof-bag-20-l-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001111",
+   "sku": "CY-BIKE-HER-111",
+   "name": "Hero Road Bike - 21 Speed",
+   "brand": "Hero",
+   "sport": "Cycling",
+   "category": "Bike",
+   "kitRole": "road-bike",
+   "mrp": 24999,
+   "price": 21999,
+   "discountPercent": 12,
+   "images": [
+    "/products/cycling/hero-road-bike-21-speed-1.svg",
+    "/products/cycling/hero-road-bike-21-speed-2.svg",
+    "/products/cycling/hero-road-bike-21-speed-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001112",
+   "sku": "CY-BIKE-HER-112",
+   "name": "Hero Mountain Bike - 27.5in",
+   "brand": "Hero",
+   "sport": "Cycling",
+   "category": "Bike",
+   "kitRole": "mountain-bike",
+   "mrp": 19999,
+   "price": 16999,
+   "discountPercent": 15,
+   "images": [
+    "/products/cycling/hero-mountain-bike-27-5in-1.svg",
+    "/products/cycling/hero-mountain-bike-27-5in-2.svg",
+    "/products/cycling/hero-mountain-bike-27-5in-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001113",
+   "sku": "CY-HELM-BTW-113",
+   "name": "Btwin Cycling Helmet - Ventilated",
+   "brand": "Btwin",
+   "sport": "Cycling",
+   "category": "Helmet",
+   "kitRole": "cycling-helmet",
+   "mrp": 2499,
+   "price": 1899,
+   "discountPercent": 24,
+   "images": [
+    "/products/cycling/btwin-cycling-helmet-ventilated-1.svg",
+    "/products/cycling/btwin-cycling-helmet-ventilated-2.svg",
+    "/products/cycling/btwin-cycling-helmet-ventilated-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001114",
+   "sku": "CY-GLOV-DEC-114",
+   "name": "Decathlon Cycling Gloves - Padded",
+   "brand": "Decathlon",
+   "sport": "Cycling",
+   "category": "Gloves",
+   "kitRole": "cycling-gloves",
+   "mrp": 899,
+   "price": 699,
+   "discountPercent": 22,
+   "images": [
+    "/products/cycling/decathlon-cycling-gloves-padded-1.svg",
+    "/products/cycling/decathlon-cycling-gloves-padded-2.svg",
+    "/products/cycling/decathlon-cycling-gloves-padded-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001115",
+   "sku": "CY-JER-BTW-115",
+   "name": "Btwin Cycling Jersey - Breathable",
+   "brand": "Btwin",
+   "sport": "Cycling",
+   "category": "Jersey",
+   "kitRole": "cycling-jersey",
+   "mrp": 1999,
+   "price": 1499,
+   "discountPercent": 25,
+   "images": [
+    "/products/cycling/btwin-cycling-jersey-breathable-1.svg",
+    "/products/cycling/btwin-cycling-jersey-breathable-2.svg",
+    "/products/cycling/btwin-cycling-jersey-breathable-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001116",
+   "sku": "CY-SHRT-BTW-116",
+   "name": "Btwin Cycling Shorts - Padded",
+   "brand": "Btwin",
+   "sport": "Cycling",
+   "category": "Jersey",
+   "kitRole": "cycling-shorts",
+   "mrp": 2299,
+   "price": 1799,
+   "discountPercent": 22,
+   "images": [
+    "/products/cycling/btwin-cycling-shorts-padded-1.svg",
+    "/products/cycling/btwin-cycling-shorts-padded-2.svg",
+    "/products/cycling/btwin-cycling-shorts-padded-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001117",
+   "sku": "CY-BTL-DEC-117",
+   "name": "Decathlon Cycling Water Bottle - 600 ml",
+   "brand": "Decathlon",
+   "sport": "Cycling",
+   "category": "Accessories",
+   "kitRole": "bike-bottle",
+   "mrp": 399,
+   "price": 299,
+   "discountPercent": 25,
+   "images": [
+    "/products/cycling/decathlon-cycling-water-bottle-600-ml-1.svg",
+    "/products/cycling/decathlon-cycling-water-bottle-600-ml-2.svg",
+    "/products/cycling/decathlon-cycling-water-bottle-600-ml-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001118",
+   "sku": "CY-LGT-DEC-118",
+   "name": "Decathlon Bike Light Set - Front & Rear",
+   "brand": "Decathlon",
+   "sport": "Cycling",
+   "category": "Accessories",
+   "kitRole": "bike-light",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/cycling/decathlon-bike-light-set-front-rear-1.svg",
+    "/products/cycling/decathlon-bike-light-set-front-rear-2.svg",
+    "/products/cycling/decathlon-bike-light-set-front-rear-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001119",
+   "sku": "CY-GLS-DEC-119",
+   "name": "Decathlon Cycling Glasses - UV400",
+   "brand": "Decathlon",
+   "sport": "Cycling",
+   "category": "Accessories",
+   "kitRole": "cycling-glasses",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/cycling/decathlon-cycling-glasses-uv400-1.svg",
+    "/products/cycling/decathlon-cycling-glasses-uv400-2.svg",
+    "/products/cycling/decathlon-cycling-glasses-uv400-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001120",
+   "sku": "CY-BAG-BTW-120",
+   "name": "Btwin Saddle Bag - Under Seat",
+   "brand": "Btwin",
+   "sport": "Cycling",
+   "category": "Kit Bag",
+   "kitRole": "saddle-bag",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/cycling/btwin-saddle-bag-under-seat-1.svg",
+    "/products/cycling/btwin-saddle-bag-under-seat-2.svg",
+    "/products/cycling/btwin-saddle-bag-under-seat-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001121",
+   "sku": "TT-BAT-STI-121",
+   "name": "Stiga Table Tennis Bat - Intermediate",
+   "brand": "Stiga",
+   "sport": "Table Tennis",
+   "category": "Bat",
+   "kitRole": "tt-bat",
+   "mrp": 1799,
+   "price": 1399,
+   "discountPercent": 22,
+   "images": [
+    "/products/table-tennis/stiga-table-tennis-bat-intermediate-1.svg",
+    "/products/table-tennis/stiga-table-tennis-bat-intermediate-2.svg",
+    "/products/table-tennis/stiga-table-tennis-bat-intermediate-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001122",
+   "sku": "TT-BAT-BUT-122",
+   "name": "Butterfly Table Tennis Bat - Pro",
+   "brand": "Butterfly",
+   "sport": "Table Tennis",
+   "category": "Bat",
+   "kitRole": "tt-bat",
+   "mrp": 4999,
+   "price": 3999,
+   "discountPercent": 20,
+   "images": [
+    "/products/table-tennis/butterfly-table-tennis-bat-pro-1.svg",
+    "/products/table-tennis/butterfly-table-tennis-bat-pro-2.svg",
+    "/products/table-tennis/butterfly-table-tennis-bat-pro-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001123",
+   "sku": "TT-BAT-COS-123",
+   "name": "Cosco Table Tennis Bat - Beginner",
+   "brand": "Cosco",
+   "sport": "Table Tennis",
+   "category": "Bat",
+   "kitRole": "tt-bat",
+   "mrp": 599,
+   "price": 449,
+   "discountPercent": 25,
+   "images": [
+    "/products/table-tennis/cosco-table-tennis-bat-beginner-1.svg",
+    "/products/table-tennis/cosco-table-tennis-bat-beginner-2.svg",
+    "/products/table-tennis/cosco-table-tennis-bat-beginner-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001124",
+   "sku": "TT-BALL-BUT-124",
+   "name": "Butterfly Table Tennis Balls - Pack of 6",
+   "brand": "Butterfly",
+   "sport": "Table Tennis",
+   "category": "Ball",
+   "kitRole": "tt-balls",
+   "mrp": 499,
+   "price": 399,
+   "discountPercent": 20,
+   "images": [
+    "/products/table-tennis/butterfly-table-tennis-balls-pack-of-6-1.svg",
+    "/products/table-tennis/butterfly-table-tennis-balls-pack-of-6-2.svg",
+    "/products/table-tennis/butterfly-table-tennis-balls-pack-of-6-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001125",
+   "sku": "TT-TBL-STI-125",
+   "name": "Stiga Table Tennis Table - Indoor",
+   "brand": "Stiga",
+   "sport": "Table Tennis",
+   "category": "Equipment",
+   "kitRole": "tt-table",
+   "mrp": 24999,
+   "price": 19999,
+   "discountPercent": 20,
+   "images": [
+    "/products/table-tennis/stiga-table-tennis-table-indoor-1.svg",
+    "/products/table-tennis/stiga-table-tennis-table-indoor-2.svg",
+    "/products/table-tennis/stiga-table-tennis-table-indoor-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001126",
+   "sku": "TT-NET-COS-126",
+   "name": "Cosco Table Tennis Net Set",
+   "brand": "Cosco",
+   "sport": "Table Tennis",
+   "category": "Accessories",
+   "kitRole": "tt-net",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/table-tennis/cosco-table-tennis-net-set-1.svg",
+    "/products/table-tennis/cosco-table-tennis-net-set-2.svg",
+    "/products/table-tennis/cosco-table-tennis-net-set-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001127",
+   "sku": "TT-TAPE-BUT-127",
+   "name": "Butterfly Bat Edge & Grip Tape",
+   "brand": "Butterfly",
+   "sport": "Table Tennis",
+   "category": "Accessories",
+   "kitRole": "grip-tape",
+   "mrp": 399,
+   "price": 299,
+   "discountPercent": 25,
+   "images": [
+    "/products/table-tennis/butterfly-bat-edge-grip-tape-1.svg",
+    "/products/table-tennis/butterfly-bat-edge-grip-tape-2.svg",
+    "/products/table-tennis/butterfly-bat-edge-grip-tape-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001128",
+   "sku": "TT-SHOE-LIN-128",
+   "name": "Li-Ning Table Tennis Shoes",
+   "brand": "Li-Ning",
+   "sport": "Table Tennis",
+   "category": "Shoes",
+   "kitRole": "tt-shoes",
+   "mrp": 4499,
+   "price": 3499,
+   "discountPercent": 22,
+   "images": [
+    "/products/table-tennis/li-ning-table-tennis-shoes-1.svg",
+    "/products/table-tennis/li-ning-table-tennis-shoes-2.svg",
+    "/products/table-tennis/li-ning-table-tennis-shoes-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001129",
+   "sku": "TT-CASE-BUT-129",
+   "name": "Butterfly Paddle Case - Double",
+   "brand": "Butterfly",
+   "sport": "Table Tennis",
+   "category": "Kit Bag",
+   "kitRole": "tt-case",
+   "mrp": 899,
+   "price": 699,
+   "discountPercent": 22,
+   "images": [
+    "/products/table-tennis/butterfly-paddle-case-double-1.svg",
+    "/products/table-tennis/butterfly-paddle-case-double-2.svg",
+    "/products/table-tennis/butterfly-paddle-case-double-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001130",
+   "sku": "VB-BALL-COS-130",
+   "name": "Cosco Volleyball - Outdoor Beach",
+   "brand": "Cosco",
+   "sport": "Volleyball",
+   "category": "Ball",
+   "kitRole": "ball",
+   "mrp": 1299,
+   "price": 999,
+   "discountPercent": 23,
+   "images": [
+    "/products/volleyball/cosco-volleyball-outdoor-beach-1.svg",
+    "/products/volleyball/cosco-volleyball-outdoor-beach-2.svg",
+    "/products/volleyball/cosco-volleyball-outdoor-beach-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001131",
+   "sku": "VB-SHOE-MIZ-131",
+   "name": "Mizuno Volleyball Shoes - Wave Grip",
+   "brand": "Mizuno",
+   "sport": "Volleyball",
+   "category": "Shoes",
+   "kitRole": "shoes",
+   "mrp": 6999,
+   "price": 5499,
+   "discountPercent": 21,
+   "images": [
+    "/products/volleyball/mizuno-volleyball-shoes-wave-grip-1.svg",
+    "/products/volleyball/mizuno-volleyball-shoes-wave-grip-2.svg",
+    "/products/volleyball/mizuno-volleyball-shoes-wave-grip-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001132",
+   "sku": "VB-BAG-NIV-132",
+   "name": "Nivia Volleyball Ball Bag",
+   "brand": "Nivia",
+   "sport": "Volleyball",
+   "category": "Kit Bag",
+   "kitRole": "ball-bag",
+   "mrp": 999,
+   "price": 749,
+   "discountPercent": 25,
+   "images": [
+    "/products/volleyball/nivia-volleyball-ball-bag-1.svg",
+    "/products/volleyball/nivia-volleyball-ball-bag-2.svg",
+    "/products/volleyball/nivia-volleyball-ball-bag-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001133",
+   "sku": "VB-NET-COS-133",
+   "name": "Cosco Volleyball Training Net",
+   "brand": "Cosco",
+   "sport": "Volleyball",
+   "category": "Accessories",
+   "kitRole": "net",
+   "mrp": 3499,
+   "price": 2799,
+   "discountPercent": 20,
+   "images": [
+    "/products/volleyball/cosco-volleyball-training-net-1.svg",
+    "/products/volleyball/cosco-volleyball-training-net-2.svg",
+    "/products/volleyball/cosco-volleyball-training-net-3.svg"
+   ]
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000001134",
+   "sku": "VB-SLV-NIK-134",
+   "name": "Nike Volleyball Arm Sleeves",
+   "brand": "Nike",
+   "sport": "Volleyball",
+   "category": "Accessories",
+   "kitRole": "arm-sleeves",
+   "mrp": 799,
+   "price": 599,
+   "discountPercent": 25,
+   "images": [
+    "/products/volleyball/nike-volleyball-arm-sleeves-1.svg",
+    "/products/volleyball/nike-volleyball-arm-sleeves-2.svg",
+    "/products/volleyball/nike-volleyball-arm-sleeves-3.svg"
+   ]
+  }
+ ],
+ "sports": [
+  "Badminton",
+  "Basketball",
+  "Cricket",
+  "Cycling",
+  "Fitness",
+  "Football",
+  "Running",
+  "Swimming",
+  "Table Tennis",
+  "Tennis",
+  "Volleyball"
+ ]
+}

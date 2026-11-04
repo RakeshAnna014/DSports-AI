@@ -1,27 +1,21 @@
 import type { InventoryRecord } from '@/types/catalog';
 
-export const getProductImageUrl = (name: string, images?: { url: string; primary?: boolean }[]): string => {
+/** Shown when a product has no image of its own: a DSports visual, never the product name painted on a coloured block. */
+export const FALLBACK_IMAGE = '/products/placeholder.svg';
+
+export const getProductImageUrl = (_name: string, images?: { url: string; primary?: boolean }[]): string => {
   if (images && images.length > 0) {
     const primary = images.find((img) => img.primary);
     return primary?.url ?? images[0].url;
   }
-  const palette = [
-    { bg: 'E8F5E9', fg: '1B5E20' },
-    { bg: 'E3F2FD', fg: '0D47A1' },
-    { bg: 'FCE4EC', fg: '880E4F' },
-    { bg: 'FFF3E0', fg: 'E65100' },
-    { bg: 'EDE7F6', fg: '4527A0' },
-    { bg: 'FFF8E1', fg: 'FF8F00' },
-  ];
-  const c = palette[name.length % palette.length];
-  return `https://placehold.co/400x400/${c.bg}/${c.fg}?text=${encodeURIComponent(name)}`;
+  return FALLBACK_IMAGE;
 };
 
 export const computeDiscount = (mrp: number, sellingPrice: number): number =>
   Math.round(((mrp - sellingPrice) / mrp) * 100);
 
-export const formatPrice = (amount: number, currency = 'USD'): string =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+export const formatPrice = (amount: number, currency = 'INR'): string =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(amount);
 
 export const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('en-US', {

@@ -29,6 +29,8 @@ public final class CheckoutEntityMapper {
         }
         entity.setDeliveryCharge(checkout.getDeliveryCharge());
         entity.setDiscountAmount(checkout.getDiscountAmount());
+        entity.setPromotionId(checkout.getPromotionId());
+        entity.setPromotionCode(checkout.getPromotionCode());
         entity.setSubtotal(checkout.getSubtotal());
         entity.setTaxAmount(checkout.getTaxAmount());
         entity.setTotalAmount(checkout.getTotalAmount());
@@ -79,7 +81,8 @@ public final class CheckoutEntityMapper {
             entity.getTotalAmount(), entity.getCurrency(), entity.getNotes(),
             entity.getExpiresAt(), entity.getValidatedAt(),
             entity.getCancelledAt(), entity.getVersion(),
-            entity.getCreatedAt(), entity.getUpdatedAt()
+            entity.getCreatedAt(), entity.getUpdatedAt(),
+            entity.getPromotionId(), entity.getPromotionCode()
         );
     }
 

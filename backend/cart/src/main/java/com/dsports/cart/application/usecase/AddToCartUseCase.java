@@ -32,16 +32,20 @@ public class AddToCartUseCase {
         var requestedQty = command.quantity();
 
         return validateProduct(productId)
-            .flatMap(product -> validateInventory(productId, requestedQty)
-                .then(Mono.defer(() -> getActivePrice(productId)))
+            .flatMap(product -> getActivePrice(productId)
                 .flatMap(price -> getOrCreateCart(userId)
                     .flatMap(cart -> {
-                        var itemId = CartItemId.generate();
-                        var qty = Quantity.from(requestedQty);
-                        cart.addItem(itemId, productId.toString(), product.name(),
-                            Money.from(price.unitPrice()), qty);
-                        return cartRepository.save(cart)
-                            .thenReturn(CartResultMapper.toResult(cart));
+                        // Stock must cover what the cart will hold after this add, not just the increment.
+                        var alreadyInCart = cart.findItemByProductId(productId.toString())
+                            .map(item -> item.getQuantity().value())
+                            .orElse(0);
+                        return validateInventory(productId, alreadyInCart + requestedQty)
+                            .then(Mono.defer(() -> {
+                                cart.addItem(CartItemId.generate(), productId.toString(), product.name(),
+                                    Money.from(price.unitPrice()), Quantity.from(requestedQty));
+                                return cartRepository.save(cart)
+                                    .thenReturn(CartResultMapper.toResult(cart));
+                            }));
                     })));
     }
 

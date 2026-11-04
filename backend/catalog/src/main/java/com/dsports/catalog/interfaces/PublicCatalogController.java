@@ -1,5 +1,7 @@
 package com.dsports.catalog.interfaces;
 
+import com.dsports.catalog.domain.exception.CatalogErrorCode;
+import com.dsports.catalog.domain.exception.CatalogDomainException;
 import com.dsports.catalog.application.port.ProductFilter;
 import com.dsports.catalog.application.result.BrandResult;
 import com.dsports.catalog.application.result.CategoryResult;
@@ -99,8 +101,10 @@ public class PublicCatalogController {
             @Parameter(description = "Sort field")
             @RequestParam(defaultValue = "created_at") String sortBy,
             @Parameter(description = "Sort direction (asc/desc)")
-            @RequestParam(defaultValue = "desc") String sortDir) {
-        var filter = new ProductFilter(brandId, categoryId, sportId, "ACTIVE", page, size, sortBy, sortDir);
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @Parameter(description = "Free-text search over name, description and SKU (all words must match)")
+            @RequestParam(required = false) String q) {
+        var filter = new ProductFilter(brandId, categoryId, sportId, "ACTIVE", page, size, sortBy, sortDir, q);
         return getProductsUseCase.execute(filter);
     }
 
@@ -112,6 +116,9 @@ public class PublicCatalogController {
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
     public Mono<ProductResult> getProduct(@Parameter(description = "Product ID") @PathVariable UUID id) {
-        return getProductUseCase.execute(ProductId.fromUUID(id));
+        return getProductUseCase.execute(ProductId.fromUUID(id))
+                .filter(product -> "ACTIVE".equals(product.status()))
+                .switchIfEmpty(Mono.error(new CatalogDomainException(CatalogErrorCode.PRODUCT_NOT_FOUND,
+                        "Product not found: " + id)));
     }
 }

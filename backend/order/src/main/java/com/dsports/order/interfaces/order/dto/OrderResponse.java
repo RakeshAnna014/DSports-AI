@@ -21,6 +21,7 @@ public record OrderResponse(
     BigDecimal shippingCharge,
     BigDecimal taxAmount,
     BigDecimal discountAmount,
+    String promotionCode,
     BigDecimal grandTotal,
     String currency,
     Instant placedAt,
@@ -35,7 +36,7 @@ public record OrderResponse(
             result.status(), result.shippingAddress(), result.billingAddress(),
             result.items().stream().map(OrderItemResponse::from).toList(),
             result.subtotal(), result.shippingCharge(), result.taxAmount(),
-            result.discountAmount(), result.grandTotal(), result.currency(),
+            result.discountAmount(), result.promotionCode(), result.grandTotal(), result.currency(),
             result.placedAt(), result.cancelledAt(), result.version(),
             result.createdAt(), result.updatedAt()
         );

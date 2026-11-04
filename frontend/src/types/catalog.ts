@@ -9,6 +9,9 @@ export interface ProductSummary {
   status: string;
   createdAt: string;
   updatedAt: string;
+  /** The primary image URL (or the first), and all image URLs in display order. */
+  imageUrl?: string | null;
+  images?: string[];
 }
 
 export interface ProductDetail {
@@ -50,13 +53,11 @@ export interface Price {
   status: string;
 }
 
+/** Storefront stock summary: availableQuantity is what can still be ordered (on hand minus reserved). */
 export interface InventoryRecord {
-  id: string;
   productId: string;
-  warehouseId: string;
   availableQuantity: number;
-  reservedQuantity: number;
-  status: string;
+  status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 }
 
 export interface ProductsQuery {

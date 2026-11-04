@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { catalogApi } from '@/api/catalog';
 import { pricingApi } from '@/api/pricing';
@@ -9,6 +10,28 @@ export const useProducts = (params?: ProductsQuery) =>
     queryKey: ['products', params],
     queryFn: () => catalogApi.getProducts(params),
   });
+
+/** The whole catalogue (the API pages at 100). */
+export const useAllProducts = () =>
+  useQuery({
+    queryKey: ['products', 'all'],
+    queryFn: () => catalogApi.getAllProducts(),
+    staleTime: 60_000,
+  });
+
+/** Structured facts of every product, keyed by product id. */
+export const useProductAttributes = () =>
+  useQuery({
+    queryKey: ['product-attributes'],
+    queryFn: () => catalogApi.getAllAttributes(),
+    staleTime: 5 * 60_000,
+  });
+
+/** productId -> primary image URL, so any screen that only knows a product id (cart, orders, AI cards) can show its picture. */
+export const useProductImageMap = () => {
+  const { data } = useAllProducts();
+  return useMemo(() => new Map((data ?? []).filter((p) => p.imageUrl).map((p) => [p.id, p.imageUrl as string])), [data]);
+};
 
 export const useProductDetail = (id: string) =>
   useQuery({

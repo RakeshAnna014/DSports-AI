@@ -59,8 +59,8 @@ class UserRepositoryIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        String r2dbcUrl = "r2dbc:postgresql://" + postgres.getHost() + ":" + postgres.getFirstMappedPort()
-                + "/identity_test?user=" + postgres.getUsername() + "&password=" + postgres.getPassword();
+        String r2dbcUrl = "r2dbc:postgresql://" + postgres.getUsername() + ":" + postgres.getPassword()
+                + "@" + postgres.getHost() + ":" + postgres.getFirstMappedPort() + "/identity_test";
         databaseClient = DatabaseClient.create(io.r2dbc.spi.ConnectionFactories.get(r2dbcUrl));
 
         var userRepo = mock(SpringR2dbcUserRepository.class);
@@ -77,7 +77,7 @@ class UserRepositoryIntegrationTest {
 
         when(userRepo.save(any(CustomerEntity.class))).thenAnswer(invocation -> {
             var entity = invocation.<CustomerEntity>getArgument(0);
-            return databaseClient.sql("""
+            var spec = databaseClient.sql("""
                     INSERT INTO customers (id, email, password_hash, first_name, last_name, phone,
                                            profile_image_url, date_of_birth, status, failed_login_attempts,
                                            locked_until, last_login_at, created_at, updated_at, deleted_at, version)
@@ -105,19 +105,18 @@ class UserRepositoryIntegrationTest {
                     .bind("passwordHash", entity.getPasswordHash())
                     .bind("firstName", entity.getFirstName())
                     .bind("lastName", entity.getLastName())
-                    .bind("phone", entity.getPhone())
-                    .bind("profileImageUrl", entity.getProfileImageUrl())
-                    .bind("dateOfBirth", entity.getDateOfBirth())
                     .bind("status", entity.getStatus())
                     .bind("failedLoginAttempts", entity.getFailedLoginAttempts())
-                    .bind("lockedUntil", entity.getLockedUntil())
-                    .bind("lastLoginAt", entity.getLastLoginAt())
                     .bind("createdAt", entity.getCreatedAt())
                     .bind("updatedAt", entity.getUpdatedAt())
-                    .bind("deletedAt", entity.getDeletedAt())
-                    .bind("version", entity.getVersion())
-                    .then()
-                    .thenReturn(entity);
+                    .bind("version", entity.getVersion());
+            spec = bindNullable(spec, "phone", entity.getPhone(), String.class);
+            spec = bindNullable(spec, "profileImageUrl", entity.getProfileImageUrl(), String.class);
+            spec = bindNullable(spec, "dateOfBirth", entity.getDateOfBirth(), java.time.LocalDate.class);
+            spec = bindNullable(spec, "lockedUntil", entity.getLockedUntil(), java.time.Instant.class);
+            spec = bindNullable(spec, "lastLoginAt", entity.getLastLoginAt(), java.time.Instant.class);
+            spec = bindNullable(spec, "deletedAt", entity.getDeletedAt(), java.time.Instant.class);
+            return spec.then().thenReturn(entity);
         });
 
         when(addressRepo.findByCustomerId(any(UUID.class))).thenReturn(Flux.empty());
@@ -255,5 +254,10 @@ class UserRepositoryIntegrationTest {
         StepVerifier.create(userRepository.existsByEmail(Email.from("duplicate@example.com")))
                 .assertNext(exists -> assertThat(exists).isTrue())
                 .verifyComplete();
+    }
+
+    private static DatabaseClient.GenericExecuteSpec bindNullable(DatabaseClient.GenericExecuteSpec spec,
+                                                                  String name, Object value, Class<?> type) {
+        return value != null ? spec.bind(name, value) : spec.bindNull(name, type);
     }
 }

@@ -22,6 +22,7 @@ public final class PaymentResultMapper {
             payment.getStatus().name(),
             payment.getFailureReason(),
             payment.getPaidAt(),
+            payment.getRefundedAmount(),
             payment.getVersion(),
             payment.getCreatedAt(),
             payment.getUpdatedAt()

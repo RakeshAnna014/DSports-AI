@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F8FC"/><stop offset="1" stop-color="#E8EEF7"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><ellipse cx="200" cy="338" rx="110" ry="14" fill="#0B1426" opacity=".12"/><g transform="translate(200 200) scale(.82) translate(-200 -200)">
+      <path d="M128 90L172 68Q200 100 228 68L272 90L332 142L296 178L272 158V304H128V158L104 178L68 142Z" fill="#1F2937"/>
+      <path d="M172 68Q200 100 228 68" stroke="#FACC15" stroke-width="10" fill="none"/>
+      <path d="M128 158V304M272 158V304" stroke="#171E29" stroke-width="3" opacity=".5"/>
+      <rect x="128" y="206" width="144" height="16" fill="#FACC15" opacity=".95"/>
+      <path d="M68 142L104 178M332 142L296 178" stroke="#FACC15" stroke-width="8"/>
+      <text x="200" y="262" font-size="40" font-family="Arial" font-weight="800" text-anchor="middle" fill="#FFFFFF" opacity=".9">DS</text></g></svg>

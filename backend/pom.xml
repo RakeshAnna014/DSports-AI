@@ -31,10 +31,14 @@
         <module>payment</module>
         <module>billing</module>
         <module>returns</module>
+        <module>support</module>
+        <module>review</module>
+        <module>shipment</module>
         <module>franchise</module>
         <module>notification</module>
         <module>admin</module>
         <module>ai</module>
+        <module>wishlist</module>
         <module>bootstrap</module>
     </modules>
 
@@ -104,6 +108,11 @@
             </dependency>
             <dependency>
                 <groupId>com.dsports</groupId>
+                <artifactId>dsports-support</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
                 <artifactId>dsports-franchise</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -114,12 +123,27 @@
             </dependency>
             <dependency>
                 <groupId>com.dsports</groupId>
+                <artifactId>dsports-review</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
+                <artifactId>dsports-shipment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
                 <artifactId>dsports-admin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.dsports</groupId>
                 <artifactId>dsports-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
+                <artifactId>dsports-wishlist</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -201,6 +225,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
+                        <argLine>-Duser.timezone=UTC</argLine>
                         <excludedGroups>integration</excludedGroups>
                     </configuration>
                 </plugin>
@@ -216,8 +241,8 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludedGroups></excludedGroups>
+                        <configuration combine.self="override">
+                            <argLine>-Duser.timezone=UTC</argLine>
                             <groups>integration</groups>
                         </configuration>
                     </plugin>

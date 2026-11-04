@@ -61,6 +61,10 @@
         </dependency>
         <dependency>
             <groupId>com.dsports</groupId>
+            <artifactId>dsports-support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
             <artifactId>dsports-franchise</artifactId>
         </dependency>
         <dependency>
@@ -69,11 +73,23 @@
         </dependency>
         <dependency>
             <groupId>com.dsports</groupId>
+            <artifactId>dsports-review</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
+            <artifactId>dsports-shipment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
             <artifactId>dsports-admin</artifactId>
         </dependency>
         <dependency>
             <groupId>com.dsports</groupId>
             <artifactId>dsports-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
+            <artifactId>dsports-wishlist</artifactId>
         </dependency>
 
         <!-- Infrastructure -->

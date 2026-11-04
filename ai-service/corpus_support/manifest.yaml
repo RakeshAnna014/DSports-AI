@@ -1,0 +1,5 @@
+# Internal support knowledge (SAMPLE documents written for the POC, not official DSports procedures).
+# document_type starts with sup_: the retriever never returns these to customers (see Retriever.search_chunks, internal="sup_").
+documents:
+  - {file: support-triage-sop.md, source: sup-support-triage-sop.md, documentType: sup_procedure, title: Support Triage SOP (sample), version: "1"}
+  - {file: support-escalation-matrix.md, source: sup-support-escalation-matrix.md, documentType: sup_procedure, title: Support Escalation Matrix (sample), version: "1"}

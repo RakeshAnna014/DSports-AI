@@ -16,6 +16,7 @@ import {
   Button,
 } from '@mui/material';
 import { paymentsApi } from '@/api/payments';
+import { getApiErrorMessage } from '@/api/errors';
 import type { PaymentSummaryResponse } from '@/types/payments';
 
 const statusColor: Record<string, 'success' | 'error' | 'warning' | 'info' | 'default'> = {
@@ -46,8 +47,7 @@ const PaymentHistoryPage = () => {
       const data = await paymentsApi.getPaymentHistory();
       setPayments(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load payment history';
-      setError(msg);
+      setError(getApiErrorMessage(err, 'Failed to load payment history'));
     } finally {
       setLoading(false);
     }

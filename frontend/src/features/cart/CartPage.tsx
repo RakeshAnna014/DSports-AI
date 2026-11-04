@@ -1,3 +1,4 @@
+import ProductImage from '@/components/common/ProductImage';
 import {
   Box,
   Typography,
@@ -5,7 +6,6 @@ import {
   IconButton,
   Card,
   CardContent,
-  CardMedia,
   Divider,
   Stack,
 } from '@mui/material';
@@ -55,19 +55,7 @@ const CartPage = () => {
             {items.map((item) => (
               <Card key={item.productId} sx={{ borderRadius: 2 }} variant="outlined">
                 <CardContent sx={{ display: 'flex', gap: 2, p: 2, '&:last-child': { pb: 2 } }}>
-                  <CardMedia
-                    component="img"
-                    image={item.imageUrl}
-                    alt={item.name}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      borderRadius: 1,
-                      objectFit: 'cover',
-                      flexShrink: 0,
-                      bgcolor: 'grey.100',
-                    }}
-                  />
+                  <ProductImage productId={item.productId} src={item.imageUrl !== '/products/placeholder.svg' ? item.imageUrl : undefined} alt={item.name} sx={{ width: 100, flexShrink: 0, borderRadius: 1 }} />
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography variant="subtitle2" fontWeight={600} noWrap>
                       {item.name}

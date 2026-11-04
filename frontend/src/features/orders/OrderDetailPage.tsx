@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
@@ -35,7 +35,9 @@ import {
 } from '@mui/icons-material';
 import type { OrderResponse } from '@/types/orders';
 import { ordersApi } from '@/api/orders';
+import { getApiErrorMessage } from '@/api/errors';
 import { formatPrice, formatDate } from '@/lib/productUtils';
+import OrderRefundSection from './OrderRefundSection';
 
 const ORDER_STEPS = [
   { label: 'Placed', statuses: ['CREATED', 'PENDING_PAYMENT'] },
@@ -65,24 +67,23 @@ const OrderDetailPage = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    loadOrder();
-  }, [id]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
       const data = await ordersApi.getOrder(id);
       setOrder(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to load order');
+    } catch (err) {
+      setError(getApiErrorMessage(err, err instanceof Error ? err.message : 'Failed to load order'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
 
   const handleCancel = async () => {
     if (!id) return;
@@ -91,8 +92,8 @@ const OrderDetailPage = () => {
       const updated = await ordersApi.cancelOrder(id);
       setOrder(updated);
       setCancelDialogOpen(false);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to cancel order');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to cancel order'));
     } finally {
       setCancelling(false);
     }
@@ -104,7 +105,9 @@ const OrderDetailPage = () => {
     return idx >= 0 ? idx : 0;
   };
 
-  const canCancel = order && ['CREATED', 'PENDING_PAYMENT', 'CONFIRMED', 'PROCESSING'].includes(order.status);
+  // Only unpaid orders can be cancelled; paid orders are closed through a refund.
+  const canCancel = order && ['CREATED', 'PENDING_PAYMENT'].includes(order.status);
+  const canPay = order?.status === 'PENDING_PAYMENT';
 
   if (loading) {
     return (
@@ -159,6 +162,11 @@ const OrderDetailPage = () => {
             color={STATUS_COLORS[order.status] || 'default'}
             size="medium"
           />
+          {canPay && (
+            <Button variant="contained" size="small" onClick={() => navigate(`/payment?orderId=${order.id}`)}>
+              Pay now
+            </Button>
+          )}
           {canCancel && (
             <Button
               variant="outlined"
@@ -174,6 +182,10 @@ const OrderDetailPage = () => {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'REFUNDED'].includes(order.status) && (
+        <OrderRefundSection orderId={order.id} />
+      )}
 
       {isCancelled ? (
         <Alert severity="warning" icon={<CancelOutlined />} sx={{ mb: 3 }}>

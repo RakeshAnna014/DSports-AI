@@ -32,7 +32,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.DUPLICATE_EMAIL, "Email already registered");
         var exchange = createExchange("/test/errors/duplicate-email", "corr-123");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(409);
@@ -49,10 +49,33 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.INVALID_EMAIL, "Invalid email format");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(400);
         assertThat(result.code()).isEqualTo("INVALID_EMAIL");
+    }
+
+    @Test
+    void addressValidationFailuresAreClientErrorsWithTheDomainMessage() {
+        var message = "Country must be a valid ISO 3166-1 alpha-2 code (e.g. US, IN)";
+        for (var code : new ErrorCode[] {ErrorCode.INVALID_COUNTRY, ErrorCode.INVALID_POSTAL_CODE, ErrorCode.INVALID_ADDRESS,
+                ErrorCode.INVALID_STATE, ErrorCode.INVALID_DATE_OF_BIRTH, ErrorCode.INVALID_PROFILE_IMAGE_URL}) {
+            var result = handler.handleIdentityDomainException(new IdentityDomainException(code, message), createExchange("/api/customers/me/addresses")).block().getBody();
+            assertThat(result.status()).as(code.name()).isEqualTo(400);
+            assertThat(result.code()).isEqualTo(code.name());
+            assertThat(result.message()).isEqualTo(message);
+        }
+        assertThat(handler.handleIdentityDomainException(new IdentityDomainException(ErrorCode.ADDRESS_NOT_FOUND, "x"), createExchange("/t")).block().getBody().status()).isEqualTo(404);
+        assertThat(handler.handleIdentityDomainException(new IdentityDomainException(ErrorCode.MAX_ADDRESSES_EXCEEDED, "x"), createExchange("/t")).block().getBody().status()).isEqualTo(409);
+    }
+
+    @Test
+    void everyIdentityErrorCodeExceptTheGenericOnesIsNotAnInternalServerError() {
+        for (var code : ErrorCode.values()) {
+            if (code == ErrorCode.GENERIC || code == ErrorCode.INTERNAL_ERROR) continue;
+            var status = handler.handleIdentityDomainException(new IdentityDomainException(code, "m"), createExchange("/t")).block().getBody().status();
+            assertThat(status).as(code.name()).isLessThan(500);
+        }
     }
 
     @Test
@@ -60,7 +83,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.USER_NOT_FOUND, "User not found");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(404);
         assertThat(result.code()).isEqualTo("USER_NOT_FOUND");
@@ -71,7 +94,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.INVALID_STATUS_TRANSITION, "Cannot transition");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(409);
         assertThat(result.code()).isEqualTo("INVALID_STATUS_TRANSITION");
@@ -82,7 +105,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.INVALID_PASSWORD, "Invalid password");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(401);
         assertThat(result.code()).isEqualTo("INVALID_PASSWORD");
@@ -93,7 +116,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.ACCOUNT_LOCKED, "Account locked");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(423);
         assertThat(result.code()).isEqualTo("ACCOUNT_LOCKED");
@@ -104,7 +127,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.GENERIC, "Something went wrong");
         var exchange = createExchange("/test");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(500);
         assertThat(result.code()).isEqualTo("GENERIC");
@@ -115,7 +138,7 @@ class GlobalExceptionHandlerTest {
         var ex = new RuntimeException("Unexpected error");
         var exchange = createExchange("/test");
 
-        var result = handler.handleUnknown(ex, exchange).block();
+        var result = handler.handleUnknown(ex, exchange).block().getBody();
 
         assertThat(result.status()).isEqualTo(500);
         assertThat(result.code()).isEqualTo("INTERNAL_ERROR");
@@ -127,7 +150,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.DUPLICATE_EMAIL, "Email already registered");
         var exchange = createExchange("/test", "my-corr-id");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.correlationId()).isEqualTo("my-corr-id");
     }
@@ -137,7 +160,7 @@ class GlobalExceptionHandlerTest {
         var ex = new IdentityDomainException(ErrorCode.USER_NOT_FOUND, "Not found");
         var exchange = createExchange("/api/users/123");
 
-        var result = handler.handleIdentityDomainException(ex, exchange).block();
+        var result = handler.handleIdentityDomainException(ex, exchange).block().getBody();
 
         assertThat(result.path()).isEqualTo("/api/users/123");
     }
@@ -147,7 +170,7 @@ class GlobalExceptionHandlerTest {
         var ex = new RuntimeException("Internal database connection pool exhausted - credentials=admin:pass123");
         var exchange = createExchange("/test");
 
-        var result = handler.handleUnknown(ex, exchange).block();
+        var result = handler.handleUnknown(ex, exchange).block().getBody();
 
         assertThat(result.message()).isEqualTo("An unexpected error occurred");
         assertThat(result.message()).doesNotContain("credentials");

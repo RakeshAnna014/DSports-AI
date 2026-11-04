@@ -31,6 +31,7 @@ public final class Order {
     private BigDecimal shippingCharge;
     private BigDecimal taxAmount;
     private BigDecimal discountAmount;
+    private String promotionCode;
     private BigDecimal grandTotal;
     private String currency;
     private Instant placedAt;
@@ -101,6 +102,11 @@ public final class Order {
             placedAt, cancelledAt, version, createdAt, updatedAt);
     }
 
+    /** Records which promotion produced the discount (history only; the amount itself is discountAmount). */
+    public void attachPromotion(String code) {
+        this.promotionCode = code;
+    }
+
     public void markPendingPayment() {
         transitionTo(OrderStatus.PENDING_PAYMENT);
         this.updatedAt = Instant.now();
@@ -136,18 +142,19 @@ public final class Order {
         domainEvents.add(new OrderDeliveredEvent(id, userId));
     }
 
+    /** Cancels an unpaid order. Paid orders are closed through a refund instead, so captured money is never stranded. */
     public void cancel() {
-        if (status == OrderStatus.DELIVERED) {
-            throw new OrderDomainException(OrderErrorCode.ORDER_ALREADY_DELIVERED,
-                "Delivered orders cannot be cancelled");
-        }
         if (status == OrderStatus.CANCELLED) {
             throw new OrderDomainException(OrderErrorCode.ORDER_ALREADY_CANCELLED,
                 "Order is already cancelled");
         }
-        if (status.isTerminal()) {
+        if (status == OrderStatus.DELIVERED) {
+            throw new OrderDomainException(OrderErrorCode.ORDER_ALREADY_DELIVERED,
+                "Delivered orders cannot be cancelled");
+        }
+        if (status.isPaid()) {
             throw new OrderDomainException(OrderErrorCode.INVALID_STATUS_TRANSITION,
-                "Cannot cancel order in terminal state: " + status);
+                "Order " + orderNumber.value() + " is already paid and cannot be cancelled; it must be refunded");
         }
         transitionTo(OrderStatus.CANCELLED);
         this.cancelledAt = Instant.now();
@@ -155,14 +162,25 @@ public final class Order {
         domainEvents.add(new OrderCancelledEvent(id, userId));
     }
 
-    public void updateStatus(OrderStatus newStatus) {
-        ensureNotCancelled();
-        if (status == OrderStatus.DELIVERED) {
-            throw new OrderDomainException(OrderErrorCode.ORDER_ALREADY_DELIVERED,
-                "Delivered orders cannot be modified");
-        }
-        transitionTo(newStatus);
+    /** Records that the full payment has been refunded. */
+    public void markRefunded() {
+        transitionTo(OrderStatus.REFUNDED);
         this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Administrative status change. Only fulfilment states can be set by an operator; payment-driven states
+     * (CONFIRMED, REFUNDED) change exclusively through payment processing.
+     */
+    public void updateStatus(OrderStatus newStatus) {
+        switch (newStatus) {
+            case PROCESSING -> process();
+            case SHIPPED -> ship();
+            case DELIVERED -> deliver();
+            case CANCELLED -> cancel();
+            default -> throw new OrderDomainException(OrderErrorCode.INVALID_STATUS_TRANSITION,
+                "Status " + newStatus + " cannot be set manually; it is controlled by payment processing");
+        }
     }
 
     private void transitionTo(OrderStatus target) {
@@ -203,6 +221,7 @@ public final class Order {
     public BigDecimal getShippingCharge() { return shippingCharge; }
     public BigDecimal getTaxAmount() { return taxAmount; }
     public BigDecimal getDiscountAmount() { return discountAmount; }
+    public String getPromotionCode() { return promotionCode; }
     public BigDecimal getGrandTotal() { return grandTotal; }
     public String getCurrency() { return currency; }
     public Instant getPlacedAt() { return placedAt; }

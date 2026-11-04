@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF2F8"/><stop offset="1" stop-color="#DCE5F2"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><g transform="translate(200 214) scale(1.5) translate(-200 -200)"><path d="M160 36H240L248 120H152Z" fill="#0F172A"/><path d="M152 280H248L240 364H160Z" fill="#0F172A"/>
+      <path d="M168 54H232M168 72H232M168 90H232M168 310H232M168 328H232M168 346H232" stroke="#878B94" stroke-width="3"/>
+      <circle cx="200" cy="200" r="92" fill="#0F172A"/><circle cx="200" cy="200" r="76" fill="#0B1426"/>
+      <circle cx="200" cy="200" r="76" fill="none" stroke="#38BDF8" stroke-width="5"/>
+      <path d="M200 200V148M200 200L238 222" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/><circle cx="200" cy="200" r="7" fill="#38BDF8"/>
+      <path d="M140 200h14M246 200h14M200 124v14M200 262v14" stroke="#94A3B8" stroke-width="4"/>
+      <text x="200" y="250" font-size="16" font-family="Arial" font-weight="700" text-anchor="middle" fill="#38BDF8">GPS</text></g><g><rect x="14" y="14" width="86" height="26" rx="13" fill="#0B1426" opacity=".78"/><text x="57" y="32" font-size="12" font-family="Arial" font-weight="700" text-anchor="middle" fill="#FFFFFF">Detail</text></g></svg>

@@ -45,6 +45,12 @@ public class CheckoutEntity {
     @Column("discount_amount")
     private BigDecimal discountAmount;
 
+    @Column("promotion_id")
+    private UUID promotionId;
+
+    @Column("promotion_code")
+    private String promotionCode;
+
     @Column("total_amount")
     private BigDecimal totalAmount;
 
@@ -96,6 +102,10 @@ public class CheckoutEntity {
     public BigDecimal getDiscountAmount() { return discountAmount; }
     public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
 
+    public UUID getPromotionId() { return promotionId; }
+    public void setPromotionId(UUID promotionId) { this.promotionId = promotionId; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
     public String getCurrency() { return currency; }

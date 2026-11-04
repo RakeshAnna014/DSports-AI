@@ -82,8 +82,16 @@ springdoc:
     disabled: true
 
 app:
+  rate-limit:                       # in-memory, per instance (see docs/SECURITY.md); set enabled=false to switch the filter off
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:20}          # login/register/refresh per client address
+    tickets-per-minute: ${RATE_LIMIT_TICKETS_PER_MINUTE:10}    # ticket creation per authenticated user (messages: 3x)
+  support:
+    business-zone: ${SUPPORT_BUSINESS_ZONE:UTC}   # zone in which a calendar day is counted for support date filters and reports; UTC until the business agrees one
   jwt:
     secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:dsports}
+    audience: ${JWT_AUDIENCE:dsports-api}
     access-token-expiration: 15m
     refresh-token-expiration: 7d
 

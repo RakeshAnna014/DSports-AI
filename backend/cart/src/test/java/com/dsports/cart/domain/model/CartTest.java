@@ -267,6 +267,54 @@ class CartTest {
             cart.checkout();
             assertThrows(CartDomainException.class, cart::abandon);
         }
+
+        @Test
+        @DisplayName("Should complete checked-out cart, clearing items and emitting CartClearedEvent")
+        void shouldCompleteCheckedOutCart() {
+            cart.addItem(CartItemId.generate(), PRODUCT_ID_1, PRODUCT_NAME_1, PRICE_100, Quantity.from(2));
+            cart.checkout();
+            cart.clearDomainEvents();
+
+            cart.complete();
+
+            assertEquals(CartStatus.COMPLETED, cart.getStatus());
+            assertTrue(cart.getItems().isEmpty());
+            assertEquals(0, cart.getTotalItems());
+            assertTrue(cart.getDomainEvents().stream().anyMatch(e -> e instanceof CartClearedEvent));
+        }
+
+        @Test
+        @DisplayName("Should not complete an active cart (must be checked out first)")
+        void shouldNotCompleteActiveCart() {
+            var ex = assertThrows(CartDomainException.class, cart::complete);
+            assertEquals(CartErrorCode.INVALID_STATUS_TRANSITION, ex.getErrorCode());
+        }
+
+        @Test
+        @DisplayName("Should not complete a cart twice")
+        void shouldNotCompleteCompletedCart() {
+            cart.checkout();
+            cart.complete();
+            assertThrows(CartDomainException.class, cart::complete);
+        }
+
+        @Test
+        @DisplayName("Should reject checkout and mutations of a completed cart")
+        void shouldRejectChangesToCompletedCart() {
+            cart.checkout();
+            cart.complete();
+            assertThrows(CartDomainException.class, cart::checkout);
+            assertThrows(CartDomainException.class, cart::abandon);
+            assertThrows(CartDomainException.class,
+                () -> cart.addItem(CartItemId.generate(), PRODUCT_ID_1, PRODUCT_NAME_1, PRICE_100, Quantity.from(1)));
+        }
+
+        @Test
+        @DisplayName("Should not check out an abandoned cart")
+        void shouldNotCheckoutAbandonedCart() {
+            cart.abandon();
+            assertThrows(CartDomainException.class, cart::checkout);
+        }
     }
 
     @Nested

@@ -9,13 +9,16 @@ import com.dsports.order.domain.order.exception.OrderErrorCode;
 import com.dsports.order.infrastructure.order.persistence.mapper.OrderEntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
+import com.dsports.order.domain.order.model.OrderStatus;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Component
@@ -64,8 +67,16 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
     }
 
     @Override
-    public Mono<Long> countOrders() {
-        return orderRepo.countBy();
+    public Mono<Long> nextOrderSequence() {
+        return orderRepo.nextOrderSequence();
+    }
+
+    @Override
+    public Flux<Order> findByStatusPlacedBefore(OrderStatus status, Instant cutoff) {
+        return orderRepo.findByStatusAndPlacedAtBefore(status.name(), cutoff)
+            .flatMap(entity -> itemRepo.findByOrderId(entity.getId())
+                .collectList()
+                .map(items -> OrderEntityMapper.toDomain(entity, items)));
     }
 
     @Override
@@ -76,15 +87,16 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
             .toList();
 
         return transactionalOperator.execute(tx ->
-            orderRepo.findById(order.getId().value())
-                .flatMap(existing -> {
-                    entity.setVersion(existing.getVersion());
-                    return orderRepo.save(entity);
-                })
-                .switchIfEmpty(orderRepo.save(entity))
+            // The entity carries the version the order was loaded with (0 for a new order), so Spring Data
+            // inserts new orders and updates existing ones only if nobody changed them in between.
+            orderRepo.save(entity)
                 .onErrorMap(OptimisticLockingFailureException.class, e ->
                     new OrderDomainException(OrderErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
-                        "Concurrent modification detected for order " + order.getId().value()))
+                        "Order " + order.getId().value() + " was modified concurrently. Reload and retry."))
+                .onErrorMap(DataIntegrityViolationException.class, e -> isDuplicateCheckout(e)
+                    ? new OrderDomainException(OrderErrorCode.DUPLICATE_ORDER,
+                        "An order for checkout " + order.getCheckoutId() + " already exists")
+                    : e)
                 .flatMap(savedEntity -> {
                     order.setVersion(savedEntity.getVersion());
                     return itemRepo.deleteByOrderId(order.getId().value())
@@ -92,5 +104,9 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
                         .then();
                 })
         ).then();
+    }
+
+    private static boolean isDuplicateCheckout(DataIntegrityViolationException e) {
+        return e.getMessage() != null && e.getMessage().contains("uq_orders_checkout_id");
     }
 }

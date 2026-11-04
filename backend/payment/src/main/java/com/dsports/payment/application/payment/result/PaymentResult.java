@@ -18,6 +18,7 @@ public record PaymentResult(
     String status,
     String failureReason,
     Instant paidAt,
+    BigDecimal refundedAmount,
     int version,
     Instant createdAt,
     Instant updatedAt

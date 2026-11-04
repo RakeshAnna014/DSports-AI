@@ -1,5 +1,7 @@
 package com.dsports.pricing.interfaces;
 
+import com.dsports.pricing.domain.exception.PricingErrorCode;
+import com.dsports.pricing.domain.exception.PricingDomainException;
 import com.dsports.pricing.application.result.PriceResult;
 import com.dsports.pricing.application.usecase.GetPriceUseCase;
 import com.dsports.pricing.application.usecase.GetPricesUseCase;
@@ -17,12 +19,16 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/api/prices", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Pricing")
 public class PublicPriceController {
+
+    private static final int MAX_BATCH = 50;
 
     private final GetPricesUseCase getPricesUseCase;
     private final GetPriceUseCase getPriceUseCase;
@@ -40,11 +46,28 @@ public class PublicPriceController {
     })
     public Flux<PriceResult> getPrices(
             @Parameter(description = "Filter by product ID")
-            @RequestParam(required = false) UUID productId) {
-        if (productId != null) {
-            return getPricesUseCase.execute(ProductId.fromUUID(productId));
+            @RequestParam(required = false) UUID productId,
+            @Parameter(description = "Batch lookup: up to 50 product IDs")
+            @RequestParam(required = false) List<UUID> productIds) {
+        Flux<PriceResult> prices;
+        if (productIds != null && !productIds.isEmpty()) {
+            if (productIds.size() > MAX_BATCH) {
+                return Flux.error(new PricingDomainException(PricingErrorCode.VALIDATION_ERROR,
+                    "At most " + MAX_BATCH + " productIds are allowed per request"));
+            }
+            prices = Flux.fromIterable(new LinkedHashSet<>(productIds))
+                .concatMap(id -> getPricesUseCase.execute(ProductId.fromUUID(id)));
+        } else if (productId != null) {
+            prices = getPricesUseCase.execute(ProductId.fromUUID(productId));
+        } else {
+            prices = getPricesUseCase.execute();
         }
-        return getPricesUseCase.execute();
+        return prices.filter(PublicPriceController::isPublished);
+    }
+
+    /** Draft, scheduled and archived prices are internal; customers only see the price currently in force. */
+    private static boolean isPublished(PriceResult price) {
+        return "ACTIVE".equals(price.status());
     }
 
     @GetMapping("/{id}")
@@ -56,6 +79,9 @@ public class PublicPriceController {
     })
     public Mono<PriceResult> getPrice(
             @Parameter(description = "Price ID") @PathVariable UUID id) {
-        return getPriceUseCase.execute(PriceId.fromUUID(id));
+        return getPriceUseCase.execute(PriceId.fromUUID(id))
+            .filter(PublicPriceController::isPublished)
+            .switchIfEmpty(Mono.error(new PricingDomainException(PricingErrorCode.PRICE_NOT_FOUND,
+                "Price not found: " + id)));
     }
 }

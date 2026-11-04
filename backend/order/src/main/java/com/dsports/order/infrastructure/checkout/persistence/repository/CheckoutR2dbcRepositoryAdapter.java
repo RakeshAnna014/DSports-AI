@@ -6,7 +6,12 @@ import com.dsports.order.domain.checkout.model.CheckoutId;
 import com.dsports.order.infrastructure.checkout.persistence.mapper.CheckoutEntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.dsports.order.domain.checkout.exception.CheckoutDomainException;
+import com.dsports.order.domain.checkout.exception.CheckoutErrorCode;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -18,9 +23,12 @@ public class CheckoutR2dbcRepositoryAdapter implements CheckoutRepository {
 
     private final SpringR2dbcCheckoutRepository checkoutRepo;
     private final SpringR2dbcCheckoutItemRepository itemRepo;
+    private final TransactionalOperator transactionalOperator;
 
     public CheckoutR2dbcRepositoryAdapter(SpringR2dbcCheckoutRepository checkoutRepo,
-                                           SpringR2dbcCheckoutItemRepository itemRepo) {
+                                          SpringR2dbcCheckoutItemRepository itemRepo,
+                                          ReactiveTransactionManager transactionManager) {
+        this.transactionalOperator = TransactionalOperator.create(transactionManager);
         this.checkoutRepo = checkoutRepo;
         this.itemRepo = itemRepo;
     }
@@ -53,14 +61,13 @@ public class CheckoutR2dbcRepositoryAdapter implements CheckoutRepository {
             .map(CheckoutEntityMapper::toItemEntity)
             .toList();
 
-        return checkoutRepo.findById(checkout.getId().value())
-            .flatMap(existing -> {
-                entity.setVersion(existing.getVersion());
-                return checkoutRepo.save(entity);
-            })
-            .switchIfEmpty(checkoutRepo.save(entity))
-            .then(itemRepo.deleteByCheckoutId(checkout.getId().value()))
-            .thenMany(itemRepo.saveAll(itemEntities))
+        return transactionalOperator.execute(tx -> checkoutRepo.save(entity)
+                .onErrorMap(OptimisticLockingFailureException.class, e ->
+                    new CheckoutDomainException(CheckoutErrorCode.OPTIMISTIC_LOCKING_CONFLICT,
+                        "Checkout " + checkout.getId().value() + " was modified concurrently. Reload and retry."))
+                .doOnNext(saved -> checkout.setVersion(saved.getVersion()))
+                .then(itemRepo.deleteByCheckoutId(checkout.getId().value()))
+                .thenMany(itemRepo.saveAll(itemEntities)))
             .then()
             .doOnSuccess(v -> log.debug("Checkout {} saved successfully", checkout.getId().value()));
     }

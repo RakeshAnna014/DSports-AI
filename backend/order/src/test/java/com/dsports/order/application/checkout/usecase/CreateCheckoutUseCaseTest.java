@@ -98,7 +98,7 @@ class CreateCheckoutUseCaseTest {
             .expectErrorSatisfies(e -> {
                 assertThat(e).isInstanceOf(CheckoutDomainException.class);
                 assertThat(((CheckoutDomainException) e).getErrorCode())
-                    .isEqualTo(CheckoutErrorCode.CHECKOUT_ALREADY_TERMINAL);
+                    .isEqualTo(CheckoutErrorCode.ACTIVE_CHECKOUT_EXISTS);
             })
             .verify();
 

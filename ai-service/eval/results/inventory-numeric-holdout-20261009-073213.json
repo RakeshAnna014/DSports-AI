@@ -1,0 +1,175 @@
+{
+ "suite": "holdout",
+ "total": 30,
+ "failed": 0,
+ "groups": {
+  "stock_risk": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "H1 cover equals the lead time: a coin flip is HIGH",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H2 medium",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H3 comfortable",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H4 already out of stock",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H5 slow seller, very long lead time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H6 case pack of 10",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H7 an order lands inside the lead time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H8 out of stock, delivery tomorrow",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H9 missing lead time",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "H10 no forecast: insufficient data",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  },
+  "promotion": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "HP1 elasticity 1",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP2 25% off",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP3 high elasticity",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP4 low elasticity",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP5 tiny stock",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP6 baseline",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP7 unit margin at 20% off",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP8 a delivery inside the window",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP9 a delivery after the window does not count",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HP10 the elasticity range becomes a units range",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  },
+  "forecasting": {
+   "passed": 10,
+   "total": 10,
+   "cases": [
+    {
+     "id": "HF1 weekly pattern (seed 21)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF2 weekly pattern (seed 33)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF3 steeper trend",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF4 intermittent demand 0.8/day",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF5 annual season (seed 23)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF6 stock-outs (seed 24)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF7 promotion (seed 26)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF8 interval calibration (seed 27)",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF9 level shift",
+     "passed": true,
+     "problems": []
+    },
+    {
+     "id": "HF10 intermittent demand 0.15/day",
+     "passed": true,
+     "problems": []
+    }
+   ]
+  }
+ }
+}

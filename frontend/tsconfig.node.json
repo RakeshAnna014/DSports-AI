@@ -14,5 +14,5 @@
     "outDir": "node_modules/.tsbuild",
     "declarationDir": "node_modules/.tsbuild"
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "vitest.config.ts"]
 }

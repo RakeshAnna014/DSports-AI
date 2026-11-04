@@ -1,0 +1,33 @@
+env-docker	PASS	0	0	
+env-gemini	PASS	0	0	
+java-build	PASS	0	207	
+java-integration	PASS	0	79	
+stack-backend	PASS	0	24	
+stack-ai	PASS	0	16	
+stack-vite	PASS	0	0	
+api-e2e	PASS	0	97	
+py-unit	PASS	0	53	
+py-integration	PASS	0	111	
+py-live	PASS	0	144	
+fe-tsc	PASS	0	16	
+fe-build	PASS	0	46	
+fe-catalog	PASS	0	0	
+cust-journeys	PASS	0	251	
+cust-journey-drawer	PASS	0	0	
+cust-journey-commerce	PASS	0	0	
+cust-journey-context	PASS	0	0	
+cust-journey-redesign	PASS	0	0	
+cust-multisport	PASS	0	180	
+scenarios-A-M	PASS	0	67	
+eval-main	PASS	0	206	
+eval-holdout1	PASS	0	73	
+cust-baseline-flow	PASS	0	17	
+inv-unit	PASS	0	12	
+inv-eval-numeric-dev	PASS	0	1	
+inv-eval-numeric-holdout	PASS	0	0	
+inv-measure	PASS	0	44	
+inv-eval-dev	PASS	0	90	
+inv-eval-holdout2	SKIP	0	0	consumed set; its first run is preserved (use --with-holdout2 to re-run for information)
+inv-browser	PASS	0	83	
+inv-failures	FAIL	1	32	exit code 1
+shop-with-ai-down	FAIL	2	22	exit code 2

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E3E8F5"/><stop offset="1" stop-color="#FDE2E2"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><ellipse cx="200" cy="338" rx="110" ry="14" fill="#0B1426" opacity=".12"/><g transform="translate(200 206) rotate(-9) scale(.78) translate(-200 -200)"><path d="M138 60Q150 60 156 100Q200 128 244 100Q250 60 262 60L276 80Q268 150 254 190Q282 240 270 330H130Q118 240 146 190Q132 150 124 80Z" fill="#1E40AF"/>
+      <path d="M146 190Q200 214 254 190" stroke="#F87171" stroke-width="10" fill="none"/>
+      <path d="M130 330Q200 300 270 330" stroke="#F87171" stroke-width="8" fill="none"/>
+      <path d="M156 100Q200 128 244 100" stroke="#0B1426" stroke-width="6" fill="none" opacity=".6"/></g></svg>

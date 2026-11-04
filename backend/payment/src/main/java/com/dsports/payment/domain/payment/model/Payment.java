@@ -9,11 +9,9 @@ import com.dsports.payment.domain.payment.event.PaymentSucceededEvent;
 import com.dsports.payment.domain.payment.exception.PaymentDomainException;
 import com.dsports.payment.domain.payment.exception.PaymentErrorCode;
 import com.dsports.shared.domain.kernel.DomainEvent;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -32,6 +30,7 @@ public final class Payment {
     private PaymentStatus status;
     private String failureReason;
     private Instant paidAt;
+    private BigDecimal refundedAmount;
     private int version;
     private Instant createdAt;
     private Instant updatedAt;
@@ -40,7 +39,7 @@ public final class Payment {
     private Payment(PaymentId id, PaymentReference paymentReference, UUID orderId, UUID userId,
                     BigDecimal amount, String currency, PaymentMethod paymentMethod,
                     PaymentProvider paymentProvider, String transactionId, String gatewayReference,
-                    PaymentStatus status, String failureReason, Instant paidAt,
+                    PaymentStatus status, String failureReason, Instant paidAt, BigDecimal refundedAmount,
                     int version, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id);
         this.paymentReference = paymentReference;
@@ -55,6 +54,7 @@ public final class Payment {
         this.status = Objects.requireNonNull(status);
         this.failureReason = failureReason;
         this.paidAt = paidAt;
+        this.refundedAmount = refundedAmount == null ? BigDecimal.ZERO : refundedAmount;
         this.version = version;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -69,7 +69,7 @@ public final class Payment {
         var now = Instant.now();
         var payment = new Payment(id, paymentReference, orderId, userId,
             amount, currency, null, null, null, null,
-            PaymentStatus.CREATED, null, null,
+            PaymentStatus.CREATED, null, null, BigDecimal.ZERO,
             0, now, now);
         payment.domainEvents.add(new PaymentCreatedEvent(id, paymentReference, orderId, userId, amount, currency));
         return payment;
@@ -79,10 +79,10 @@ public final class Payment {
                                         BigDecimal amount, String currency, PaymentMethod paymentMethod,
                                         PaymentProvider paymentProvider, String transactionId, String gatewayReference,
                                         PaymentStatus status, String failureReason, Instant paidAt,
-                                        int version, Instant createdAt, Instant updatedAt) {
+                                        BigDecimal refundedAmount, int version, Instant createdAt, Instant updatedAt) {
         return new Payment(id, paymentReference, orderId, userId,
             amount, currency, paymentMethod, paymentProvider, transactionId, gatewayReference,
-            status, failureReason, paidAt, version, createdAt, updatedAt);
+            status, failureReason, paidAt, refundedAmount, version, createdAt, updatedAt);
     }
 
     public void initiatePayment(PaymentMethod paymentMethod, PaymentProvider paymentProvider) {
@@ -117,6 +117,26 @@ public final class Payment {
         domainEvents.add(new PaymentAuthorizedEvent(id, userId));
     }
 
+    /**
+     * Claims the payment for capture before the gateway is called. Persisting this state makes concurrent captures
+     * and order cancellation see that a capture is in flight. Retrying a claimed (PROCESSING) capture is allowed.
+     */
+    public void beginCapture() {
+        if (status == PaymentStatus.PROCESSING && gatewayReference != null) {
+            return;
+        }
+        if (status != PaymentStatus.AUTHORIZED) {
+            throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
+                "Only authorized payments can be captured. Current status: " + status);
+        }
+        transitionTo(PaymentStatus.PROCESSING);
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean isCaptureInProgress() {
+        return status == PaymentStatus.PROCESSING && gatewayReference != null;
+    }
+
     public void markSuccess(String transactionId, String gatewayReference) {
         if (status != PaymentStatus.PROCESSING && status != PaymentStatus.AUTHORIZED) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
@@ -132,9 +152,9 @@ public final class Payment {
     }
 
     public void markFailed(String failureReason) {
-        if (status.isTerminal() && status != PaymentStatus.FAILED) {
+        if (!status.isOpen()) {
             throw new PaymentDomainException(PaymentErrorCode.INVALID_STATUS_TRANSITION,
-                "Cannot mark payment failed in terminal status: " + status);
+                "Cannot mark payment failed in status: " + status);
         }
         this.failureReason = Objects.requireNonNull(failureReason);
         transitionTo(PaymentStatus.FAILED);
@@ -142,14 +162,15 @@ public final class Payment {
         domainEvents.add(new PaymentFailedEvent(id, userId, failureReason));
     }
 
+    /** Voids a payment that has not been captured. A capture in flight cannot be voided. */
     public void cancel() {
-        if (status == PaymentStatus.SUCCESS) {
+        if (status.isCaptured()) {
             throw new PaymentDomainException(PaymentErrorCode.PAYMENT_ALREADY_SUCCESSFUL,
-                "Cannot cancel a successful payment");
+                "Cannot cancel a captured payment; it must be refunded");
         }
-        if (status == PaymentStatus.REFUNDED) {
-            throw new PaymentDomainException(PaymentErrorCode.PAYMENT_ALREADY_REFUNDED,
-                "Cannot cancel a refunded payment");
+        if (isCaptureInProgress()) {
+            throw new PaymentDomainException(PaymentErrorCode.PAYMENT_IN_PROGRESS,
+                "A capture is in progress for payment " + paymentReference.value());
         }
         if (status.isTerminal()) {
             throw new PaymentDomainException(PaymentErrorCode.CANNOT_CANCEL_TERMINAL_PAYMENT,
@@ -160,14 +181,33 @@ public final class Payment {
         domainEvents.add(new PaymentCancelledEvent(id, userId));
     }
 
-    public void refund() {
-        if (status != PaymentStatus.SUCCESS) {
+    /** Amount that can still be refunded. */
+    public BigDecimal getRefundableAmount() {
+        return status.isCaptured() ? amount.subtract(refundedAmount) : BigDecimal.ZERO;
+    }
+
+    /** Records a refund that the gateway has completed. Never called before the gateway confirms the refund. */
+    public void applyRefund(BigDecimal refundAmount) {
+        if (status != PaymentStatus.SUCCESS && status != PaymentStatus.PARTIALLY_REFUNDED) {
             throw new PaymentDomainException(PaymentErrorCode.CANNOT_REFUND_NON_SUCCESS_PAYMENT,
-                "Only successful payments can be refunded. Current status: " + status);
+                "Only captured payments can be refunded. Current status: " + status);
         }
-        transitionTo(PaymentStatus.REFUNDED);
+        if (refundAmount == null || refundAmount.signum() <= 0) {
+            throw new PaymentDomainException(PaymentErrorCode.INVALID_REFUND_AMOUNT,
+                "Refund amount must be positive");
+        }
+        if (refundAmount.compareTo(getRefundableAmount()) > 0) {
+            throw new PaymentDomainException(PaymentErrorCode.INVALID_REFUND_AMOUNT,
+                "Refund amount " + refundAmount + " exceeds refundable amount " + getRefundableAmount());
+        }
+        this.refundedAmount = this.refundedAmount.add(refundAmount);
+        transitionTo(refundedAmount.compareTo(amount) == 0 ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED);
         this.updatedAt = Instant.now();
-        domainEvents.add(new PaymentRefundedEvent(id, orderId, userId, amount));
+        domainEvents.add(new PaymentRefundedEvent(id, orderId, userId, refundAmount));
+    }
+
+    public boolean isFullyRefunded() {
+        return status == PaymentStatus.REFUNDED;
     }
 
     private void transitionTo(PaymentStatus target) {
@@ -191,6 +231,7 @@ public final class Payment {
     public PaymentStatus getStatus() { return status; }
     public String getFailureReason() { return failureReason; }
     public Instant getPaidAt() { return paidAt; }
+    public BigDecimal getRefundedAmount() { return refundedAmount; }
     public int getVersion() { return version; }
     public void setVersion(int version) { this.version = version; }
     public Instant getCreatedAt() { return createdAt; }

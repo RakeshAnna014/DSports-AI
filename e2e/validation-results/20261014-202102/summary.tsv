@@ -1,0 +1,47 @@
+env-docker	PASS	0	0	
+env-gemini	PASS	0	0	
+java-build	PASS	0	199	
+java-integration	PASS	0	108	
+stack-backend	PASS	0	24	
+stack-ai	PASS	0	18	
+stack-vite	PASS	0	1	
+api-e2e	PASS	0	102	
+py-unit	PASS	0	77	
+py-integration	PASS	0	314	
+py-live	PASS	0	187	
+fe-tsc	PASS	0	27	
+fe-build	PASS	0	62	
+fe-catalog	PASS	0	1	
+cust-journeys	PASS	0	323	
+cust-journey-drawer	PASS	0	0	
+cust-journey-commerce	PASS	0	0	
+cust-journey-context	PASS	0	0	
+cust-journey-redesign	PASS	0	0	
+cust-multisport	PASS	0	230	
+scenarios-A-M	PASS	0	75	
+eval-main	PASS	0	468	
+eval-holdout1	PASS	0	165	
+cust-baseline-flow	FAIL	1	58	exit code 1
+inv-unit	PASS	0	28	
+inv-eval-numeric-dev	PASS	0	1	
+inv-eval-numeric-holdout	PASS	0	1	
+inv-measure	PASS	0	84	
+inv-eval-dev	PASS	0	166	
+inv-eval-holdout2	SKIP	0	0	consumed set; its first run is preserved (use --with-holdout2 to re-run for information)
+inv-browser	PASS	0	152	
+inv-failures	PASS	0	37	
+sup-unit	PASS	0	32	
+sup-corpus	PASS	0	5	
+sup-live	PASS	0	34	
+sup-eval-dev	PASS	0	377	
+sup-world	PASS	0	31	
+sup-browser	PASS	0	90	
+sup-eval-holdout	SKIP	0	0	first run preserved in ai-service/eval/results; later runs are regression (see docs/ai/phase3/10-evaluation.md)
+fe-unit	PASS	0	57	
+mgmt-api	PASS	0	30	
+mgmt-browser	PASS	0	64	
+eng-unit	PASS	0	10	
+eng-integration	PASS	0	16	
+eng-eval	PASS	0	1	
+eng-e2e	PASS	0	15	
+shop-with-ai-down	FAIL	1	46	exit code 1

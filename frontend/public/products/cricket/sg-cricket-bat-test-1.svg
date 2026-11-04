@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="product illustration"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F8FC"/><stop offset="1" stop-color="#E8EEF7"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F2D9A8"/><stop offset=".5" stop-color="#E4BE80"/><stop offset="1" stop-color="#C99A58"/></linearGradient>
+  <radialGradient id="spot" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs><rect width="400" height="400" fill="url(#bg)"/><rect width="400" height="400" fill="url(#spot)"/><ellipse cx="200" cy="338" rx="110" ry="14" fill="#0B1426" opacity=".12"/><g transform="translate(200 200) scale(.82) translate(-200 -200)"><g transform="rotate(32 200 200)">
+      <rect x="168" y="86" width="64" height="196" rx="16" fill="url(#wood)"/>
+      <rect x="168" y="86" width="64" height="196" rx="16" fill="none" stroke="#8B7552" stroke-width="2"/>
+      <rect x="183" y="130" width="34" height="86" rx="6" fill="#B91C1C" opacity=".92"/>
+      <rect x="183" y="226" width="34" height="8" rx="3" fill="#F8FAFC"/>
+      <path d="M200 96V270" stroke="#A28960" stroke-width="1.6" opacity=".6"/>
+      <rect x="190" y="26" width="20" height="70" rx="8" fill="#111827"/>
+      <path d="M190 40h20M190 52h20M190 64h20M190 76h20" stroke="#F8FAFC" stroke-width="3" opacity=".9"/></g></g></svg>
