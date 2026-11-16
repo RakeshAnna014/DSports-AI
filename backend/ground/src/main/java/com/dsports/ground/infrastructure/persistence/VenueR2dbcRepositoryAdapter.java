@@ -32,10 +32,10 @@ public class VenueR2dbcRepositoryAdapter implements VenueRepository {
 
     @Override
     public Flux<Venue> findActive(UUID sportIdOrNull, String cityOrNull) {
-        // lower() on both sides makes the city match case-insensitive (there is an index on lower(city)); the sport is matched in the court's sport array.
+        // lower() on both sides makes the city match case-insensitive (there is an index on lower(city)); the sport is matched with the array containment operator, which (unlike = ANY) can use the GIN index on courts.sport_ids.
         var sql = new StringBuilder("SELECT v.id FROM venues v WHERE v.active AND EXISTS (SELECT 1 FROM courts c WHERE c.venue_id = v.id AND c.active");
         if (sportIdOrNull != null) {
-            sql.append(" AND :sportId = ANY(c.sport_ids)");
+            sql.append(" AND c.sport_ids @> ARRAY[CAST(:sportId AS uuid)]");
         }
         sql.append(')');
         if (cityOrNull != null) {
