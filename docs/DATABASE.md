@@ -9,7 +9,7 @@ One PostgreSQL server (`pgvector/pgvector:pg16-trixie`, container `dsports-postg
 | `dsports_ai_test`, `dsports_ai_src_test`, `dsports_ai_pln_test` | Python integration tests | created by hand or by `validate-all.sh` | **throwaway**: tests drop and recreate their tables. Never point a `*_TEST_DATABASE_URL` at `dsports_ai` |
 | `dsports_e2e_val` | consolidated validation | `validate-all.sh` | disposable copy used for destructive checks |
 
-## 1. Java database `dsports` (Flyway, forward-only, V1 to V49)
+## 1. Java database `dsports` (Flyway, forward-only, V1 to V52)
 
 Migrations live in each module's `src/main/resources/db/migration` (one shared version sequence; `bootstrap` holds V33 and V43). Flyway runs when the backend starts; there is no down-migration. Never drop `dsports`; use a throwaway database for destructive experiments.
 
@@ -27,8 +27,10 @@ Migrations live in each module's `src/main/resources/db/migration` (one shared v
 | review | `reviews`, `review_helpful_votes` (V24) | one review per customer and product (V37) |
 | wishlist | `wishlists`, `wishlist_items` (V25) | |
 | notification | `notifications`, `notification_templates` (V26) | unique per user, type and reference (V38); type constraint widened for booking notifications (V49) |
+| catalog (sports) | `sports.bookable` (V50, default false); Pickleball added | which catalogue sports can be booked as courts; the shop lists a bookable sport only once it has an active product (ADR-018) |
+| identity (roles) | `role_audit_log` (V52) | append-only: who gave or removed a role, for whom and when, in the same transaction as the change; no foreign keys on purpose |
 | support | `support_cases`, `support_case_messages`, `support_case_events` (V44, V45) | |
-| ground | `grounds`, `ground_blackouts`, `ground_bookings` and sequence `ground_booking_seq` (V48) | opening hours are `TIME` + a time zone on the ground; bookings and blackouts are UTC instants; money is `NUMERIC(12,2)`; the `no_overlap` exclusion constraint (needs `btree_gist`) makes double booking impossible; unique `(user_id, idempotency_key)`; a booking is paid through `payments` with the booking id in `order_id` (ADR-017) |
+| ground | `venues`, `courts` (V51), `ground_blackouts`, `ground_bookings` and sequence `ground_booking_seq` (V48, reshaped by V51); the V48 `grounds` table is kept, unused | a venue has opening hours as `TIME` + a time zone; a court has `sport_ids UUID[]` (catalogue sports, no foreign key across modules, GIN index), its own slot length and prices; bookings and blackouts are UTC instants and carry `venue_id`, `court_id` and (bookings) `sport_id`; money is `NUMERIC(12,2)`; the `no_overlap_court` exclusion constraint (needs `btree_gist`) makes double booking of a court impossible whatever the sport; unique `(user_id, idempotency_key)` and unique court name per venue (any case); V51 turns each existing ground into a venue with one court (same ids); a booking is paid through `payments` with the booking id in `order_id` (ADR-017, ADR-018) |
 | bootstrap | `outbox_events` (V33) | transactional outbox: `status` PENDING / PROCESSING / DONE / FAILED, `attempts`, `last_error`, unique `(event_type, aggregate_id)`, partial index on due rows |
 
 Relationships in one line: customer → cart → checkout → order (+items) → payment (→ refunds) and → shipment (→ tracking) and → return_requests; order items hold product snapshots (name, sku, price) so history survives catalogue changes; `inventory_reservations` link an order to stock until fulfilment or release.

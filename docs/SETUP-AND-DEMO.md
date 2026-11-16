@@ -50,7 +50,7 @@ cd frontend && pnpm install && pnpm exec vite     # or: pnpm dev
 Build the jar first with `cd backend && mvn -B -o clean install -DskipTests` (stop the backend before rebuilding: Windows locks the running jar).
 On Windows run the `.sh` scripts with Git Bash (`& 'C:\Program Files\Git\bin\bash.exe' e2e/ai/start-ai.sh`). Stop: `bash e2e/ai/free-port.sh 8080` (8090, 3000): it only stops processes whose command line belongs to this project and refuses to touch another project's process.
 
-**Migrations**: Flyway is forward-only and runs at backend start (current head V49, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
+**Migrations**: Flyway is forward-only and runs at backend start (current head V52, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
 
 ## 5. Seed data
 
@@ -75,8 +75,8 @@ POST /v1/sourcing/demo/seed              # labelled DEMO records (optional)
 ```
 Roles for these screens (`SALES_PLANNER`, `CATEGORY_MANAGER`, `REGIONAL_MANAGER`, `STORE_MANAGER`, `PROCUREMENT_BUYER`) are granted by SQL like the others; scoped managers also need a row in `pln_scope` (`POST /v1/planning/scope`).
 
-Privileged roles are **not** assignable through any API (only a domain method exists). Grant by SQL on purpose:
-`INSERT INTO customer_roles (customer_id, role) SELECT id,'ADMIN' FROM customers WHERE email='…'` (roles used: `ADMIN`, `SUPPORT_EXECUTIVE`, `GROUND_OWNER`). The V48 migration needs the PostgreSQL `btree_gist` extension: it is available in the project's Docker image; a managed database may need it enabled first.
+Privileged roles are **not** assignable through the general API (only a domain method exists). Grant them by SQL on purpose:
+`INSERT INTO customer_roles (customer_id, role) SELECT id,'ADMIN' FROM customers WHERE email='…'` (roles used: `ADMIN`, `SUPPORT_EXECUTIVE`). **The first administrator is created this way, once.** The one exception is `GROUND_OWNER`: a signed-in administrator gives and removes it in the app (*Admin → Ground owners*, `/api/v1/admin/ground-owners`), by email, for someone who has already registered; every change is audited, and an administrator cannot grant it to themselves. No SQL is needed for it. The V48 migration needs the PostgreSQL `btree_gist` extension: it is available in the project's Docker image; a managed database may need it enabled first.
 
 ## 6. Tests: exact commands
 
@@ -104,17 +104,20 @@ URLs are the local defaults above. Customers register at `/register`; roles are 
 5. **Inventory Intelligence** (`ADMIN`): `/inventory-ai`. All data is labelled POC SYNTHETIC; ask the copilot "which products will stock out in 14 days?" and open the evidence behind each answer.
 6. **Engineering AI** (`ADMIN`): `python -m app.engineering.cli synthetic`, then `/engineering-ai`, choose "Synthetic only", ask "Why did checkout fail?": clusters, a deployment-timing hypothesis (marked not confirmed), evidence records L<id> with correlation ids, synthetic labels, and a withheld injected log line. Choose "Real only" and ask "Show recurring errors in the backend in the last 3 days" for the real recurring warning.
 
-7a. **Ground booking** (customer and `GROUND_OWNER`, all payments use the demonstration gateway):
+7a. **Court booking** (customer, venue owner and administrator, all payments use the demonstration gateway). Needs one administrator, created once by SQL (see section 5).
 
-   1. Register two accounts at `/register`: an owner and a customer. Grant the owner role by SQL, then sign the owner out and in again (the role is read from the token):
-      `docker exec dsports-postgres psql -U dsports -d dsports -c "INSERT INTO customer_roles (customer_id, role) SELECT id,'GROUND_OWNER' FROM customers WHERE email='owner@example.com'"`
-   2. As the owner open `/owner/grounds` (account menu, *My grounds*), choose *New ground*, fill the form (for example Bengaluru, 06:00 to 22:00, 60 minute slots, base price 1000, peak price 2000 from 18:00 to 21:00) and save.
-   3. As the customer open `/grounds`, search the city and a date at least a day ahead, open the ground, choose one or two consecutive slots and press *Hold and pay*.
-   4. On the payment page watch the 10 minute countdown, pay, and see the booking confirmed in `/bookings` and the notification bell.
-   5. Cancel it from `/bookings`: the page shows the refund share and that a refund was **requested**; approve it as an administrator (`POST /api/v1/admin/refunds/{id}/approve`).
-   6. Book another slot, then as the owner cancel it from the bookings list: the full refund is paid out **automatically** and the customer is notified.
-   7. Let a hold run out without paying: after the window the slot becomes free again (the expiry job runs every 15 seconds).
-   8. As the owner add a blackout on a free period and check the slot shows as closed; adding one over a booking is refused.
+   1. Register three accounts at `/register`: an owner, a customer and (once) an administrator; give the administrator the `ADMIN` role by the SQL in section 5 and sign in as them.
+   2. **Admin → Ground owners**: enter an email nobody registered with to see "Ask them to register first"; then enter the owner's email and press *Make ground owner*. The audit log lists it. Try your own email: it is refused. (No SQL for this step.)
+   3. The owner signs in again (the role is read from the token) and opens **Owner console**. *New venue*: for example Chennai, 06:00 to 22:00; then *Add court* twice: "Court 1" offering Pickleball and Cricket (60 minute slots, base 800), and "Hall" offering Badminton.
+   4. As the customer open **Courts**: choose a sport (only bookable sports are offered), type the city in any case, pick a day at least a day ahead, open the venue, choose a court and the sport, select one or two consecutive slots and press *Hold and pay*. The same time on the other court stays free.
+   5. On the payment page watch the 10 minute countdown, pay, and see the booking confirmed in `/bookings` (venue, court and sport shown) and the notification bell.
+   6. Cancel it from `/bookings`: the page shows the refund share and that a refund was **requested**; approve it as an administrator (`POST /api/v1/admin/refunds/{id}/approve`).
+   7. Book another slot, then as the owner cancel it from the bookings list: the full refund is paid out **automatically** and the customer is notified.
+   8. Let a hold run out without paying: after the window the slot becomes free again (the expiry job runs every 15 seconds).
+   9. As the owner add a blackout for the whole venue or for one court; adding one over a booking is refused.
+   10. **Owner removal:** as the administrator remove the owner's role (Ground owners → *Remove role*). The venue disappears from the customer's search and its page says it takes no new bookings; an existing booking is still valid. Open **Admin → Venues**: the venue is flagged "owner removed"; *Reassign* it to a second owner (grant that role first) and it is bookable again. The removed owner's current sign-in keeps the role for up to 15 minutes (ADR-018).
+   11. **Admin → Sports**: add a sport and leave *Bookable* on: it appears in the booking list but not in the shop until it has products.
+   12. The same journey runs in a real browser with `node e2e/venues-ui.mjs [shotDir]` (backend on 8080, Vite on 3000); it removes what it created.
 
 ## 8. Troubleshooting
 

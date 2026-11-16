@@ -1,6 +1,6 @@
 # ADR-017: Ground booking reuses payments and the outbox, and the database prevents double booking
 
-Status: accepted (Phase 1 of the cricket features plan, `docs/plans/cricket-features.md`). Builds on the modular monolith and reactive stack described in `docs/architecture.md`; reuses the payment module, the transactional outbox and the `ExpireUnpaidOrdersUseCase` pattern.
+Status: accepted (Phase 1 of the cricket features plan, `docs/plans/cricket-features.md`). Partly superseded by [ADR-018](ADR-018-venues-courts-and-role-administration.md): a ground became a venue with courts, the overlap constraint moved from the ground to the court, and the routes were renamed (`/grounds` to `/venues`). The payment, outbox, idempotency and cancellation decisions below still stand. Builds on the modular monolith and reactive stack described in `docs/architecture.md`; reuses the payment module, the transactional outbox and the `ExpireUnpaidOrdersUseCase` pattern.
 
 ## Context
 
