@@ -49,10 +49,11 @@ const Header = () => {
       <Toolbar sx={{ gap: { xs: 1, md: 1, lg: 2 }, minHeight: { xs: 60, md: 68 } }}>
         <Brand tone="light" />
 
-        <Box component="nav" aria-label="Main" sx={{ display: { xs: 'none', md: 'flex' }, gap: { md: 0, lg: 0.5 }, ml: { md: 0.5, lg: 2 }, flexGrow: 1 }}>
+        <Box component="nav" aria-label="Main" data-testid="main-nav" sx={{ display: { xs: 'none', md: 'flex' }, gap: { md: 0, lg: 0.5 }, ml: { md: 0.5, lg: 2 }, flexGrow: 1, flexShrink: 1, minWidth: 0, overflowX: 'auto',
+            scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' }, '& > .MuiButton-root': { flexShrink: 0, whiteSpace: 'nowrap' } }}>
           {NAV.map((n) => (
             <Button key={n.to} component={NavLink} to={n.to} end={n.end}
-              sx={{ color: 'rgba(255,255,255,0.78)', fontWeight: 600, borderRadius: 2, px: { md: 0.75, lg: 1.5 }, minWidth: 0, whiteSpace: 'nowrap', fontSize: { md: '0.8rem', lg: '0.875rem' }, position: 'relative',
+              sx={{ color: 'rgba(255,255,255,0.78)', fontWeight: 600, borderRadius: 2, px: { md: 0.75, lg: 1, xl: 1.5 }, minWidth: 0, whiteSpace: 'nowrap', fontSize: { md: '0.8rem', lg: '0.8125rem', xl: '0.875rem' }, position: 'relative',
                 '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.06)' },
                 '&.active': { color: '#fff', '&::after': { content: '""', position: 'absolute', left: 12, right: 12, bottom: 4, height: 2, borderRadius: 2, background: gradients.brand } } }}>
               {n.label}
@@ -69,11 +70,13 @@ const Header = () => {
                 <MenuItem onClick={() => goto('/admin/ground-owners')} data-testid="admin-ground-owners">Ground owners</MenuItem>
                 <MenuItem onClick={() => goto('/admin/venues')} data-testid="admin-venues">Venues</MenuItem>
                 <MenuItem onClick={() => goto('/admin/sports')} data-testid="admin-sports">Sports</MenuItem>
+                <Divider />
+                <MenuItem onClick={() => goto('/inventory-ai')} data-testid="nav-inventory-ai">Inventory AI</MenuItem>
+                <MenuItem onClick={() => goto('/engineering-ai')} data-testid="nav-engineering-ai">Engineering AI</MenuItem>
+                <MenuItem onClick={() => goto('/fulfilment')} data-testid="nav-fulfilment">Fulfilment</MenuItem>
+                <MenuItem onClick={() => goto('/support-cases')} data-testid="nav-support-console">Support console</MenuItem>
               </Menu>
             </>
-          )}
-          {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/inventory-ai" data-testid="nav-inventory-ai" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Inventory AI</Button>
           )}
           {isBuyer(user?.roles) && (
             <Button component={NavLink} to="/product-intelligence" data-testid="nav-product-intelligence" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Product Intelligence</Button>
@@ -81,13 +84,7 @@ const Header = () => {
           {isPlanner(user?.roles) && (
             <Button component={NavLink} to="/sales-planning" data-testid="nav-sales-planning" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Sales Planning</Button>
           )}
-          {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/engineering-ai" data-testid="nav-engineering-ai" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Engineering AI</Button>
-          )}
-          {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/fulfilment" data-testid="nav-fulfilment" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Fulfilment</Button>
-          )}
-          {user?.roles?.some((r) => r === 'ADMIN' || r === 'SUPPORT_EXECUTIVE' || r === 'ROLE_ADMIN' || r === 'ROLE_SUPPORT_EXECUTIVE') && (
+          {!isAdmin(user?.roles) && user?.roles?.some((r) => r === 'SUPPORT_EXECUTIVE' || r === 'ROLE_SUPPORT_EXECUTIVE') && (
             <Button component={NavLink} to="/support-cases" data-testid="nav-support-console" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Support console</Button>
           )}
         </Box>
@@ -96,7 +93,7 @@ const Header = () => {
         <Button variant="contained" color="secondary" startIcon={<AutoAwesome />} onClick={() => setAiOpen(true)} data-testid="ai-header-button"
           aria-label="Ask DSports AI" sx={{ flexShrink: 0, background: gradients.ai, color: '#1b1200', fontWeight: 800, borderRadius: 999, px: { xs: 1.5, md: 2.25 }, boxShadow: '0 6px 22px rgba(255,122,26,0.38)',
             '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 } } }}>
-          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline', md: 'none', lg: 'inline' }, whiteSpace: 'nowrap' }}>Ask DSports AI</Box>
+          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline', md: 'none', xl: 'inline' }, whiteSpace: 'nowrap' }}>Ask DSports AI</Box>
         </Button>
 
         <Box sx={{ display: 'flex', alignItems: 'center' }}>

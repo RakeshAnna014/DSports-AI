@@ -49,9 +49,23 @@ describe('Header navigation for the venue features', () => {
     await user.click(screen.getByTestId('nav-admin'));
     expect(screen.getByTestId('admin-ground-owners')).toHaveTextContent('Ground owners');
     expect(screen.getByTestId('admin-venues')).toHaveTextContent('Venues');
+    // The administrator's other consoles live in the same menu, so the top bar stays on one row.
+    for (const id of ['nav-inventory-ai', 'nav-engineering-ai', 'nav-fulfilment', 'nav-support-console']) expect(screen.getByTestId(id)).toBeInTheDocument();
     await user.click(screen.getByTestId('admin-sports'));
 
     expect(await screen.findByTestId('where')).toHaveTextContent('/admin/sports');
+  });
+
+  it('keeps the Support console as a button for support staff who are not administrators, and out of the top bar for administrators', () => {
+    signIn('SUPPORT_EXECUTIVE');
+    const first = renderHeader();
+    expect(screen.getByTestId('nav-support-console')).toHaveAttribute('href', '/support-cases');
+    expect(screen.queryByTestId('nav-admin')).toBeNull();
+    first.unmount();
+
+    signIn('ADMIN');
+    renderHeader();
+    expect(screen.queryByTestId('nav-support-console')).toBeNull();
   });
 
   it('shows neither to a visitor who is signed out', () => {
