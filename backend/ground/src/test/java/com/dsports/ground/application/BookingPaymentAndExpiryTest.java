@@ -9,7 +9,8 @@ import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.Booking;
 import com.dsports.ground.domain.model.BookingStatus;
 import com.dsports.ground.domain.model.CancelledBy;
-import com.dsports.ground.domain.model.Ground;
+import com.dsports.ground.domain.model.Court;
+import com.dsports.ground.domain.model.Venue;
 import com.dsports.ground.domain.policy.BookingPolicy;
 import com.dsports.shared.application.outbox.OutboxMessage;
 import com.dsports.shared.application.outbox.OutboxMessageTypes;
@@ -33,7 +34,11 @@ import static com.dsports.ground.domain.GroundFixtures.CUSTOMER;
 import static com.dsports.ground.domain.GroundFixtures.NOW;
 import static com.dsports.ground.domain.GroundFixtures.WEDNESDAY;
 import static com.dsports.ground.domain.GroundFixtures.at;
-import static com.dsports.ground.domain.GroundFixtures.ground;
+import static com.dsports.ground.domain.GroundFixtures.CRICKET;
+import static com.dsports.ground.domain.GroundFixtures.FOOTBALL;
+import static com.dsports.ground.domain.GroundFixtures.OWNER;
+import static com.dsports.ground.domain.GroundFixtures.court;
+import static com.dsports.ground.domain.GroundFixtures.venue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -42,14 +47,18 @@ class BookingPaymentAndExpiryTest {
     private static final UUID OTHER = UUID.fromString("00000000-0000-0000-0000-0000000000c2");
     private static final Duration HOLD = Duration.ofMinutes(10);
 
-    private final Fakes.Grounds grounds = new Fakes.Grounds();
+    private final Fakes.Venues venues = new Fakes.Venues();
+    private final Fakes.Courts courts = new Fakes.Courts();
+    private final Fakes.Owners owners = new Fakes.Owners();
+    private final Fakes.Sports sports = new Fakes.Sports().with(CRICKET, "Cricket", true).with(FOOTBALL, "Football", true);
     private final Fakes.Bookings bookings = new Fakes.Bookings();
     private final Fakes.Blackouts blackouts = new Fakes.Blackouts();
     private final RecordingPayments payments = new RecordingPayments();
     private final List<OutboxMessage> outbox = new ArrayList<>();
     private final OutboxWriter outboxWriter = message -> Mono.fromRunnable(() -> outbox.add(message));
     private Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    private Ground ground;
+    private Venue venue;
+    private Court court;
 
     static final class RecordingPayments implements BookingPaymentPort {
         final List<UUID> voided = new ArrayList<>();
@@ -82,12 +91,15 @@ class BookingPaymentAndExpiryTest {
 
     @BeforeEach
     void setUp() {
-        ground = ground();
-        grounds.save(ground).block();
+        venue = venue();
+        venues.save(venue).block();
+        court = court(venue);
+        courts.save(court).block();
+        owners.withRole.add(OWNER);
     }
 
     private BookingPaymentUseCase payments() {
-        return new BookingPaymentUseCase(bookings, grounds, payments, outboxWriter, clock);
+        return new BookingPaymentUseCase(bookings, Fakes.presenter(venues, courts, sports), payments, outboxWriter, clock);
     }
 
     private ExpireHeldBookingsUseCase expiry() {
@@ -95,8 +107,9 @@ class BookingPaymentAndExpiryTest {
     }
 
     private Booking held(UUID user, int fromHour, int toHour, String key) {
-        var hold = new HoldBookingUseCase(grounds, bookings, blackouts, BookingPolicy.defaults(), HOLD, 10, Fakes.IMMEDIATE, Clock.fixed(NOW, ZoneOffset.UTC));
-        var id = hold.execute(new HoldBookingUseCase.Command(user, ground.getId(), at(WEDNESDAY, fromHour, 0), at(WEDNESDAY, toHour, 0), key)).block().booking().id();
+        var hold = new HoldBookingUseCase(venues, courts, bookings, blackouts, owners, sports, Fakes.presenter(venues, courts, sports), BookingPolicy.defaults(), HOLD, 10,
+            Fakes.IMMEDIATE, Clock.fixed(NOW, ZoneOffset.UTC));
+        var id = hold.execute(new HoldBookingUseCase.Command(user, court.getId(), CRICKET, at(WEDNESDAY, fromHour, 0), at(WEDNESDAY, toHour, 0), key)).block().booking().id();
         return bookings.store.get(id);
     }
 
@@ -161,7 +174,7 @@ class BookingPaymentAndExpiryTest {
         assertThat(outbox).singleElement().satisfies(m -> {
             assertThat(m.type()).isEqualTo(OutboxMessageTypes.NOTIFY_BOOKING_CONFIRMED);
             assertThat(m.aggregateId()).isEqualTo(booking.getId().toString());
-            assertThat(m.payload()).containsEntry("userId", CUSTOMER.toString()).containsEntry("groundName", "Green Park Turf").containsEntry("when", "Wed 18 Nov, 17:00-19:00");
+            assertThat(m.payload()).containsEntry("userId", CUSTOMER.toString()).containsEntry("groundName", "Green Park Sports Hub, Court 1 (Cricket)").containsEntry("when", "Wed 18 Nov, 17:00-19:00");
         });
         assertThat(payments.refunded).isEmpty();
     }
@@ -214,7 +227,7 @@ class BookingPaymentAndExpiryTest {
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.EXPIRED);
         assertThat(payments.voided).containsExactly(booking.getId());
-        assertThat(bookings.findOccupiedPeriods(ground.getId(), at(WEDNESDAY, 6, 0), at(WEDNESDAY, 22, 0)).collectList().block()).isEmpty();
+        assertThat(bookings.findOccupiedPeriods(court.getId(), at(WEDNESDAY, 6, 0), at(WEDNESDAY, 22, 0)).collectList().block()).isEmpty();
     }
 
     @Test

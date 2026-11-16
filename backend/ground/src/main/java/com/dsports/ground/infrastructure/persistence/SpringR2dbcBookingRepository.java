@@ -11,8 +11,8 @@ public interface SpringR2dbcBookingRepository extends R2dbcRepository<BookingEnt
 
     Mono<BookingEntity> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 
-    @Query("SELECT * FROM ground_bookings WHERE ground_id = :groundId AND start_at < :to AND end_at > :from ORDER BY start_at")
-    Flux<BookingEntity> findByGroundInRange(UUID groundId, java.time.Instant from, java.time.Instant to);
+    @Query("SELECT * FROM ground_bookings WHERE venue_id = :venueId AND start_at < :to AND end_at > :from ORDER BY start_at")
+    Flux<BookingEntity> findByVenueInRange(UUID venueId, java.time.Instant from, java.time.Instant to);
 
     @Query("SELECT * FROM ground_bookings WHERE id = :id FOR UPDATE")
     Mono<BookingEntity> findByIdForUpdate(UUID id);

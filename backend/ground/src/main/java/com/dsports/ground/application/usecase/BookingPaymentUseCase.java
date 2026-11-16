@@ -2,12 +2,10 @@ package com.dsports.ground.application.usecase;
 
 import com.dsports.ground.application.port.BookingPaymentPort;
 import com.dsports.ground.application.port.BookingRepository;
-import com.dsports.ground.application.port.GroundRepository;
 import com.dsports.ground.domain.exception.GroundDomainException;
 import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.Booking;
 import com.dsports.ground.domain.model.BookingStatus;
-import com.dsports.ground.domain.model.Ground;
 import com.dsports.shared.application.outbox.OutboxMessage;
 import com.dsports.shared.application.outbox.OutboxMessageTypes;
 import com.dsports.shared.application.outbox.OutboxWriter;
@@ -42,14 +40,14 @@ public class BookingPaymentUseCase {
     }
 
     private final BookingRepository bookings;
-    private final GroundRepository grounds;
+    private final BookingPresenter presenter;
     private final BookingPaymentPort payments;
     private final OutboxWriter outbox;
     private final Clock clock;
 
-    public BookingPaymentUseCase(BookingRepository bookings, GroundRepository grounds, BookingPaymentPort payments, OutboxWriter outbox, Clock clock) {
+    public BookingPaymentUseCase(BookingRepository bookings, BookingPresenter presenter, BookingPaymentPort payments, OutboxWriter outbox, Clock clock) {
         this.bookings = bookings;
-        this.grounds = grounds;
+        this.presenter = presenter;
         this.payments = payments;
         this.outbox = outbox;
         this.clock = clock;
@@ -71,35 +69,35 @@ public class BookingPaymentUseCase {
     public Mono<Boolean> confirmPaid(UUID bookingId, UUID paymentId) {
         return bookings.findByIdForUpdate(bookingId)
             .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.BOOKING_NOT_FOUND, "Booking not found: " + bookingId)))
-            .flatMap(booking -> grounds.findById(booking.getGroundId()).map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
-                .flatMap(ground -> booking.getStatus() == BookingStatus.HELD
-                    ? confirm(booking, paymentId, ground.orElse(null))
-                    : abandon(booking, paymentId, ground.orElse(null))));
+            .flatMap(booking -> presenter.context(booking)
+                .flatMap(context -> booking.getStatus() == BookingStatus.HELD
+                    ? confirm(booking, paymentId, context)
+                    : abandon(booking, paymentId, context)));
     }
 
-    private Mono<Boolean> confirm(Booking booking, UUID paymentId, Ground ground) {
+    private Mono<Boolean> confirm(Booking booking, UUID paymentId, BookingPresenter.Context context) {
         booking.confirm(paymentId, clock.instant());
         return bookings.save(booking)
-            .then(Mono.defer(() -> outbox.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_BOOKING_CONFIRMED, booking.getId(), message(booking, ground, null)))))
+            .then(Mono.defer(() -> outbox.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_BOOKING_CONFIRMED, booking.getId(), message(booking, context, null)))))
             .doOnSuccess(v -> log.info("Booking {} confirmed by payment {}", booking.getBookingNumber(), paymentId))
             .thenReturn(true);
     }
 
-    private Mono<Boolean> abandon(Booking booking, UUID paymentId, Ground ground) {
+    private Mono<Boolean> abandon(Booking booking, UUID paymentId, BookingPresenter.Context context) {
         log.warn("Payment {} was captured for booking {} which is {}: refunding in full", paymentId, booking.getBookingNumber(), booking.getStatus());
         var reason = "Booking " + booking.getBookingNumber() + " was " + booking.getStatus() + " when the payment was captured";
         return payments.refundCapturedPayment(paymentId, reason)
             .then(Mono.defer(() -> outbox.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_BOOKING_CANCELLED, booking.getId(),
-                message(booking, ground, "We could not confirm this slot because it was no longer held when your payment arrived. A full refund has been started.")))))
+                message(booking, context, "We could not confirm this slot because it was no longer held when your payment arrived. A full refund has been started.")))))
             .thenReturn(false);
     }
 
-    private static Map<String, String> message(Booking booking, Ground ground, String note) {
-        var zone = ground == null ? java.time.ZoneOffset.UTC : ground.getTimeZone();
+    private static Map<String, String> message(Booking booking, BookingPresenter.Context context, String note) {
+        var zone = context.zone();
         var payload = new java.util.HashMap<String, String>();
         payload.put("userId", booking.getUserId().toString());
         payload.put("bookingNumber", booking.getBookingNumber());
-        payload.put("groundName", ground == null ? "your ground" : ground.getName());
+        payload.put("groundName", context.label());
         payload.put("when", WHEN.format(booking.getStartAt().atZone(zone)) + "-" + DateTimeFormatter.ofPattern("HH:mm").format(booking.getEndAt().atZone(zone)));
         payload.put("note", note == null ? "" : note);
         return payload;

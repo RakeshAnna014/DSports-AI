@@ -24,8 +24,8 @@ public interface BookingRepository {
     /** The customer's bookings, newest first. */
     Flux<Booking> findByUser(UUID userId);
 
-    /** Bookings of a ground whose period overlaps [from, to), in time order. */
-    Flux<Booking> findByGround(UUID groundId, Instant from, Instant to);
+    /** Bookings at a venue (any court) whose period overlaps [from, to), in time order. */
+    Flux<Booking> findByVenue(UUID venueId, Instant from, Instant to);
 
     /** Ids of CONFIRMED bookings that ended before {@code endedBefore}, oldest first (candidates to be marked COMPLETED; re-checked under the row lock). */
     Flux<UUID> findEndedConfirmedIds(Instant endedBefore, int limit);
@@ -33,8 +33,11 @@ public interface BookingRepository {
     /** The customer's booking made with this Idempotency-Key, if any. */
     Mono<Booking> findByUserAndKey(UUID userId, String idempotencyKey);
 
-    /** The periods of HELD and CONFIRMED bookings of a ground that overlap [from, to). Expired and cancelled bookings never block a slot. */
-    Flux<Slot> findOccupiedPeriods(UUID groundId, Instant from, Instant to);
+    /** The periods of HELD and CONFIRMED bookings of a court that overlap [from, to). Expired and cancelled bookings never block a slot. */
+    Flux<Slot> findOccupiedPeriods(UUID courtId, Instant from, Instant to);
+
+    /** The same, for every court of a venue (used before a venue-wide blackout). */
+    Flux<Slot> findOccupiedPeriodsAtVenue(UUID venueId, Instant from, Instant to);
 
     /** How many HELD bookings of the customer are still inside their payment window at {@code now}. */
     Mono<Long> countActiveHolds(UUID userId, Instant now);
@@ -49,15 +52,15 @@ public interface BookingRepository {
     Mono<Booking> save(Booking booking);
 
     /**
-     * Takes a transaction-scoped advisory lock for one ground, so that holding a slot and adding a blackout (and concurrent holds) are
-     * serialised per ground. It must be called inside a transaction; it is released at commit or rollback. The database overlap
+     * Takes a transaction-scoped advisory lock for one venue, so that holding a slot and adding a blackout (and concurrent holds) are
+     * serialised per venue (a venue-wide blackout must exclude holds on every court). It must be called inside a transaction; it is released at commit or rollback. The database overlap
      * constraint stays as the backstop, but PostgreSQL can abort a loser of a true race with a deadlock error instead of an overlap error.
      */
-    Mono<Void> lockGround(UUID groundId);
+    Mono<Void> lockVenue(UUID venueId);
 
     /**
      * Takes a transaction-scoped advisory lock for one customer, so that two requests of the same customer cannot both pass the
-     * idempotency lookup or the hold limit. Always taken before {@link #lockGround} so the two locks can never deadlock.
+     * idempotency lookup or the hold limit. Always taken before {@link #lockVenue} so the two locks can never deadlock.
      */
     Mono<Void> lockUser(UUID userId);
 }

@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/prices/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/reviews/product/**").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/api/v1/grounds", "/api/v1/grounds/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/venues", "/api/v1/venues/**").permitAll()
                         .pathMatchers("/api/v1/owner/**").hasRole("GROUND_OWNER")
                         .pathMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/v1/support/staff/**").hasAnyRole("SUPPORT_EXECUTIVE", "ADMIN")

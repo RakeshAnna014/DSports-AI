@@ -2,14 +2,14 @@ package com.dsports.ground.application.usecase;
 
 import com.dsports.ground.application.port.BookingPaymentPort;
 import com.dsports.ground.application.port.BookingRepository;
-import com.dsports.ground.application.port.GroundRepository;
+import com.dsports.ground.application.port.VenueRepository;
 import com.dsports.ground.application.result.BookingResult;
 import com.dsports.ground.domain.exception.GroundDomainException;
 import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.Booking;
 import com.dsports.ground.domain.model.BookingStatus;
 import com.dsports.ground.domain.model.CancelledBy;
-import com.dsports.ground.domain.model.Ground;
+import com.dsports.ground.domain.model.Venue;
 import com.dsports.ground.domain.policy.CancellationPolicy;
 import com.dsports.shared.application.TransactionRunner;
 import com.dsports.shared.application.outbox.OutboxMessage;
@@ -53,17 +53,19 @@ public class CancelBookingUseCase {
     }
 
     private final BookingRepository bookings;
-    private final GroundRepository grounds;
+    private final VenueRepository venues;
+    private final BookingPresenter presenter;
     private final BookingPaymentPort payments;
     private final CancellationPolicy policy;
     private final OutboxWriter outbox;
     private final TransactionRunner transactions;
     private final Clock clock;
 
-    public CancelBookingUseCase(BookingRepository bookings, GroundRepository grounds, BookingPaymentPort payments, CancellationPolicy policy,
-                                OutboxWriter outbox, TransactionRunner transactions, Clock clock) {
+    public CancelBookingUseCase(BookingRepository bookings, VenueRepository venues, BookingPresenter presenter, BookingPaymentPort payments,
+                                CancellationPolicy policy, OutboxWriter outbox, TransactionRunner transactions, Clock clock) {
         this.bookings = bookings;
-        this.grounds = grounds;
+        this.venues = venues;
+        this.presenter = presenter;
         this.payments = payments;
         this.policy = policy;
         this.outbox = outbox;
@@ -74,25 +76,25 @@ public class CancelBookingUseCase {
     public Mono<Result> execute(Command command) {
         return transactions.inTransaction(() -> bookings.findByIdForUpdate(command.bookingId())
             .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.BOOKING_NOT_FOUND, "Booking not found: " + command.bookingId())))
-            .flatMap(booking -> authorise(booking, command).flatMap(ground -> cancel(booking, ground, command))));
+            .flatMap(booking -> authorise(booking, command).flatMap(venue -> cancel(booking, command))));
     }
 
-    private Mono<Ground> authorise(Booking booking, Command command) {
+    private Mono<Venue> authorise(Booking booking, Command command) {
         if (command.by() == CancelledBy.CUSTOMER) {
             if (!booking.getUserId().equals(command.callerId())) {
                 return Mono.error(new GroundDomainException(GroundErrorCode.BOOKING_NOT_OWNED_BY_USER, "This booking does not belong to you"));
             }
-            return grounds.findById(booking.getGroundId())
-                .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.GROUND_NOT_FOUND, "Ground not found: " + booking.getGroundId())));
+            return venues.findById(booking.getVenueId())
+                .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.VENUE_NOT_FOUND, "Venue not found: " + booking.getVenueId())));
         }
-        return grounds.findById(booking.getGroundId())
-            .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.GROUND_NOT_FOUND, "Ground not found: " + booking.getGroundId())))
-            .flatMap(ground -> ground.getOwnerId().equals(command.callerId())
-                ? Mono.just(ground)
-                : Mono.<Ground>error(new GroundDomainException(GroundErrorCode.GROUND_NOT_OWNED_BY_USER, "This booking is not at one of your grounds")));
+        return venues.findById(booking.getVenueId())
+            .switchIfEmpty(Mono.error(new GroundDomainException(GroundErrorCode.VENUE_NOT_FOUND, "Venue not found: " + booking.getVenueId())))
+            .flatMap(venue -> venue.getOwnerId().equals(command.callerId())
+                ? Mono.just(venue)
+                : Mono.<Venue>error(new GroundDomainException(GroundErrorCode.VENUE_NOT_OWNED_BY_USER, "This booking is not at one of your venues")));
     }
 
-    private Mono<Result> cancel(Booking booking, Ground ground, Command command) {
+    private Mono<Result> cancel(Booking booking, Command command) {
         var now = clock.instant();
         boolean paid = booking.getStatus() == BookingStatus.CONFIRMED;
         booking.cancel(command.by(), now);
@@ -113,13 +115,14 @@ public class CancelBookingUseCase {
         }
         return money
             .then(Mono.defer(() -> bookings.save(booking)))
-            .then(Mono.defer(() -> outbox.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_BOOKING_CANCELLED, booking.getId(), message(booking, ground, refund, percent, amount)))))
-            .doOnSuccess(v -> log.info("Booking {} cancelled by {} (refund {} {}% {})", booking.getBookingNumber(), command.by(), refund, percent, amount))
-            .thenReturn(new Result(BookingResult.from(booking, ground == null ? null : ground.getName(), ground == null ? null : ground.getCity()), percent, amount, refund));
+            .then(Mono.defer(() -> presenter.context(booking)))
+            .flatMap(context -> outbox.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_BOOKING_CANCELLED, booking.getId(), message(booking, context, refund, percent, amount)))
+                .doOnSuccess(v -> log.info("Booking {} cancelled by {} (refund {} {}% {})", booking.getBookingNumber(), command.by(), refund, percent, amount))
+                .thenReturn(new Result(BookingResult.from(booking, context.names()), percent, amount, refund)));
     }
 
-    private static java.util.Map<String, String> message(Booking booking, Ground ground, Refund refund, int percent, BigDecimal amount) {
-        var zone = ground == null ? java.time.ZoneOffset.UTC : ground.getTimeZone();
+    private static java.util.Map<String, String> message(Booking booking, BookingPresenter.Context context, Refund refund, int percent, BigDecimal amount) {
+        var zone = context.zone();
         var note = switch (refund) {
             case STARTED -> "A full refund of " + booking.getCurrency() + " " + amount.toPlainString() + " has been started automatically.";
             case REQUESTED -> "A " + percent + "% refund of " + booking.getCurrency() + " " + amount.toPlainString() + " has been requested and is awaiting approval.";
@@ -128,7 +131,7 @@ public class CancelBookingUseCase {
         var payload = new HashMap<String, String>();
         payload.put("userId", booking.getUserId().toString());
         payload.put("bookingNumber", booking.getBookingNumber());
-        payload.put("groundName", ground == null ? "your ground" : ground.getName());
+        payload.put("groundName", context.label());
         payload.put("when", WHEN.format(booking.getStartAt().atZone(zone)) + "-" + DateTimeFormatter.ofPattern("HH:mm").format(booking.getEndAt().atZone(zone)));
         payload.put("note", note);
         return payload;

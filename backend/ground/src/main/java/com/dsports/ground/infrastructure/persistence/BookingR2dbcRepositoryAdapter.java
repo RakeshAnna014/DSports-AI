@@ -39,8 +39,8 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
     }
 
     @Override
-    public Flux<Booking> findByGround(UUID groundId, Instant from, Instant to) {
-        return springRepository.findByGroundInRange(groundId, from, to).map(BookingR2dbcRepositoryAdapter::toDomain);
+    public Flux<Booking> findByVenue(UUID venueId, Instant from, Instant to) {
+        return springRepository.findByVenueInRange(venueId, from, to).map(BookingR2dbcRepositoryAdapter::toDomain);
     }
 
     @Override
@@ -70,13 +70,19 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
     }
 
     @Override
-    public Flux<Slot> findOccupiedPeriods(UUID groundId, Instant from, Instant to) {
-        return databaseClient.sql("""
-                SELECT start_at, end_at FROM ground_bookings
-                 WHERE ground_id = :groundId AND status IN ('HELD', 'CONFIRMED') AND start_at < :to AND end_at > :from
-                 ORDER BY start_at
-                """)
-            .bind("groundId", groundId).bind("from", from).bind("to", to)
+    public Flux<Slot> findOccupiedPeriods(UUID courtId, Instant from, Instant to) {
+        return occupied("court_id", courtId, from, to);
+    }
+
+    @Override
+    public Flux<Slot> findOccupiedPeriodsAtVenue(UUID venueId, Instant from, Instant to) {
+        return occupied("venue_id", venueId, from, to);
+    }
+
+    private Flux<Slot> occupied(String column, UUID id, Instant from, Instant to) {
+        return databaseClient.sql("SELECT start_at, end_at FROM ground_bookings WHERE " + column
+                + " = :id AND status IN ('HELD', 'CONFIRMED') AND start_at < :to AND end_at > :from ORDER BY start_at")
+            .bind("id", id).bind("from", from).bind("to", to)
             .map((row, meta) -> new Slot(row.get("start_at", Instant.class), row.get("end_at", Instant.class)))
             .all();
     }
@@ -110,8 +116,8 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
     }
 
     @Override
-    public Mono<Void> lockGround(UUID groundId) {
-        return advisoryLock("ground-slot:" + groundId);
+    public Mono<Void> lockVenue(UUID venueId) {
+        return advisoryLock("ground-venue:" + venueId);
     }
 
     @Override
@@ -148,7 +154,7 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
 
     private static GroundDomainException mapIntegrityViolation(DataIntegrityViolationException e) {
         var message = String.valueOf(e.getMessage());
-        if (message.contains("no_overlap")) {
+        if (message.contains("no_overlap_court")) {
             return new GroundDomainException(GroundErrorCode.SLOT_UNAVAILABLE, "That time is no longer available. Please choose another slot.");
         }
         if (message.contains("uq_ground_bookings_user_key")) {
@@ -158,7 +164,7 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
     }
 
     static Booking toDomain(BookingEntity e) {
-        return Booking.reconstitute(e.getId(), e.getBookingNumber(), e.getGroundId(), e.getUserId(), e.getStartAt(), e.getEndAt(), e.getPrice(),
+        return Booking.reconstitute(e.getId(), e.getBookingNumber(), e.getVenueId(), e.getCourtId(), e.getSportId(), e.getUserId(), e.getStartAt(), e.getEndAt(), e.getPrice(),
             e.getCurrency(), BookingStatus.valueOf(e.getStatus()), e.getPaymentId(), e.getIdempotencyKey(), e.getHeldUntil(), e.getCancelledAt(),
             e.getCancelledBy() == null ? null : CancelledBy.valueOf(e.getCancelledBy()), e.getVersion(), e.getCreatedAt(), e.getUpdatedAt());
     }
@@ -167,7 +173,9 @@ public class BookingR2dbcRepositoryAdapter implements BookingRepository {
         var e = new BookingEntity();
         e.setId(b.getId());
         e.setBookingNumber(b.getBookingNumber());
-        e.setGroundId(b.getGroundId());
+        e.setVenueId(b.getVenueId());
+        e.setCourtId(b.getCourtId());
+        e.setSportId(b.getSportId());
         e.setUserId(b.getUserId());
         e.setStartAt(b.getStartAt());
         e.setEndAt(b.getEndAt());

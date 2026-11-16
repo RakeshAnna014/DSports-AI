@@ -32,10 +32,10 @@ import java.util.UUID;
 /** Customer bookings. Every call is for the signed-in customer; the id always comes from the verified token. */
 @RestController
 @RequestMapping(path = "/api/v1", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Ground bookings")
+@Tag(name = "Bookings")
 public class BookingController {
 
-    public record HoldRequest(@NotNull UUID groundId, @NotNull Instant startAt, @NotNull Instant endAt) {
+    public record HoldRequest(@NotNull UUID courtId, @NotNull UUID sportId, @NotNull Instant startAt, @NotNull Instant endAt) {
     }
 
     private final HoldBookingUseCase holdBooking;
@@ -52,28 +52,29 @@ public class BookingController {
 
     @PostMapping("/bookings")
     @Operation(summary = "Hold a slot",
-        description = "Holds [startAt, endAt) of a ground for the configured payment window (10 minutes by default) and snapshots its price. "
-            + "The range must be whole consecutive slots of the ground. An Idempotency-Key header is required: repeating the identical request "
+        description = "Holds [startAt, endAt) of one court, for the sport chosen, for the configured payment window (10 minutes by default) and snapshots its price. "
+            + "The range must be whole consecutive slots of the court, and the court must offer the sport. An Idempotency-Key header is required: repeating the identical request "
             + "returns the original booking (200), reusing the key for a different request is 409. Pay for the booking through the payments API "
             + "(orderId = the booking id) before it expires.")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Slot held"),
         @ApiResponse(responseCode = "200", description = "Idempotent replay of an earlier identical request"),
         @ApiResponse(responseCode = "400", description = "Missing Idempotency-Key, off-grid slot, too soon or too far ahead"),
-        @ApiResponse(responseCode = "404", description = "No such active ground"),
-        @ApiResponse(responseCode = "409", description = "SLOT_UNAVAILABLE, HOLD_LIMIT_REACHED or IDEMPOTENCY_KEY_REUSED")})
+        @ApiResponse(responseCode = "404", description = "No such active court or venue"),
+        @ApiResponse(responseCode = "409", description = "SLOT_UNAVAILABLE, HOLD_LIMIT_REACHED, IDEMPOTENCY_KEY_REUSED or VENUE_NOT_ACCEPTING_BOOKINGS"),
+        @ApiResponse(responseCode = "422", description = "SPORT_NOT_SUPPORTED by the court, or SPORT_NOT_BOOKABLE")})
     public Mono<ResponseEntity<BookingResult>> hold(Authentication authentication,
                                                     @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                     @Valid @RequestBody HoldRequest request) {
-        var command = new HoldBookingUseCase.Command(OwnerGroundController.callerId(authentication), request.groundId(), request.startAt(), request.endAt(), idempotencyKey);
+        var command = new HoldBookingUseCase.Command(Principals.callerId(authentication), request.courtId(), request.sportId(), request.startAt(), request.endAt(), idempotencyKey);
         return holdBooking.execute(command)
             .map(result -> ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED).body(result.booking()));
     }
 
     @GetMapping("/me/bookings")
-    @Operation(summary = "My bookings", description = "The signed-in customer's bookings, newest first, with each ground's name and city.")
+    @Operation(summary = "My bookings", description = "The signed-in customer's bookings, newest first, with each venue, court and sport.")
     public Mono<List<BookingResult>> mine(Authentication authentication) {
-        return listBookings.mine(OwnerGroundController.callerId(authentication));
+        return listBookings.mine(Principals.callerId(authentication));
     }
 
     @PostMapping("/bookings/{bookingId}/cancel")
@@ -85,7 +86,7 @@ public class BookingController {
         @ApiResponse(responseCode = "404", description = "No such booking"),
         @ApiResponse(responseCode = "409", description = "Already started, not cancellable in its status, or a payment is being captured")})
     public Mono<CancelBookingUseCase.Result> cancel(Authentication authentication, @PathVariable UUID bookingId) {
-        return cancelBooking.execute(new CancelBookingUseCase.Command(OwnerGroundController.callerId(authentication), bookingId, CancelledBy.CUSTOMER));
+        return cancelBooking.execute(new CancelBookingUseCase.Command(Principals.callerId(authentication), bookingId, CancelledBy.CUSTOMER));
     }
 
     @GetMapping("/bookings/{bookingId}")
@@ -93,6 +94,6 @@ public class BookingController {
     @ApiResponses({@ApiResponse(responseCode = "200", description = "The booking"), @ApiResponse(responseCode = "403", description = "Not your booking"),
         @ApiResponse(responseCode = "404", description = "No such booking")})
     public Mono<BookingResult> get(Authentication authentication, @PathVariable UUID bookingId) {
-        return getBooking.execute(OwnerGroundController.callerId(authentication), bookingId);
+        return getBooking.execute(Principals.callerId(authentication), bookingId);
     }
 }

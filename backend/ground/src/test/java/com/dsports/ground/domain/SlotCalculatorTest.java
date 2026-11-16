@@ -12,7 +12,7 @@ import java.util.List;
 
 import static com.dsports.ground.domain.GroundFixtures.NOW;
 import static com.dsports.ground.domain.GroundFixtures.WEDNESDAY;
-import static com.dsports.ground.domain.GroundFixtures.ground;
+import static com.dsports.ground.domain.GroundFixtures.court;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SlotCalculatorTest {
@@ -20,7 +20,7 @@ class SlotCalculatorTest {
     private static final BookingPolicy POLICY = BookingPolicy.defaults();
 
     private List<SlotCalculator.SlotAvailability> day(List<Slot> bookings, List<Slot> blackouts, Instant now) {
-        return SlotCalculator.availability(ground(), WEDNESDAY, bookings, blackouts, now, POLICY);
+        return SlotCalculator.availability(court(), WEDNESDAY, bookings, blackouts, now, POLICY);
     }
 
     private static SlotCalculator.SlotAvailability at(List<SlotCalculator.SlotAvailability> day, int hour) {

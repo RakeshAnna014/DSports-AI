@@ -1,6 +1,6 @@
 package com.dsports.ground.domain.policy;
 
-import com.dsports.ground.domain.model.Ground;
+import com.dsports.ground.domain.model.Court;
 import com.dsports.ground.domain.model.Slot;
 
 import java.math.BigDecimal;
@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Available slots are computed, never stored: the ground's grid for the day, minus slots that overlap an active booking or a
+ * Available slots are computed, never stored: the court grid for the day, minus slots that overlap an active booking or a
  * blackout, minus slots outside the booking window. Each unavailable slot says why.
  */
 public final class SlotCalculator {
@@ -23,9 +23,9 @@ public final class SlotCalculator {
     private SlotCalculator() {
     }
 
-    public static List<SlotAvailability> availability(Ground ground, LocalDate date, Collection<Slot> activeBookings,
+    public static List<SlotAvailability> availability(Court court, LocalDate date, Collection<Slot> activeBookings,
                                                       Collection<Slot> blackouts, Instant now, BookingPolicy policy) {
-        return ground.slotsOn(date).stream().map(slot -> {
+        return court.slotsOn(date).stream().map(slot -> {
             Reason reason = null;
             if (slot.start().isBefore(now.plus(policy.minLead()))) {
                 reason = Reason.TOO_SOON;
@@ -36,7 +36,7 @@ public final class SlotCalculator {
             } else if (activeBookings.stream().anyMatch(slot::overlaps)) {
                 reason = Reason.BOOKED;
             }
-            return new SlotAvailability(slot, ground.slotPrice(slot), reason == null, reason);
+            return new SlotAvailability(slot, court.slotPrice(slot), reason == null, reason);
         }).toList();
     }
 }

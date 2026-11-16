@@ -1,8 +1,15 @@
 package com.dsports.ground.domain.exception;
 
 public enum GroundErrorCode {
-    GROUND_NOT_FOUND,
-    GROUND_NOT_OWNED_BY_USER,
+    VENUE_NOT_FOUND,
+    VENUE_NOT_OWNED_BY_USER,
+    /** The venue exists but its owner no longer holds the ground-owner role: it takes no NEW bookings until an administrator reassigns it. */
+    VENUE_NOT_ACCEPTING_BOOKINGS,
+    COURT_NOT_FOUND,
+    SPORT_NOT_SUPPORTED,
+    SPORT_NOT_BOOKABLE,
+    OWNER_NOT_ELIGIBLE,
+    DUPLICATE_COURT_NAME,
     BOOKING_NOT_FOUND,
     BOOKING_NOT_OWNED_BY_USER,
     INVALID_SLOT,

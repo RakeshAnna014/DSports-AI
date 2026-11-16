@@ -1,11 +1,14 @@
 package com.dsports.ground.infrastructure.persistence;
 
+import com.dsports.ground.application.Fakes;
+import com.dsports.ground.application.usecase.BookingPresenter;
 import com.dsports.ground.application.usecase.HoldBookingUseCase;
 import com.dsports.ground.application.usecase.HoldBookingUseCase.Command;
 import com.dsports.ground.domain.exception.GroundDomainException;
 import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.Booking;
-import com.dsports.ground.domain.model.Ground;
+import com.dsports.ground.domain.model.Court;
+import com.dsports.ground.domain.model.Venue;
 import com.dsports.ground.domain.policy.BookingPolicy;
 import com.dsports.shared.application.TransactionRunner;
 import io.r2dbc.spi.ConnectionFactories;
@@ -33,11 +36,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.dsports.ground.domain.GroundFixtures.CRICKET;
+import static com.dsports.ground.domain.GroundFixtures.FOOTBALL;
 import static com.dsports.ground.domain.GroundFixtures.NOW;
 import static com.dsports.ground.domain.GroundFixtures.OWNER;
 import static com.dsports.ground.domain.GroundFixtures.WEDNESDAY;
 import static com.dsports.ground.domain.GroundFixtures.at;
-import static com.dsports.ground.domain.GroundFixtures.spec;
+import static com.dsports.ground.domain.GroundFixtures.courtSpec;
+import static com.dsports.ground.domain.GroundFixtures.venueSpec;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -48,7 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HoldBookingIntegrationTest {
 
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-    private static GroundR2dbcRepositoryAdapter grounds;
+    private static VenueR2dbcRepositoryAdapter venues;
+    private static CourtR2dbcRepositoryAdapter courts;
     private static BookingR2dbcRepositoryAdapter bookings;
     private static HoldBookingUseCase hold;
     private static DatabaseClient db;
@@ -63,7 +70,8 @@ class HoldBookingIntegrationTest {
         var template = new R2dbcEntityTemplate(connectionFactory);
         var factory = new R2dbcRepositoryFactory(template);
         db = DatabaseClient.create(connectionFactory);
-        grounds = new GroundR2dbcRepositoryAdapter(factory.getRepository(SpringR2dbcGroundRepository.class));
+        venues = new VenueR2dbcRepositoryAdapter(factory.getRepository(SpringR2dbcVenueRepository.class), db);
+        courts = new CourtR2dbcRepositoryAdapter(factory.getRepository(SpringR2dbcCourtRepository.class), db);
         bookings = new BookingR2dbcRepositoryAdapter(factory.getRepository(SpringR2dbcBookingRepository.class), db);
         var operator = TransactionalOperator.create(new R2dbcTransactionManager(connectionFactory));
         TransactionRunner transactions = new TransactionRunner() {
@@ -73,8 +81,11 @@ class HoldBookingIntegrationTest {
             }
         };
         var blackouts = new BlackoutR2dbcRepositoryAdapter(db, template);
-        hold = new HoldBookingUseCase(grounds, bookings, blackouts, BookingPolicy.defaults(), Duration.ofMinutes(10), 2, transactions,
-            Clock.fixed(NOW, ZoneOffset.UTC));
+        var sports = new Fakes.Sports().with(CRICKET, "Cricket", true).with(FOOTBALL, "Football", true);
+        var owners = new Fakes.Owners();
+        owners.withRole.add(OWNER);
+        hold = new HoldBookingUseCase(venues, courts, bookings, blackouts, owners, sports, new BookingPresenter(venues, courts, sports), BookingPolicy.defaults(),
+            Duration.ofMinutes(10), 2, transactions, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @AfterAll
@@ -82,12 +93,26 @@ class HoldBookingIntegrationTest {
         POSTGRES.stop();
     }
 
-    private static Ground ground() {
-        return grounds.save(Ground.create(OWNER, spec(), NOW)).block();
+    private static Venue venue() {
+        return venues.save(Venue.create(OWNER, venueSpec(), NOW)).block();
     }
 
-    private static Command command(Ground ground, UUID user, int fromHour, int toHour, String key) {
-        return new Command(user, ground.getId(), at(WEDNESDAY, fromHour, 0), at(WEDNESDAY, toHour, 0), key);
+    private static Court court(Venue venue, String name) {
+        var s = courtSpec();
+        var spec = new Court.Spec(name, s.surface(), s.sportIds(), s.slotMinutes(), s.basePrice(), s.weekendPrice(), s.peakPrice(), s.peakFrom(), s.peakTo());
+        return courts.save(Court.create(venue, spec, NOW)).block();
+    }
+
+    private static Court court() {
+        return court(venue(), "Court 1");
+    }
+
+    private static Command command(Court court, UUID user, int fromHour, int toHour, String key) {
+        return command(court, CRICKET, user, fromHour, toHour, key);
+    }
+
+    private static Command command(Court court, UUID sport, UUID user, int fromHour, int toHour, String key) {
+        return new Command(user, court.getId(), sport, at(WEDNESDAY, fromHour, 0), at(WEDNESDAY, toHour, 0), key);
     }
 
     /** "OK" for a booking, otherwise the error code, run with every request in flight at the same time. */
@@ -97,6 +122,10 @@ class HoldBookingIntegrationTest {
                 .map(result -> result.replayed() ? "REPLAY" : "OK")
                 .onErrorResume(GroundDomainException.class, e -> Mono.just(e.getErrorCode().name())), requests.size())
             .collectList().block(Duration.ofSeconds(60));
+    }
+
+    private static Venue venueOf(Court court) {
+        return venues.findById(court.getVenueId()).block();
     }
 
     private static long count(String sql, Object... binds) {
@@ -109,26 +138,26 @@ class HoldBookingIntegrationTest {
 
     @Test
     void ofManyCustomersRacingForOneSlotExactlyOneWinsAndTheRestGetACleanConflict() {
-        var ground = ground();
-        var requests = IntStream.range(0, 12).mapToObj(i -> hold.execute(command(ground, UUID.randomUUID(), 17, 18, "race-" + i))).toList();
+        var court = court();
+        var requests = IntStream.range(0, 12).mapToObj(i -> hold.execute(command(court, UUID.randomUUID(), 17, 18, "race-" + i))).toList();
 
         var outcomes = runConcurrently(requests);
 
         assertThat(outcomes.stream().filter("OK"::equals).count()).isEqualTo(1);
         assertThat(outcomes.stream().filter(o -> !o.equals("OK"))).hasSize(11).allMatch(GroundErrorCode.SLOT_UNAVAILABLE.name()::equals);
-        assertThat(count("SELECT COUNT(*) FROM ground_bookings WHERE ground_id = $1 AND status = 'HELD'", ground.getId())).isEqualTo(1);
+        assertThat(count("SELECT COUNT(*) FROM ground_bookings WHERE court_id = $1 AND status = 'HELD'", court.getId())).isEqualTo(1);
     }
 
     @Test
     void overlappingMultiSlotRequestsStillAllowExactlyOneWinner() {
-        var ground = ground();
-        var requests = IntStream.range(0, 8).mapToObj(i -> hold.execute(command(ground, UUID.randomUUID(), 10 + i % 3, 12 + i % 3, "multi-" + i))).toList();
+        var court = court();
+        var requests = IntStream.range(0, 8).mapToObj(i -> hold.execute(command(court, UUID.randomUUID(), 10 + i % 3, 12 + i % 3, "multi-" + i))).toList();
 
         var outcomes = runConcurrently(requests);
 
         assertThat(outcomes.stream().filter("OK"::equals).count()).isGreaterThanOrEqualTo(1);
         assertThat(outcomes).allMatch(o -> o.equals("OK") || o.equals(GroundErrorCode.SLOT_UNAVAILABLE.name()));
-        var rows = bookings.findOccupiedPeriods(ground.getId(), at(WEDNESDAY, 6, 0), at(WEDNESDAY, 22, 0)).collectList().block();
+        var rows = bookings.findOccupiedPeriods(court.getId(), at(WEDNESDAY, 6, 0), at(WEDNESDAY, 22, 0)).collectList().block();
         for (int i = 0; i < rows.size(); i++) {
             for (int j = i + 1; j < rows.size(); j++) {
                 assertThat(rows.get(i).overlaps(rows.get(j))).as("bookings %s and %s overlap", rows.get(i), rows.get(j)).isFalse();
@@ -138,9 +167,9 @@ class HoldBookingIntegrationTest {
 
     @Test
     void theSameRequestRepeatedAtTheSameMomentCreatesOneBooking() {
-        var ground = ground();
+        var court = court();
         var user = UUID.randomUUID();
-        var requests = IntStream.range(0, 6).mapToObj(i -> hold.execute(command(ground, user, 9, 10, "same-key"))).toList();
+        var requests = IntStream.range(0, 6).mapToObj(i -> hold.execute(command(court, user, 9, 10, "same-key"))).toList();
 
         var outcomes = runConcurrently(requests);
 
@@ -151,9 +180,9 @@ class HoldBookingIntegrationTest {
 
     @Test
     void oneCustomerRacingWithDifferentSlotsCannotExceedTheHoldLimit() {
-        var ground = ground();
+        var court = court();
         var user = UUID.randomUUID();
-        var requests = IntStream.range(0, 6).mapToObj(i -> hold.execute(command(ground, user, 6 + i, 7 + i, "limit-" + i))).toList();
+        var requests = IntStream.range(0, 6).mapToObj(i -> hold.execute(command(court, user, 6 + i, 7 + i, "limit-" + i))).toList();
 
         var outcomes = runConcurrently(requests);
 
@@ -163,11 +192,36 @@ class HoldBookingIntegrationTest {
     }
 
     @Test
+    void twoCourtsOfOneVenueBookedAtTheSameMomentForTheSameTimeBothSucceed() {
+        var venue = venue();
+        var one = court(venue, "Court 1");
+        var two = court(venue, "Court 2");
+        var requests = List.of(hold.execute(command(one, UUID.randomUUID(), 17, 18, "c1")), hold.execute(command(two, UUID.randomUUID(), 17, 18, "c2")));
+
+        var outcomes = runConcurrently(requests);
+
+        assertThat(outcomes).containsExactlyInAnyOrder("OK", "OK");
+        assertThat(count("SELECT COUNT(*) FROM ground_bookings WHERE venue_id = $1 AND status = 'HELD'", venue.getId())).isEqualTo(2);
+    }
+
+    @Test
+    void theSameCourtRacedForTwoSportsAtTheSameTimeGivesExactlyOneWinner() {
+        var court = court();
+        var requests = IntStream.range(0, 10).mapToObj(i -> hold.execute(command(court, i % 2 == 0 ? CRICKET : FOOTBALL, UUID.randomUUID(), 18, 19, "sport-" + i))).toList();
+
+        var outcomes = runConcurrently(requests);
+
+        assertThat(outcomes.stream().filter("OK"::equals).count()).isEqualTo(1);
+        assertThat(outcomes.stream().filter(o -> !o.equals("OK"))).hasSize(9).allMatch(GroundErrorCode.SLOT_UNAVAILABLE.name()::equals);
+        assertThat(count("SELECT COUNT(*) FROM ground_bookings WHERE court_id = $1 AND status = 'HELD'", court.getId())).isEqualTo(1);
+    }
+
+    @Test
     void theDatabaseConstraintAloneStillTurnsEveryLoserIntoAConflictWhenTheLocksAreBypassed() {
-        var ground = ground();
+        var court = court();
         var requests = IntStream.range(0, 12).mapToObj(i -> Mono.defer(() -> {
-            var booking = Booking.hold(ground, UUID.randomUUID(), at(WEDNESDAY, 20, 0), at(WEDNESDAY, 21, 0), "GB-RAW" + i, "raw-" + i, NOW, Duration.ofMinutes(10),
-                BookingPolicy.defaults());
+            var booking = Booking.hold(venueOf(court), court, i % 2 == 0 ? CRICKET : FOOTBALL, UUID.randomUUID(), at(WEDNESDAY, 20, 0), at(WEDNESDAY, 21, 0),
+                "GB-RAW" + i, "raw-" + i, NOW, Duration.ofMinutes(10), BookingPolicy.defaults());
             return bookings.save(booking).map(b -> new HoldBookingUseCase.Result(null, false));
         })).toList();
 
@@ -179,9 +233,9 @@ class HoldBookingIntegrationTest {
 
     @Test
     void aBookingSurvivesAPersistenceRoundTripAndEachUpdateRaisesItsVersion() {
-        var ground = ground();
+        var court = court();
         var customer = UUID.randomUUID();
-        var created = hold.execute(command(ground, customer, 14, 16, "round-trip")).block().booking();
+        var created = hold.execute(command(court, customer, 14, 16, "round-trip")).block().booking();
 
         var loaded = bookings.findById(created.id()).block();
         assertThat(loaded.getPrice()).isEqualByComparingTo("2000");

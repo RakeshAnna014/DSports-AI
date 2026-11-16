@@ -5,7 +5,7 @@ import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.Booking;
 import com.dsports.ground.domain.model.BookingStatus;
 import com.dsports.ground.domain.model.CancelledBy;
-import com.dsports.ground.domain.model.Ground;
+import com.dsports.ground.domain.model.Court;
 import com.dsports.ground.domain.policy.BookingPolicy;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +17,9 @@ import static com.dsports.ground.domain.GroundFixtures.CUSTOMER;
 import static com.dsports.ground.domain.GroundFixtures.NOW;
 import static com.dsports.ground.domain.GroundFixtures.WEDNESDAY;
 import static com.dsports.ground.domain.GroundFixtures.at;
-import static com.dsports.ground.domain.GroundFixtures.ground;
+import static com.dsports.ground.domain.GroundFixtures.CRICKET;
+import static com.dsports.ground.domain.GroundFixtures.court;
+import static com.dsports.ground.domain.GroundFixtures.venue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -30,7 +32,8 @@ class BookingTest {
     private final Instant end = at(WEDNESDAY, 19, 0);
 
     private Booking held() {
-        return Booking.hold(ground(), CUSTOMER, start, end, "GB-000001", "key-1", NOW, HOLD, POLICY);
+        var venue = venue();
+        return Booking.hold(venue, court(venue), CRICKET, CUSTOMER, start, end, "GB-000001", "key-1", NOW, HOLD, POLICY);
     }
 
     @Test
@@ -46,31 +49,65 @@ class BookingTest {
     }
 
     @Test
-    void theHoldIsRejectedWhenTheRequestBreaksARule() {
-        var ground = ground();
-        assertCode(() -> Booking.hold(ground, CUSTOMER, NOW.plus(Duration.ofMinutes(30)), NOW.plus(Duration.ofMinutes(90)), "GB-1", "k", NOW, HOLD, POLICY),
-            GroundErrorCode.INVALID_SLOT);
-        assertCode(() -> Booking.hold(ground, CUSTOMER, at(WEDNESDAY, 6, 30), at(WEDNESDAY, 7, 30), "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.INVALID_SLOT);
-        assertCode(() -> Booking.hold(ground, CUSTOMER, at(WEDNESDAY, 6, 0), at(WEDNESDAY, 11, 0), "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.INVALID_SLOT);
-        assertCode(() -> Booking.hold(ground, CUSTOMER, start, end, "GB-1", " ", NOW, HOLD, POLICY), GroundErrorCode.VALIDATION_ERROR);
-        assertCode(() -> Booking.hold(ground, CUSTOMER, start, end, "GB-1", "k", start.minus(Duration.ofMinutes(59)), HOLD, POLICY), GroundErrorCode.BOOKING_TOO_SOON);
-        assertCode(() -> Booking.hold(ground, CUSTOMER, start, end, "GB-1", "k", start.minus(Duration.ofDays(31)), HOLD, POLICY), GroundErrorCode.BOOKING_TOO_FAR);
+    void holdingRecordsTheVenueTheCourtAndTheChosenSport() {
+        var venue = venue();
+        var court = court(venue);
+        var booking = Booking.hold(venue, court, GroundFixtures.FOOTBALL, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY);
+
+        assertThat(booking.getVenueId()).isEqualTo(venue.getId());
+        assertThat(booking.getCourtId()).isEqualTo(court.getId());
+        assertThat(booking.getSportId()).isEqualTo(GroundFixtures.FOOTBALL);
     }
 
     @Test
-    void anInactiveGroundCannotBeBooked() {
-        var ground = ground();
-        ground.deactivate(NOW);
+    void theHoldIsRejectedWhenTheRequestBreaksARule() {
+        var venue = venue();
+        var court = court(venue);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, NOW.plus(Duration.ofMinutes(30)), NOW.plus(Duration.ofMinutes(90)), "GB-1", "k", NOW, HOLD, POLICY),
+            GroundErrorCode.INVALID_SLOT);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, at(WEDNESDAY, 6, 30), at(WEDNESDAY, 7, 30), "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.INVALID_SLOT);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, at(WEDNESDAY, 6, 0), at(WEDNESDAY, 11, 0), "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.INVALID_SLOT);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, start, end, "GB-1", " ", NOW, HOLD, POLICY), GroundErrorCode.VALIDATION_ERROR);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, start, end, "GB-1", "k", start.minus(Duration.ofMinutes(59)), HOLD, POLICY), GroundErrorCode.BOOKING_TOO_SOON);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, start, end, "GB-1", "k", start.minus(Duration.ofDays(31)), HOLD, POLICY), GroundErrorCode.BOOKING_TOO_FAR);
+    }
 
-        assertCode(() -> Booking.hold(ground, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.GROUND_NOT_FOUND);
+    @Test
+    void aSportTheCourtDoesNotOfferCannotBeBooked() {
+        var venue = venue();
+        var court = court(venue);
+
+        assertCode(() -> Booking.hold(venue, court, GroundFixtures.BADMINTON, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.SPORT_NOT_SUPPORTED);
+    }
+
+    @Test
+    void anInactiveVenueOrCourtCannotBeBooked() {
+        var venue = venue();
+        var court = court(venue);
+        court.deactivate(NOW);
+        assertCode(() -> Booking.hold(venue, court, CRICKET, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.COURT_NOT_FOUND);
+
+        var closedVenue = venue();
+        var openCourt = court(closedVenue);
+        closedVenue.deactivate(NOW);
+        assertCode(() -> Booking.hold(closedVenue, openCourt, CRICKET, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.VENUE_NOT_FOUND);
+    }
+
+    @Test
+    void aCourtOfAnotherVenueCannotBeBookedThroughThisOne() {
+        var venue = venue();
+        var elsewhere = court(venue());
+
+        assertCode(() -> Booking.hold(venue, elsewhere, CRICKET, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY), GroundErrorCode.COURT_NOT_FOUND);
     }
 
     @Test
     void aLaterPriceChangeNeverChangesAnExistingBooking() {
-        var ground = ground();
-        var booking = Booking.hold(ground, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY);
-        ground.update(new Ground.Spec("Green Park Turf", "12 Park Road", "Bengaluru", null, null, ground.getSpec().pitchType(), java.util.List.of(), java.util.List.of(),
-            ground.getSpec().opensAt(), ground.getSpec().closesAt(), ground.getTimeZone(), 60, new java.math.BigDecimal("9999"), null, null, null, null), NOW);
+        var venue = venue();
+        var court = court(venue);
+        var booking = Booking.hold(venue, court, CRICKET, CUSTOMER, start, end, "GB-1", "k", NOW, HOLD, POLICY);
+        var s = court.getSpec();
+        court.update(new Court.Spec(s.name(), s.surface(), s.sportIds(), 60, new java.math.BigDecimal("9999"), null, null, null, null), NOW);
 
         assertThat(booking.getPrice()).isEqualByComparingTo("3000");
     }

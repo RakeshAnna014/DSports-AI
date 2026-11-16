@@ -19,8 +19,14 @@ public class BookingEntity {
     @Column("booking_number")
     private String bookingNumber;
 
-    @Column("ground_id")
-    private UUID groundId;
+    @Column("venue_id")
+    private UUID venueId;
+
+    @Column("court_id")
+    private UUID courtId;
+
+    @Column("sport_id")
+    private UUID sportId;
 
     @Column("user_id")
     private UUID userId;
@@ -69,8 +75,12 @@ public class BookingEntity {
     public void setId(UUID id) { this.id = id; }
     public String getBookingNumber() { return bookingNumber; }
     public void setBookingNumber(String bookingNumber) { this.bookingNumber = bookingNumber; }
-    public UUID getGroundId() { return groundId; }
-    public void setGroundId(UUID groundId) { this.groundId = groundId; }
+    public UUID getVenueId() { return venueId; }
+    public void setVenueId(UUID venueId) { this.venueId = venueId; }
+    public UUID getCourtId() { return courtId; }
+    public void setCourtId(UUID courtId) { this.courtId = courtId; }
+    public UUID getSportId() { return sportId; }
+    public void setSportId(UUID sportId) { this.sportId = sportId; }
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
     public Instant getStartAt() { return startAt; }

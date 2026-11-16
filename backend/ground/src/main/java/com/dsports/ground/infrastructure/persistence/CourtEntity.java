@@ -10,48 +10,24 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
 
-@Table("grounds")
-public class GroundEntity {
+@Table("courts")
+public class CourtEntity {
 
     @Id
     @Column("id")
     private UUID id;
 
-    @Column("owner_id")
-    private UUID ownerId;
+    @Column("venue_id")
+    private UUID venueId;
 
     @Column("name")
     private String name;
 
-    @Column("address")
-    private String address;
+    @Column("surface")
+    private String surface;
 
-    @Column("city")
-    private String city;
-
-    @Column("latitude")
-    private BigDecimal latitude;
-
-    @Column("longitude")
-    private BigDecimal longitude;
-
-    @Column("pitch_type")
-    private String pitchType;
-
-    @Column("facilities")
-    private String[] facilities;
-
-    @Column("photo_urls")
-    private String[] photoUrls;
-
-    @Column("opens_at")
-    private LocalTime opensAt;
-
-    @Column("closes_at")
-    private LocalTime closesAt;
-
-    @Column("time_zone")
-    private String timeZone;
+    @Column("sport_ids")
+    private UUID[] sportIds;
 
     @Column("slot_minutes")
     private int slotMinutes;
@@ -71,9 +47,6 @@ public class GroundEntity {
     @Column("peak_to")
     private LocalTime peakTo;
 
-    @Column("currency")
-    private String currency;
-
     @Column("active")
     private boolean active;
 
@@ -89,30 +62,14 @@ public class GroundEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public UUID getOwnerId() { return ownerId; }
-    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
+    public UUID getVenueId() { return venueId; }
+    public void setVenueId(UUID venueId) { this.venueId = venueId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
-    public BigDecimal getLatitude() { return latitude; }
-    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
-    public BigDecimal getLongitude() { return longitude; }
-    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
-    public String getPitchType() { return pitchType; }
-    public void setPitchType(String pitchType) { this.pitchType = pitchType; }
-    public String[] getFacilities() { return facilities; }
-    public void setFacilities(String[] facilities) { this.facilities = facilities; }
-    public String[] getPhotoUrls() { return photoUrls; }
-    public void setPhotoUrls(String[] photoUrls) { this.photoUrls = photoUrls; }
-    public LocalTime getOpensAt() { return opensAt; }
-    public void setOpensAt(LocalTime opensAt) { this.opensAt = opensAt; }
-    public LocalTime getClosesAt() { return closesAt; }
-    public void setClosesAt(LocalTime closesAt) { this.closesAt = closesAt; }
-    public String getTimeZone() { return timeZone; }
-    public void setTimeZone(String timeZone) { this.timeZone = timeZone; }
+    public String getSurface() { return surface; }
+    public void setSurface(String surface) { this.surface = surface; }
+    public UUID[] getSportIds() { return sportIds; }
+    public void setSportIds(UUID[] sportIds) { this.sportIds = sportIds; }
     public int getSlotMinutes() { return slotMinutes; }
     public void setSlotMinutes(int slotMinutes) { this.slotMinutes = slotMinutes; }
     public BigDecimal getBasePrice() { return basePrice; }
@@ -125,8 +82,6 @@ public class GroundEntity {
     public void setPeakFrom(LocalTime peakFrom) { this.peakFrom = peakFrom; }
     public LocalTime getPeakTo() { return peakTo; }
     public void setPeakTo(LocalTime peakTo) { this.peakTo = peakTo; }
-    public String getCurrency() { return currency; }
-    public void setCurrency(String currency) { this.currency = currency; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public int getVersion() { return version; }

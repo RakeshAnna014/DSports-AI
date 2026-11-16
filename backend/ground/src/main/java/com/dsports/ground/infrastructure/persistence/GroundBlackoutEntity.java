@@ -15,8 +15,11 @@ public class GroundBlackoutEntity {
     @Column("id")
     private UUID id;
 
-    @Column("ground_id")
-    private UUID groundId;
+    @Column("venue_id")
+    private UUID venueId;
+
+    @Column("court_id")
+    private UUID courtId;
 
     @Column("start_at")
     private Instant startAt;
@@ -35,8 +38,10 @@ public class GroundBlackoutEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public UUID getGroundId() { return groundId; }
-    public void setGroundId(UUID groundId) { this.groundId = groundId; }
+    public UUID getVenueId() { return venueId; }
+    public void setVenueId(UUID venueId) { this.venueId = venueId; }
+    public UUID getCourtId() { return courtId; }
+    public void setCourtId(UUID courtId) { this.courtId = courtId; }
     public Instant getStartAt() { return startAt; }
     public void setStartAt(Instant startAt) { this.startAt = startAt; }
     public Instant getEndAt() { return endAt; }

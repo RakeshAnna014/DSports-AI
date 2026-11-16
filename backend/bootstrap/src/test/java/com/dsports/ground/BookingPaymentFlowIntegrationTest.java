@@ -6,12 +6,17 @@ import com.dsports.ground.application.usecase.CompleteEndedBookingsUseCase;
 import com.dsports.ground.application.usecase.ExpireHeldBookingsUseCase;
 import com.dsports.ground.application.usecase.HoldBookingUseCase;
 import com.dsports.ground.application.usecase.ListBookingsUseCase;
-import com.dsports.ground.application.usecase.ManageGroundsUseCase;
+import com.dsports.catalog.application.command.CreateSportCommand;
+import com.dsports.catalog.application.usecase.CreateSportUseCase;
+import com.dsports.catalog.application.usecase.GetSportsUseCase;
+import com.dsports.ground.application.usecase.Caller;
+import com.dsports.ground.application.usecase.ManageCourtsUseCase;
+import com.dsports.ground.application.usecase.ManageVenuesUseCase;
 import com.dsports.ground.domain.exception.GroundDomainException;
 import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.ground.domain.model.CancelledBy;
-import com.dsports.ground.domain.model.Ground;
-import com.dsports.ground.domain.model.PitchType;
+import com.dsports.ground.domain.model.Court;
+import com.dsports.ground.domain.model.Venue;
 import com.dsports.payment.application.payment.command.CapturePaymentCommand;
 import com.dsports.payment.application.payment.command.CreatePaymentCommand;
 import com.dsports.payment.application.payment.port.PaymentGateway;
@@ -142,7 +147,10 @@ class BookingPaymentFlowIntegrationTest {
         }
     }
 
-    @Autowired private ManageGroundsUseCase manageGrounds;
+    @Autowired private CreateSportUseCase createSport;
+    @Autowired private GetSportsUseCase getSports;
+    @Autowired private ManageVenuesUseCase manageVenues;
+    @Autowired private ManageCourtsUseCase manageCourts;
     @Autowired private HoldBookingUseCase hold;
     @Autowired private ExpireHeldBookingsUseCase expireHeld;
     @Autowired private CancelBookingUseCase cancelBooking;
@@ -156,27 +164,53 @@ class BookingPaymentFlowIntegrationTest {
     private final UUID owner = UUID.randomUUID();
     private final UUID customer = UUID.randomUUID();
     private final UUID otherCustomer = UUID.randomUUID();
-    private UUID groundId;
+    private UUID venueId;
+    private UUID courtId;
+    private UUID cricketId;
+    private UUID footballId;
     private int nextHour;
 
     @BeforeEach
     void freshGround() {
         gateway.captureStarted = null;
         gateway.captureRelease = null;
-        var spec = new Ground.Spec("Flow Turf " + UUID.randomUUID(), "1 Test Road", "Pune", null, null, PitchType.TURF, List.of(), List.of(), LocalTime.of(6, 0),
-            LocalTime.of(22, 0), IST, 60, new BigDecimal("1000"), new BigDecimal("1500"), null, null, null);
-        groundId = manageGrounds.create(owner, spec).block().ground().id();
+        cricketId = sportId("cricket");
+        footballId = sportId("football");
+        grantOwnerRole(owner);
+        var venue = new Venue.Spec("Flow Hub " + UUID.randomUUID(), "1 Test Road", "Pune", null, null, List.of(), List.of(), LocalTime.of(6, 0), LocalTime.of(22, 0), IST);
+        venueId = manageVenues.create(Caller.owner(owner), null, venue).block().venue().id();
+        courtId = addCourt("Court 1");
         nextHour = 7;
     }
 
     // ---- helpers -----------------------------------------------------------------------------------------------
+
+    private UUID sportId(String slug) {
+        return db.sql("SELECT id FROM sports WHERE slug = :slug").bind("slug", slug).map((r, m) -> r.get("id", UUID.class)).one().block();
+    }
+
+    /** The owner must really hold the role: bookings are only taken while the venue's owner does, read live from the identity tables. */
+    private void grantOwnerRole(UUID user) {
+        db.sql("INSERT INTO customers (id, email, first_name, last_name, status, created_at, updated_at) VALUES (:id, :email, 'Flow', 'Owner', 'ACTIVE', now(), now())")
+            .bind("id", user).bind("email", "flow-owner-" + user + "@example.com").fetch().rowsUpdated().block();
+        db.sql("INSERT INTO customer_roles (customer_id, role) VALUES (:id, 'GROUND_OWNER')").bind("id", user).fetch().rowsUpdated().block();
+    }
+
+    private void removeOwnerRole(UUID user) {
+        db.sql("DELETE FROM customer_roles WHERE customer_id = :id AND role = 'GROUND_OWNER'").bind("id", user).fetch().rowsUpdated().block();
+    }
+
+    private UUID addCourt(String name) {
+        var court = new Court.Spec(name, "turf", List.of(cricketId, footballId), 60, new BigDecimal("1000"), new BigDecimal("1500"), null, null, null);
+        return manageCourts.create(Caller.owner(owner), venueId, court).block().id();
+    }
 
     private static LocalDate day() {
         return LocalDate.now(IST).plusDays(5);
     }
 
     private HoldBookingUseCase.Command slot(UUID user, int hour) {
-        return new HoldBookingUseCase.Command(user, groundId, day().atTime(hour, 0).atZone(IST).toInstant(), day().atTime(hour + 1, 0).atZone(IST).toInstant(),
+        return new HoldBookingUseCase.Command(user, courtId, cricketId, day().atTime(hour, 0).atZone(IST).toInstant(), day().atTime(hour + 1, 0).atZone(IST).toInstant(),
             UUID.randomUUID().toString());
     }
 
@@ -315,7 +349,7 @@ class BookingPaymentFlowIntegrationTest {
         assertThat(paymentStatus(paymentId)).isEqualTo("CANCELLED");
         assertThatThrownBy(() -> capturePayment.execute(new CapturePaymentCommand(paymentId, customer)).block())
             .satisfies(e -> assertPaymentCode(e, PaymentErrorCode.INVALID_STATUS_TRANSITION));
-        var reHeld = hold.execute(new HoldBookingUseCase.Command(otherCustomer, groundId, day().atTime(7, 0).atZone(IST).toInstant(),
+        var reHeld = hold.execute(new HoldBookingUseCase.Command(otherCustomer, courtId, cricketId, day().atTime(7, 0).atZone(IST).toInstant(),
             day().atTime(8, 0).atZone(IST).toInstant(), UUID.randomUUID().toString())).block();
         assertThat(reHeld.booking().status()).isEqualTo("HELD");
     }
@@ -427,7 +461,7 @@ class BookingPaymentFlowIntegrationTest {
         await(() -> "REFUNDED".equals(paymentStatus(paymentId)), "the payment to be fully refunded");
         await(() -> count("SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND type = 'BOOKING_CANCELLED' AND message LIKE '%automatically%'", customer) == 1,
             "the cancellation notification");
-        assertThat(listBookings.atGround(owner, groundId, day()).block()).hasSize(1);
+        assertThat(listBookings.atVenue(owner, venueId, null, day()).block()).hasSize(1);
     }
 
     @Test
@@ -493,5 +527,74 @@ class BookingPaymentFlowIntegrationTest {
         assertThatThrownBy(() -> hold.execute(slot(otherCustomer, 10)).block()).isInstanceOfSatisfying(GroundDomainException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(GroundErrorCode.SLOT_UNAVAILABLE));
         assertThat(Instant.now()).isNotNull();
+    }
+
+    @Test
+    void twoCourtsOfTheSameVenueCanBeHeldAndPaidForTheSameTime() {
+        var secondCourt = addCourt("Court 2");
+
+        var first = hold.execute(slot(customer, 11)).block().booking();
+        var second = hold.execute(new HoldBookingUseCase.Command(otherCustomer, secondCourt, footballId, day().atTime(11, 0).atZone(IST).toInstant(),
+            day().atTime(12, 0).atZone(IST).toInstant(), UUID.randomUUID().toString())).block().booking();
+
+        assertThat(first.courtId()).isNotEqualTo(second.courtId());
+        assertThat(first.venueId()).isEqualTo(second.venueId());
+        var paid = authorised(customer, first.id());
+        capturePayment.execute(new CapturePaymentCommand(paid, customer)).block();
+        var paidToo = authorised(otherCustomer, second.id());
+        capturePayment.execute(new CapturePaymentCommand(paidToo, otherCustomer)).block();
+        assertThat(bookingStatus(first.id())).isEqualTo("CONFIRMED");
+        assertThat(bookingStatus(second.id())).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void theSameCourtCannotBeHeldForAnotherSportAtTheSameTime() {
+        hold.execute(slot(customer, 13)).block();
+
+        var football = new HoldBookingUseCase.Command(otherCustomer, courtId, footballId, day().atTime(13, 0).atZone(IST).toInstant(),
+            day().atTime(14, 0).atZone(IST).toInstant(), UUID.randomUUID().toString());
+
+        assertThatThrownBy(() -> hold.execute(football).block()).isInstanceOfSatisfying(GroundDomainException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(GroundErrorCode.SLOT_UNAVAILABLE));
+    }
+
+    @Test
+    void removingTheOwnersRoleStopsNewBookingsKeepsExistingOnesValidAndReassigningRestoresBooking() {
+        var booking = heldBooking(customer);
+        var paymentId = authorised(customer, booking);
+        removeOwnerRole(owner);
+
+        // New bookings are refused at once ...
+        assertThatThrownBy(() -> hold.execute(slot(otherCustomer, 15)).block()).isInstanceOfSatisfying(GroundDomainException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(GroundErrorCode.VENUE_NOT_ACCEPTING_BOOKINGS));
+        // ... but the booking that already exists is still payable and confirms.
+        capturePayment.execute(new CapturePaymentCommand(paymentId, customer)).block();
+        assertThat(bookingStatus(booking)).isEqualTo("CONFIRMED");
+
+        // An administrator hands the venue to another owner who holds the role, and it takes bookings again.
+        var newOwner = UUID.randomUUID();
+        grantOwnerRole(newOwner);
+        var current = manageVenues.get(Caller.administrator(UUID.randomUUID()), venueId).block();
+        assertThat(current.ownerEligible()).isFalse();
+        var moved = manageVenues.update(Caller.administrator(UUID.randomUUID()), venueId,
+            new Venue.Spec(current.venue().name(), current.venue().address(), current.venue().city(), null, null, List.of(), List.of(), LocalTime.of(6, 0), LocalTime.of(22, 0), IST),
+            true, current.version(), newOwner).block();
+        assertThat(moved.ownerId()).isEqualTo(newOwner);
+        assertThat(moved.ownerEligible()).isTrue();
+        assertThat(hold.execute(slot(otherCustomer, 16)).block().booking().status()).isEqualTo("HELD");
+    }
+
+    @Test
+    void aBookableSportWithoutProductsIsNotListedInTheShopButIsListedForBooking() {
+        var unique = "court-" + UUID.randomUUID().toString().substring(0, 8);
+        createSport.execute(new CreateSportCommand("Sport " + unique, unique, "no products", true)).block();
+        var shopOnly = "shop-" + UUID.randomUUID().toString().substring(0, 8);
+        createSport.execute(new CreateSportCommand("Sport " + shopOnly, shopOnly, "no products", false)).block();
+
+        var shop = getSports.execute().map(r -> r.slug()).collectList().block();
+        var bookable = getSports.bookable().map(r -> r.slug()).collectList().block();
+
+        assertThat(shop).doesNotContain(unique).contains(shopOnly, "cricket", "football");
+        assertThat(bookable).contains(unique, "cricket", "football").doesNotContain(shopOnly);
     }
 }

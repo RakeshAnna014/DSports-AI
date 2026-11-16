@@ -416,9 +416,15 @@ public class GlobalExceptionHandler {
     }
 
     private static final Map<GroundErrorCode, HttpStatus> GROUND_ERROR_STATUS_MAP = Map.ofEntries(
-        Map.entry(GroundErrorCode.GROUND_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.VENUE_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.COURT_NOT_FOUND, HttpStatus.NOT_FOUND),
         Map.entry(GroundErrorCode.BOOKING_NOT_FOUND, HttpStatus.NOT_FOUND),
-        Map.entry(GroundErrorCode.GROUND_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.VENUE_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.VENUE_NOT_ACCEPTING_BOOKINGS, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.OWNER_NOT_ELIGIBLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.DUPLICATE_COURT_NAME, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.SPORT_NOT_SUPPORTED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(GroundErrorCode.SPORT_NOT_BOOKABLE, HttpStatus.UNPROCESSABLE_ENTITY),
         Map.entry(GroundErrorCode.BOOKING_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
         Map.entry(GroundErrorCode.SLOT_UNAVAILABLE, HttpStatus.CONFLICT),
         Map.entry(GroundErrorCode.HOLD_LIMIT_REACHED, HttpStatus.CONFLICT),
