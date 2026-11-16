@@ -22,6 +22,8 @@ public class SportEntity {
 
     private String status;
 
+    private boolean bookable;
+
     @Column("created_at")
     private Instant createdAt;
 
@@ -47,6 +49,9 @@ public class SportEntity {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public boolean isBookable() { return bookable; }
+    public void setBookable(boolean bookable) { this.bookable = bookable; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

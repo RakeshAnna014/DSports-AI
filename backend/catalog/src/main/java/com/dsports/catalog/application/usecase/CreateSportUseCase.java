@@ -36,6 +36,7 @@ public class CreateSportUseCase {
                                 "Sport with slug '" + command.slug() + "' already exists"));
                     }
                     var sport = Sport.create(name, slug, command.description());
+                    sport.changeBookable(Boolean.TRUE.equals(command.bookable()));
                     return sportRepository.save(sport)
                             .thenReturn(toResult(sport));
                 });
@@ -49,7 +50,8 @@ public class CreateSportUseCase {
                 sport.getDescription(),
                 sport.getStatus().name(),
                 sport.getCreatedAt(),
-                sport.getUpdatedAt()
+                sport.getUpdatedAt(),
+                sport.isBookable()
         );
     }
 }

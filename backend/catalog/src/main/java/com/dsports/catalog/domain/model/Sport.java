@@ -18,6 +18,7 @@ public final class Sport {
     private Slug slug;
     private String description;
     private Status status;
+    private boolean bookable;
     private Instant createdAt;
     private Instant updatedAt;
     private int version;
@@ -42,6 +43,11 @@ public final class Sport {
 
     public static Sport reconstitute(SportId id, SportName name, Slug slug, String description,
                                       Status status, Instant createdAt, Instant updatedAt, int version) {
+        return reconstitute(id, name, slug, description, status, createdAt, updatedAt, version, false);
+    }
+
+    public static Sport reconstitute(SportId id, SportName name, Slug slug, String description,
+                                      Status status, Instant createdAt, Instant updatedAt, int version, boolean bookable) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(slug, "slug must not be null");
@@ -50,6 +56,7 @@ public final class Sport {
         sport.createdAt = createdAt;
         sport.updatedAt = updatedAt;
         sport.version = version;
+        sport.bookable = bookable;
         return sport;
     }
 
@@ -66,6 +73,17 @@ public final class Sport {
         recordEvent(new SportUpdatedEvent(this.id, this.name, this.slug));
     }
 
+    /** Whether courts and grounds of this sport can be booked. Independent of the shop: it does not make the sport appear there. */
+    public void changeBookable(boolean bookable) {
+        if (this.status == Status.ARCHIVED) {
+            throw new IllegalStateException("Cannot update an archived sport");
+        }
+        if (this.bookable != bookable) {
+            this.bookable = bookable;
+            this.updatedAt = Instant.now();
+        }
+    }
+
     public void archive() {
         if (this.status == Status.ARCHIVED) {
             throw new IllegalStateException("Sport is already archived");
@@ -80,6 +98,7 @@ public final class Sport {
     public Slug getSlug() { return slug; }
     public String getDescription() { return description; }
     public Status getStatus() { return status; }
+    public boolean isBookable() { return bookable; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public int getVersion() { return version; }

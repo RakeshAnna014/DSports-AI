@@ -10,5 +10,10 @@ public record SportResult(
     String description,
     String status,
     Instant createdAt,
-    Instant updatedAt
-) {}
+    Instant updatedAt,
+    boolean bookable
+) {
+    public SportResult(UUID id, String name, String slug, String description, String status, Instant createdAt, Instant updatedAt) {
+        this(id, name, slug, description, status, createdAt, updatedAt, false);
+    }
+}

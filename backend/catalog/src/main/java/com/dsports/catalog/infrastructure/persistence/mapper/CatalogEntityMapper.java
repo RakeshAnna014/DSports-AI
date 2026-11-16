@@ -26,6 +26,7 @@ public class CatalogEntityMapper {
         entity.setSlug(domain.getSlug().value());
         entity.setDescription(domain.getDescription());
         entity.setStatus(domain.getStatus().name());
+        entity.setBookable(domain.isBookable());
         entity.setCreatedAt(domain.getCreatedAt());
         entity.setUpdatedAt(domain.getUpdatedAt());
         entity.setVersion(domain.getVersion());
@@ -41,7 +42,8 @@ public class CatalogEntityMapper {
                 Status.valueOf(entity.getStatus()),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.getVersion()
+                entity.getVersion(),
+                entity.isBookable()
         );
     }
 

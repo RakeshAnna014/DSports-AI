@@ -68,7 +68,38 @@ class CatalogMigrationTest {
             var stmt = conn.createStatement();
             var rs = stmt.executeQuery("SELECT COUNT(*) FROM sports");
             assertThat(rs.next()).isTrue();
-            assertThat(rs.getInt(1)).isEqualTo(6);
+            // the six catalogue seeds plus Pickleball, added by V50 as a court sport
+            assertThat(rs.getInt(1)).isEqualTo(7);
+        }
+    }
+
+    @Test
+    void shouldMarkCourtSportsBookableAndLeaveTheRestShopOnly() throws Exception {
+        try (var conn = DriverManager.getConnection(jdbcUrl, postgres.getUsername(), postgres.getPassword())) {
+            var rs = conn.createStatement().executeQuery("SELECT slug, bookable FROM sports");
+            var bookable = new java.util.HashMap<String, Boolean>();
+            while (rs.next()) {
+                bookable.put(rs.getString("slug"), rs.getBoolean("bookable"));
+            }
+            assertThat(bookable).containsEntry("pickleball", true).containsEntry("cricket", true).containsEntry("football", true)
+                    .containsEntry("badminton", true).containsEntry("tennis", true).containsEntry("basketball", true);
+            assertThat(bookable.get("running")).isNull();
+            bookable.forEach((slug, value) -> {
+                if (java.util.Set.of("running", "fitness", "swimming", "cycling").contains(slug)) {
+                    assertThat(value).as(slug).isFalse();
+                }
+            });
+        }
+    }
+
+    @Test
+    void shouldDefaultNewSportsToNotBookable() throws Exception {
+        try (var conn = DriverManager.getConnection(jdbcUrl, postgres.getUsername(), postgres.getPassword())) {
+            conn.createStatement().executeUpdate("INSERT INTO sports (id, name, slug, status, created_at, updated_at, version) "
+                    + "VALUES (gen_random_uuid(), 'Ice Hockey', 'ice-hockey', 'ACTIVE', NOW(), NOW(), 0)");
+            var rs = conn.createStatement().executeQuery("SELECT bookable FROM sports WHERE slug = 'ice-hockey'");
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getBoolean(1)).isFalse();
         }
     }
 

@@ -56,12 +56,12 @@ public class PublicCatalogController {
     }
 
     @GetMapping("/sports")
-    @Operation(summary = "List sports", description = "Retrieve all available sports")
+    @Operation(summary = "List sports", description = "Retrieve the sports the shop lists, or with bookable=true the sports that can be booked")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Sports retrieved successfully")
     })
-    public Flux<SportResult> getSports() {
-        return getSportsUseCase.execute();
+    public Flux<SportResult> getSports(@org.springframework.web.bind.annotation.RequestParam(required = false) Boolean bookable) {
+        return Boolean.TRUE.equals(bookable) ? getSportsUseCase.bookable() : getSportsUseCase.execute();
     }
 
     @GetMapping("/categories")

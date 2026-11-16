@@ -50,6 +50,23 @@ class SportTest {
     }
 
     @Test
+    void shouldBeShopOnlyByDefaultAndBecomeBookableOnRequest() {
+        var sport = Sport.create(SportName.from("Squash"), Slug.from("squash"), null);
+        assertThat(sport.isBookable()).isFalse();
+
+        sport.changeBookable(true);
+        assertThat(sport.isBookable()).isTrue();
+    }
+
+    @Test
+    void shouldNotChangeBookableOnAnArchivedSport() {
+        var sport = Sport.create(SportName.from("Squash"), Slug.from("squash"), null);
+        sport.archive();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> sport.changeBookable(true)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void shouldArchiveSport() {
         var sport = Sport.create(SportName.from("Cricket"), Slug.from("cricket"), null);
         sport.clearDomainEvents();

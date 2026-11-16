@@ -12,8 +12,15 @@ public class GetSportsUseCase {
         this.sportRepository = sportRepository;
     }
 
+    /** The shop's sports: bookable-only sports without products are left out. */
     public Flux<SportResult> execute() {
-        return sportRepository.findAllActive()
+        return sportRepository.findAllShoppable()
+                .map(CreateSportUseCase::toResult);
+    }
+
+    /** The sports that can be booked (court and ground booking). */
+    public Flux<SportResult> bookable() {
+        return sportRepository.findAllBookable()
                 .map(CreateSportUseCase::toResult);
     }
 }

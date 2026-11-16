@@ -55,6 +55,18 @@ class CreateSportUseCaseTest {
     }
 
     @Test
+    void shouldCreateASportThatIsNotBookableUnlessTheAdminSaysSo() {
+        when(sportRepository.existsByName(any(SportName.class))).thenReturn(Mono.just(false));
+        when(sportRepository.existsBySlug(any())).thenReturn(Mono.just(false));
+        when(sportRepository.save(any(Sport.class))).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.execute(new CreateSportCommand("Archery", "archery", null)))
+                .assertNext(result -> assertThat(result.bookable()).isFalse()).verifyComplete();
+        StepVerifier.create(useCase.execute(new CreateSportCommand("Squash", "squash", null, true)))
+                .assertNext(result -> assertThat(result.bookable()).isTrue()).verifyComplete();
+    }
+
+    @Test
     void shouldRejectDuplicateName() {
         var command = new CreateSportCommand("Cricket", "cricket", null);
 
