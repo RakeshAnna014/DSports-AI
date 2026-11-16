@@ -96,19 +96,20 @@ public class CreatePaymentUseCase {
                         : Mono.just(existing))
                     .doOnNext(existing -> log.info("Returning open payment {} for order {} (idempotent replay)",
                         existing.getPaymentReference().value(), orderData.orderNumber()))
-                    .switchIfEmpty(Mono.defer(() -> authorize(command, paymentMethod, paymentProvider)));
+                    .switchIfEmpty(Mono.defer(() -> authorize(command, orderData, paymentMethod, paymentProvider)));
             })
             .map(PaymentResultMapper::toResult);
     }
 
-    private Mono<Payment> authorize(CreatePaymentCommand command, PaymentMethod method, PaymentProvider provider) {
+    /** The amount and currency charged are always those of the order (or booking) record, never the request's: the request can only echo them. */
+    private Mono<Payment> authorize(CreatePaymentCommand command, OrderPaymentPort.OrderData orderData, PaymentMethod method, PaymentProvider provider) {
         var payment = Payment.create(PaymentId.generate(), PaymentReference.generate(),
-            command.orderId(), command.userId(), command.amount(), command.currency());
+            command.orderId(), command.userId(), orderData.grandTotal(), orderData.currency());
         payment.initiatePayment(method, provider);
         payment.markProcessing();
 
         var request = new PaymentGateway.InitiatePaymentRequest(payment.getPaymentReference(),
-            new Money(command.amount(), command.currency()), "Payment for order " + command.orderId());
+            new Money(orderData.grandTotal(), orderData.currency()), "Payment for order " + command.orderId());
 
         return paymentGateway.initiatePayment(request)
             .timeout(gatewayTimeout)
