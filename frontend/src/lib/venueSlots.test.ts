@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clock, localToday, mmss, nextSelection, refundSentence, secondsLeft, selectionSummary, when } from './groundSlots';
-import type { CancelResult, Slot } from '@/types/grounds';
+import { clock, localToday, mmss, nextSelection, refundSentence, secondsLeft, selectionSummary, when } from './venueSlots';
+import type { CancelResult, Slot } from '@/types/venues';
 
 /** Six hourly slots starting 06:00 IST (00:30Z); the fourth (index 3) is booked. */
 const slots: Slot[] = Array.from({ length: 6 }, (_, i) => {

@@ -1,4 +1,4 @@
-import type { CancelResult, Slot } from '@/types/grounds';
+import type { CancelResult, Slot } from '@/types/venues';
 import { formatPrice } from '@/lib/productUtils';
 
 /** The longest run of consecutive slots offered by the UI. The server enforces its own (configurable) limit and is the authority. */
@@ -28,11 +28,11 @@ export const selectionSummary = (slots: Slot[], selected: number[]) => {
   return { start: run[0].start, end: run[run.length - 1].end, price: run.reduce((sum, s) => sum + s.price, 0), count: run.length };
 };
 
-/** A time of day in the ground's own zone, e.g. "17:00". */
+/** A time of day in the venue's own zone, e.g. "17:00". */
 export const clock = (iso: string, timeZone: string) =>
   new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone }).format(new Date(iso));
 
-/** A date and time in the ground's own zone, e.g. "Wed 18 Nov, 17:00". */
+/** A date and time in the venue's own zone, e.g. "Wed 18 Nov, 17:00". */
 export const when = (iso: string, timeZone: string) =>
   new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone }).format(new Date(iso));
 

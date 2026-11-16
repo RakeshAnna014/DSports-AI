@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Box, Button, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
-import { groundsApi } from '@/api/grounds';
+import { venuesApi } from '@/api/venues';
 import { paymentsApi } from '@/api/payments';
 import { getApiError, getApiErrorMessage } from '@/api/errors';
 import { ErrorState } from '@/components/common/States';
 import { formatPrice } from '@/lib/productUtils';
-import { mmss, secondsLeft, when } from '@/lib/groundSlots';
+import { mmss, secondsLeft, when } from '@/lib/venueSlots';
 import type { PaymentResponse } from '@/types/payments';
 
 const RETRYABLE = ['GATEWAY_TIMEOUT', 'GATEWAY_ERROR', 'OPTIMISTIC_LOCKING_CONFLICT'];
@@ -20,7 +20,7 @@ const RETRYABLE = ['GATEWAY_TIMEOUT', 'GATEWAY_ERROR', 'OPTIMISTIC_LOCKING_CONFL
 const BookingPaymentPage = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const booking = useQuery({ queryKey: ['booking', id], queryFn: () => groundsApi.getBooking(id), refetchOnWindowFocus: false });
+  const booking = useQuery({ queryKey: ['booking', id], queryFn: () => venuesApi.getBooking(id), refetchOnWindowFocus: false });
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PaymentResponse | null>(null);
@@ -74,7 +74,8 @@ const BookingPaymentPage = () => {
     <Box sx={{ maxWidth: 560, mx: 'auto' }}>
       <Typography variant="h3" component="h1">Pay for your booking</Typography>
       <Paper variant="outlined" sx={{ p: 2.5, mt: 2 }}>
-        <Typography variant="subtitle1" fontWeight={800}>{b.groundName ?? 'Ground'}{b.groundCity ? `, ${b.groundCity}` : ''}</Typography>
+        <Typography variant="subtitle1" fontWeight={800}>{b.venueName ?? 'Venue'}{b.venueCity ? `, ${b.venueCity}` : ''}</Typography>
+        {(b.courtName || b.sportName) && <Typography variant="body2" data-testid="booking-court-sport">{[b.courtName, b.sportName].filter(Boolean).join(' · ')}</Typography>}
         <Typography variant="body2" color="text.secondary">{b.bookingNumber} · {when(b.startAt, timeZone)} – {when(b.endAt, timeZone).split(', ').pop()}</Typography>
         <Typography variant="h5" sx={{ my: 1.5 }} data-testid="booking-amount">{formatPrice(b.price, b.currency)}</Typography>
 

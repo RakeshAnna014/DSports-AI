@@ -3,13 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import { SportsCricket } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { groundsApi } from '@/api/grounds';
+import { venuesApi } from '@/api/venues';
 import { getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/store/authStore';
 import { EmptyState, ErrorState } from '@/components/common/States';
 import { formatPrice } from '@/lib/productUtils';
-import { refundSentence, when } from '@/lib/groundSlots';
-import type { Booking, BookingStatus, CancelResult } from '@/types/grounds';
+import { refundSentence, when } from '@/lib/venueSlots';
+import type { Booking, BookingStatus, CancelResult } from '@/types/venues';
 
 const STATUS: Record<BookingStatus, { label: string; color: 'warning' | 'success' | 'default' | 'error' | 'info' }> = {
   HELD: { label: 'Awaiting payment', color: 'warning' },
@@ -30,10 +30,10 @@ const MyBookingsPage = () => {
   const [confirming, setConfirming] = useState(false);
   const [outcome, setOutcome] = useState<CancelResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['my-bookings'], queryFn: groundsApi.myBookings, enabled: isAuthenticated });
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['my-bookings'], queryFn: venuesApi.myBookings, enabled: isAuthenticated });
 
   const cancel = useMutation({
-    mutationFn: (id: string) => groundsApi.cancel(id),
+    mutationFn: (id: string) => venuesApi.cancel(id),
     onSuccess: (result) => { setOutcome(result); setConfirming(false); setError(null); void queryClient.invalidateQueries({ queryKey: ['my-bookings'] }); },
     onError: (err) => { setConfirming(false); setError(getApiErrorMessage(err, 'That booking could not be cancelled.')); },
   });
@@ -46,14 +46,14 @@ const MyBookingsPage = () => {
     <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} spacing={1} sx={{ mb: 2 }}>
         <Typography variant="h3" component="h1">My bookings</Typography>
-        <Button variant="contained" component={RouterLink} to="/grounds">Book a ground</Button>
+        <Button variant="contained" component={RouterLink} to="/venues">Book a court</Button>
       </Stack>
       {searchParams.get('paid') && <Alert severity="success" sx={{ mb: 2 }} data-testid="paid-banner">Payment received: your booking is confirmed.</Alert>}
       {outcome && <Alert severity="info" sx={{ mb: 2 }} onClose={() => setOutcome(null)} data-testid="cancel-outcome">Booking {outcome.booking.bookingNumber} cancelled. {refundSentence(outcome)}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {isError && <ErrorState body="We couldn't load your bookings." onRetry={() => void refetch()} />}
       {isLoading && <Stack spacing={1.5}>{[0, 1].map((i) => <Skeleton key={i} variant="rounded" height={88} />)}</Stack>}
-      {data && data.length === 0 && <EmptyState icon={<SportsCricket sx={{ fontSize: 56 }} />} title="No bookings yet" body="Pick a ground and a slot to make your first booking." />}
+      {data && data.length === 0 && <EmptyState icon={<SportsCricket sx={{ fontSize: 56 }} />} title="No bookings yet" body="Pick a sport, a venue and a slot to make your first booking." />}
       <Stack spacing={1.5}>
         {data?.map((b) => {
           const s = STATUS[b.status];
@@ -62,7 +62,8 @@ const MyBookingsPage = () => {
             <Paper key={b.id} variant="outlined" sx={{ p: 2 }} data-testid="booking-card">
               <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}>
                 <Box>
-                  <Typography variant="subtitle1" fontWeight={800}>{b.groundName ?? 'Ground'}{b.groundCity ? `, ${b.groundCity}` : ''}</Typography>
+                  <Typography variant="subtitle1" fontWeight={800}>{b.venueName ?? 'Venue'}{b.venueCity ? `, ${b.venueCity}` : ''}</Typography>
+                  {(b.courtName || b.sportName) && <Typography variant="body2" data-testid="booking-court-sport">{[b.courtName, b.sportName].filter(Boolean).join(' · ')}</Typography>}
                   <Typography variant="body2" color="text.secondary">{b.bookingNumber} · {when(b.startAt, 'Asia/Kolkata')} · {formatPrice(b.price, b.currency)}</Typography>
                   <Chip size="small" color={s.color} label={s.label} sx={{ mt: 1 }} />
                 </Box>

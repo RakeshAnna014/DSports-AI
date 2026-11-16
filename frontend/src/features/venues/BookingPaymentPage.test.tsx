@@ -5,20 +5,20 @@ import { AxiosError } from 'axios';
 import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders } from '@/test/render';
 import BookingPaymentPage from './BookingPaymentPage';
-import { groundsApi } from '@/api/grounds';
+import { venuesApi } from '@/api/venues';
 import { paymentsApi } from '@/api/payments';
-import type { Booking } from '@/types/grounds';
+import type { Booking } from '@/types/venues';
 
-vi.mock('@/api/grounds', async (orig) => {
-  const real = await orig<typeof import('@/api/grounds')>();
-  return { ...real, groundsApi: { getBooking: vi.fn() } };
+vi.mock('@/api/venues', async (orig) => {
+  const real = await orig<typeof import('@/api/venues')>();
+  return { ...real, venuesApi: { getBooking: vi.fn() } };
 });
 vi.mock('@/api/payments', () => ({ paymentsApi: { createPayment: vi.fn(), capturePayment: vi.fn() } }));
 
 const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
 
 const booking = (over: Partial<Booking> = {}): Booking => ({
-  id: 'b-1', bookingNumber: 'GB-000001', groundId: 'g-1', groundName: 'Green Park Turf', groundCity: 'Bengaluru', startAt: inMinutes(60 * 48), endAt: inMinutes(60 * 49),
+  id: 'b-1', bookingNumber: 'GB-000001', venueId: 'v-1', venueName: 'Green Park Sports Hub', venueCity: 'Bengaluru', courtId: 'c-1', courtName: 'Court 1', sportId: 's-cricket', sportName: 'Cricket', startAt: inMinutes(60 * 48), endAt: inMinutes(60 * 49),
   price: 3000, currency: 'INR', status: 'HELD', heldUntil: inMinutes(9), paymentId: null, cancelledAt: null, cancelledBy: null, createdAt: new Date().toISOString(), ...over,
 });
 
@@ -33,7 +33,7 @@ const renderPage = () => renderWithProviders(
 
 describe('BookingPaymentPage', () => {
   beforeEach(() => {
-    vi.mocked(groundsApi.getBooking).mockResolvedValue(booking());
+    vi.mocked(venuesApi.getBooking).mockResolvedValue(booking());
     vi.mocked(paymentsApi.createPayment).mockResolvedValue({ id: 'pay-1', status: 'AUTHORIZED' } as never);
     vi.mocked(paymentsApi.capturePayment).mockResolvedValue({ id: 'pay-1', status: 'SUCCESS' } as never);
   });
@@ -79,14 +79,14 @@ describe('BookingPaymentPage', () => {
   });
 
   it('shows why a booking can no longer be paid and offers no pay button', async () => {
-    vi.mocked(groundsApi.getBooking).mockResolvedValue(booking({ heldUntil: inMinutes(-1) }));
+    vi.mocked(venuesApi.getBooking).mockResolvedValue(booking({ heldUntil: inMinutes(-1) }));
     renderPage();
     expect(await screen.findByTestId('hold-lapsed')).toBeInTheDocument();
     expect(screen.getByTestId('pay-booking')).toBeDisabled();
   });
 
   it('does not offer payment for a booking that is already confirmed or expired', async () => {
-    vi.mocked(groundsApi.getBooking).mockResolvedValue(booking({ status: 'CONFIRMED' }));
+    vi.mocked(venuesApi.getBooking).mockResolvedValue(booking({ status: 'CONFIRMED' }));
     renderPage();
     expect(await screen.findByText(/paid and confirmed/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId('pay-booking')).toBeDisabled());

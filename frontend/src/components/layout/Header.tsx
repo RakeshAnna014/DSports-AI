@@ -6,7 +6,7 @@ import Brand from '@/components/common/Brand';
 import NotificationCenter from '@/features/notifications/NotificationCenter';
 import { isBuyer } from '@/api/sourcing';
 import { isPlanner } from '@/api/planning';
-import { isGroundOwner } from '@/api/grounds';
+import { isAdmin, isGroundOwner } from '@/api/venues';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
@@ -17,7 +17,7 @@ import { colors, gradients } from '@/design/tokens';
 const NAV = [
   { label: 'Home', to: '/', end: true },
   { label: 'Products', to: '/products' },
-  { label: 'Grounds', to: '/grounds' },
+  { label: 'Courts', to: '/venues' },
   { label: 'AI Shop', to: '/ai' },
   { label: 'Orders', to: '/orders' },
   { label: 'Track', to: '/track' },
@@ -35,13 +35,14 @@ const Header = () => {
   const setAiOpen = useAiStore((s) => s.setOpen);
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [adminAnchor, setAdminAnchor] = useState<null | HTMLElement>(null);
 
   const handleLogout = async () => {
     setAnchorEl(null);
     await logout();
     navigate('/');
   };
-  const goto = (path: string) => { setAnchorEl(null); navigate(path); };
+  const goto = (path: string) => { setAnchorEl(null); setAdminAnchor(null); navigate(path); };
 
   return (
     <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(7,12,24,0.86)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -57,6 +58,20 @@ const Header = () => {
               {n.label}
             </Button>
           ))}
+          {isGroundOwner(user?.roles) && (
+            <Button component={NavLink} to="/owner/venues" data-testid="nav-owner-console" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5, whiteSpace: 'nowrap' }}>Owner console</Button>
+          )}
+          {isAdmin(user?.roles) && (
+            <>
+              <Button onClick={(e) => setAdminAnchor(e.currentTarget)} data-testid="nav-admin" aria-haspopup="menu" aria-expanded={Boolean(adminAnchor)}
+                sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5, whiteSpace: 'nowrap' }}>Admin</Button>
+              <Menu anchorEl={adminAnchor} open={Boolean(adminAnchor)} onClose={() => setAdminAnchor(null)} MenuListProps={{ 'aria-label': 'Admin' }}>
+                <MenuItem onClick={() => goto('/admin/ground-owners')} data-testid="admin-ground-owners">Ground owners</MenuItem>
+                <MenuItem onClick={() => goto('/admin/venues')} data-testid="admin-venues">Venues</MenuItem>
+                <MenuItem onClick={() => goto('/admin/sports')} data-testid="admin-sports">Sports</MenuItem>
+              </Menu>
+            </>
+          )}
           {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
             <Button component={NavLink} to="/inventory-ai" data-testid="nav-inventory-ai" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Inventory AI</Button>
           )}
@@ -104,7 +119,7 @@ const Header = () => {
                 <Divider />
                 <MenuItem onClick={() => goto('/orders')}><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My Orders</MenuItem>
                 <MenuItem onClick={() => goto('/bookings')} data-testid="menu-bookings"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My bookings</MenuItem>
-                {isGroundOwner(user.roles) && <MenuItem onClick={() => goto('/owner/grounds')} data-testid="menu-owner-grounds"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My grounds</MenuItem>}
+                {isGroundOwner(user.roles) && <MenuItem onClick={() => goto('/owner/venues')} data-testid="menu-owner-console"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Owner console</MenuItem>}
                 <MenuItem onClick={() => goto('/returns')}><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Returns</MenuItem>
                 <MenuItem onClick={() => goto('/support')} data-testid="menu-support"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Support cases</MenuItem>
                 <MenuItem onClick={() => goto('/support?new=1')} data-testid="menu-raise-ticket"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Contact support</MenuItem>

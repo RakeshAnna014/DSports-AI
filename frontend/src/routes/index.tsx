@@ -30,11 +30,14 @@ import FulfilmentApp from '@/features/fulfilment/FulfilmentApp';
 import SourcingApp from '@/features/sourcing/SourcingApp';
 import PlanningApp from '@/features/planning/PlanningApp';
 import MyCasesPage from '@/features/support/MyCasesPage';
-import GroundsPage from '@/features/grounds/GroundsPage';
-import GroundDetailPage from '@/features/grounds/GroundDetailPage';
-import BookingPaymentPage from '@/features/grounds/BookingPaymentPage';
-import MyBookingsPage from '@/features/grounds/MyBookingsPage';
-import OwnerGroundsPage from '@/features/grounds/OwnerGroundsPage';
+import VenuesPage from '@/features/venues/VenuesPage';
+import VenueDetailPage from '@/features/venues/VenueDetailPage';
+import BookingPaymentPage from '@/features/venues/BookingPaymentPage';
+import MyBookingsPage from '@/features/venues/MyBookingsPage';
+import OwnerVenuesPage from '@/features/venues/OwnerVenuesPage';
+import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
+import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
+import AdminSportsPage from '@/features/admin/AdminSportsPage';
 
 const router = createBrowserRouter([
   // Internal, business-facing area: its own layout (no storefront chrome). Access is enforced by the backend (ADMIN role) on every request.
@@ -62,11 +65,14 @@ const router = createBrowserRouter([
       { path: '/checkout', element: <CheckoutPage /> },
       { path: '/ai', element: <AiShopPage /> },
       { path: '/returns', element: <ReturnsPage /> },
-      { path: '/grounds', element: <GroundsPage /> },
-      { path: '/grounds/:id', element: <GroundDetailPage /> },
+      { path: '/venues', element: <VenuesPage /> },
+      { path: '/venues/:id', element: <VenueDetailPage /> },
       { path: '/bookings', element: <MyBookingsPage /> },
       { path: '/bookings/:id/pay', element: <BookingPaymentPage /> },
-      { path: '/owner/grounds', element: <OwnerGroundsPage /> },
+      { path: '/owner/venues', element: <OwnerVenuesPage /> },
+      { path: '/admin/ground-owners', element: <AdminGroundOwnersPage /> },
+      { path: '/admin/venues', element: <AdminVenuesPage /> },
+      { path: '/admin/sports', element: <AdminSportsPage /> },
       { path: '/support/:ref?', element: <MyCasesPage /> },
       { path: '/orders', element: <OrdersPage /> },
       { path: '/orders/:id', element: <OrderDetailPage /> },
