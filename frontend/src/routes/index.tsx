@@ -30,6 +30,11 @@ import FulfilmentApp from '@/features/fulfilment/FulfilmentApp';
 import SourcingApp from '@/features/sourcing/SourcingApp';
 import PlanningApp from '@/features/planning/PlanningApp';
 import MyCasesPage from '@/features/support/MyCasesPage';
+import GroundsPage from '@/features/grounds/GroundsPage';
+import GroundDetailPage from '@/features/grounds/GroundDetailPage';
+import BookingPaymentPage from '@/features/grounds/BookingPaymentPage';
+import MyBookingsPage from '@/features/grounds/MyBookingsPage';
+import OwnerGroundsPage from '@/features/grounds/OwnerGroundsPage';
 
 const router = createBrowserRouter([
   // Internal, business-facing area: its own layout (no storefront chrome). Access is enforced by the backend (ADMIN role) on every request.
@@ -57,6 +62,11 @@ const router = createBrowserRouter([
       { path: '/checkout', element: <CheckoutPage /> },
       { path: '/ai', element: <AiShopPage /> },
       { path: '/returns', element: <ReturnsPage /> },
+      { path: '/grounds', element: <GroundsPage /> },
+      { path: '/grounds/:id', element: <GroundDetailPage /> },
+      { path: '/bookings', element: <MyBookingsPage /> },
+      { path: '/bookings/:id/pay', element: <BookingPaymentPage /> },
+      { path: '/owner/grounds', element: <OwnerGroundsPage /> },
       { path: '/support/:ref?', element: <MyCasesPage /> },
       { path: '/orders', element: <OrdersPage /> },
       { path: '/orders/:id', element: <OrderDetailPage /> },
