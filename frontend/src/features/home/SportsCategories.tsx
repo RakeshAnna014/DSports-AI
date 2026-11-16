@@ -9,7 +9,7 @@ const slugOf = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').
 /**
  * EXPLORE SPORTS: one tile per sport in the catalogue, each with its own artwork (`/sports/<slug>.svg`) and the categories that sport
  * really has ("Bat • Ball • Gloves", derived from the products). Opens the Products page filtered to the sport. Nothing here is
- * specific to a sport: a new sport in the catalogue gets a tile (artwork falls back to the DSports visual).
+ * specific to a sport: a new sport in the catalogue gets a tile (artwork falls back to the NisumSports visual).
  */
 const SportsCategories = () => {
   const navigate = useNavigate();

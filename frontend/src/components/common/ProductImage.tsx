@@ -19,7 +19,7 @@ interface Props {
 }
 
 /**
- * The one way a product picture is shown: lazy-loaded, with a skeleton while loading, a DSports fallback visual when the image is missing
+ * The one way a product picture is shown: lazy-loaded, with a skeleton while loading, a NisumSports fallback visual when the image is missing
  * or fails (never a broken-image icon, never the product name in the picture), alt text, and a console warning in development so
  * a missing asset is noticed and fixed.
  */

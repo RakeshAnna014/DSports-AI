@@ -16,7 +16,7 @@ import type { AiProduct } from '@/types/ai';
 const label = (value: string) => value.replace(/_/g, ' ');
 const SHOWN_ATTRIBUTES = ['skillLevel', 'weightClass', 'material', 'surface'];
 
-/** One verified product from DSports (live price, stock, rating). `grid` is the roomy page layout; the drawer uses the compact row. */
+/** One verified product from NisumSports (live price, stock, rating). `grid` is the roomy page layout; the drawer uses the compact row. */
 const ProductResultCard = ({ product, onNavigate, grid }: { product: AiProduct; onNavigate: () => void; grid: boolean }) => {
   const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);

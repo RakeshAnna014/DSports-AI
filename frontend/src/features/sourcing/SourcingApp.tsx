@@ -34,7 +34,7 @@ const AddProduct = ({ onClose, onCreated }: { onClose: () => void; onCreated: (i
         <Stack direction="row" spacing={1.5}><TextField size="small" label="Brand" value={f.brand} onChange={set('brand')} /><TextField size="small" label="Model number" value={f.model} onChange={set('model')} /><TextField size="small" label="GTIN / barcode" value={f.gtin} onChange={set('gtin')} /></Stack>
         <Stack direction="row" spacing={1.5}><TextField size="small" label="Sport" value={f.sport} onChange={set('sport')} /><TextField size="small" label="Category" value={f.category} onChange={set('category')} /></Stack>
         <TextField size="small" multiline minRows={2} label="Description" value={f.description} onChange={set('description')} />
-        <TextField size="small" label="Why it may matter to DSports" value={f.relevance} onChange={set('relevance')} />
+        <TextField size="small" label="Why it may matter to NisumSports" value={f.relevance} onChange={set('relevance')} />
         <FormControlLabel control={<Checkbox size="small" checked={isTest} onChange={(e) => setIsTest(e.target.checked)} inputProps={{ 'data-testid': 'p-test' } as React.InputHTMLAttributes<HTMLInputElement>} />}
           label={<Typography variant="body2">This is test or practice data (kept out of live figures)</Typography>} />
         {save.isError && <Alert severity="warning" data-testid="p-error">{sourcingError(save.error)}</Alert>}

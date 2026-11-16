@@ -50,7 +50,7 @@ const OrdersPage = () => {
   return (
     <Box>
       <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>My Orders</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Track, reorder or return in one tap. DSports AI can help with any of them.</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Track, reorder or return in one tap. NisumSports-AI can help with any of them.</Typography>
       <Tabs value={filter} onChange={(_, v) => setFilter(v)} variant="scrollable" allowScrollButtonsMobile sx={{ mb: 2 }} aria-label="Order filter">
         {FILTERS.map((f) => <Tab key={f.key} value={f.key} label={f.label} />)}
       </Tabs>

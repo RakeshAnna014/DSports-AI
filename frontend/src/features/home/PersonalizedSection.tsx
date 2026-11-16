@@ -10,7 +10,7 @@ import { useShopperProfiles } from '@/features/profile/useShopperProfiles';
 import { colors } from '@/design/tokens';
 
 const Prompt = () => (
-  <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', bgcolor: colors.greenSoft }} data-testid="personalization-prompt">
+  <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', bgcolor: colors.orangeSoft }} data-testid="personalization-prompt">
     <TuneOutlined color="primary" />
     <Typography variant="body2" sx={{ flexGrow: 1 }}>Tell us what you play, your budget and favourite brands, and we will pick products that fit. All optional.</Typography>
     <Button component={RouterLink} to="/profile" size="small" variant="contained">Set preferences</Button>

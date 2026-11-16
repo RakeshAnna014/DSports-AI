@@ -15,7 +15,7 @@ const Group = ({ icon, title, tone, testId, children }: { icon: React.ReactNode;
 );
 
 /**
- * Verified facts, possibilities and what could not be verified are three different things and are never mixed. A fact names the DSports record
+ * Verified facts, possibilities and what could not be verified are three different things and are never mixed. A fact names the NisumSports record
  * it came from; a possibility says what it rests on; "can't verify" says why that matters.
  */
 export const InvestigationEvidence = ({ s }: { s: Investigation }) => {
@@ -24,7 +24,7 @@ export const InvestigationEvidence = ({ s }: { s: Investigation }) => {
     <Paper variant="outlined" data-testid="support-evidence" sx={{ p: 1.5 }}>
       <Stack spacing={1.25}>
         {verified.length > 0 && (
-          <Group icon={<CheckCircleOutline fontSize="small" color="success" />} title="VERIFIED IN YOUR DSPORTS RECORDS" tone="#067647" testId="support-verified">
+          <Group icon={<CheckCircleOutline fontSize="small" color="success" />} title="VERIFIED IN YOUR NISUMSPORTS RECORDS" tone="#067647" testId="support-verified">
             {verified.map((f) => <Typography key={f.statement} component="li" variant="body2">{f.statement}</Typography>)}
           </Group>
         )}

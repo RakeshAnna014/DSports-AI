@@ -45,7 +45,7 @@ const VerifiedBlock = ({ children }: { children: React.ReactNode }) => (
   <Paper variant="outlined" data-testid="ai-verified" sx={{ p: 1.25, borderColor: 'success.light', bgcolor: 'rgba(22, 163, 74, 0.04)' }}>
     <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.75 }}>
       <VerifiedUser fontSize="small" color="success" />
-      <Typography variant="caption" fontWeight={800} color="success.dark" sx={{ letterSpacing: '.04em' }}>VERIFIED FROM DSPORTS</Typography>
+      <Typography variant="caption" fontWeight={800} color="success.dark" sx={{ letterSpacing: '.04em' }}>VERIFIED FROM NISUMSPORTS</Typography>
     </Stack>
     <Stack spacing={1.25}>{children}</Stack>
   </Paper>
@@ -89,11 +89,11 @@ export const AssistantMessage = ({ response, onNavigate, wide = false }: { respo
       {!response.selection && kind !== 'CONFIRMATION' && (quietText && (verified.length > 0 || investigation) ? (
         <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.5, whiteSpace: 'pre-wrap' }} data-testid="ai-summary">{response.message}</Typography>
       ) : (
-        <Paper variant="outlined" sx={{ p: 1.5, borderColor: ai ? 'secondary.light' : colors.line, background: ai ? 'linear-gradient(135deg, rgba(255,122,26,0.06), rgba(255,255,255,0))' : undefined }}>
+        <Paper variant="outlined" sx={{ p: 1.5, borderColor: ai ? 'secondary.light' : colors.line, background: ai ? 'linear-gradient(135deg, rgba(228,87,46,0.06), rgba(255,255,255,0))' : undefined }}>
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
             {ai ? <AutoAwesome fontSize="small" color="secondary" /> : <VerifiedUser fontSize="small" color="disabled" />}
             <Typography variant="caption" fontWeight={800} color={ai ? 'secondary.dark' : 'text.secondary'} sx={{ letterSpacing: '.04em' }}>
-              {ai ? 'AI EXPLANATION' : 'FROM DSPORTS DATA'}
+              {ai ? 'AI EXPLANATION' : 'FROM NISUMSPORTS DATA'}
             </Typography>
           </Stack>
           <RichText text={response.message} />
@@ -121,7 +121,7 @@ const MessageList = ({ entries, onNavigate }: { entries: ChatEntry[]; onNavigate
       {entries.map((e) => {
         if (e.role === 'user') {
           return (
-            <Paper key={e.id} sx={{ alignSelf: 'flex-end', maxWidth: '85%', p: 1.25, color: '#fff', background: gradients.aiPanel, borderRadius: '16px 16px 4px 16px' }} data-testid="ai-user-message">
+            <Paper key={e.id} sx={{ alignSelf: 'flex-end', maxWidth: '85%', p: 1.25, color: colors.navy800, background: gradients.aiPanel, border: `1px solid ${colors.line}`, borderRadius: '16px 16px 4px 16px' }} data-testid="ai-user-message">
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{e.text}</Typography>
             </Paper>
           );

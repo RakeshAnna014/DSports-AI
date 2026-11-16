@@ -53,7 +53,7 @@ export const supportError = (err: unknown): { code: string; message: string; sta
   if (axios.isAxiosError(err)) {
     const body = err.response?.data as { code?: string; message?: string } | undefined;
     if (!err.response) return { code: 'UNREACHABLE', message: 'The support service could not be reached. The rest of the shop is not affected.' };
-    if (err.response.status === 403) return { code: 'FORBIDDEN', message: 'This area is restricted to DSports support staff.', status: 403 };
+    if (err.response.status === 403) return { code: 'FORBIDDEN', message: 'This area is restricted to NisumSports support staff.', status: 403 };
     if (err.response.status === 404) return { code: 'NOT_FOUND', message: 'We could not find that case on your account.', status: 404 };
     if (body?.message) return { code: body.code ?? 'ERROR', message: body.message, status: err.response.status };
   }

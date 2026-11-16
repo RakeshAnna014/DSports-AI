@@ -23,7 +23,7 @@ const NAV = [
   { label: 'Support', to: '/support' },
 ];
 
-const iconSx = { color: 'rgba(255,255,255,0.86)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } };
+const iconSx = { color: colors.navy800, '&:hover': { color: colors.orange, bgcolor: 'rgba(27,42,65,0.06)' } };
 
 const Header = () => {
   const navigate = useNavigate();
@@ -42,44 +42,44 @@ const Header = () => {
   const goto = (path: string) => { setAnchorEl(null); navigate(path); };
 
   return (
-    <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(7,12,24,0.86)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-      <Toolbar sx={{ gap: { xs: 1, md: 2 }, minHeight: { xs: 60, md: 68 } }}>
-        <Brand tone="light" />
+    <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'rgba(255,255,255,0.86)', color: colors.navy800, backdropFilter: 'blur(14px)', borderBottom: `1px solid ${colors.line}` }}>
+      <Toolbar sx={{ gap: { xs: 0.5, md: 2 }, px: { xs: 1.5, sm: 3 }, minHeight: { xs: 60, md: 68 } }}>
+        <Brand tone="dark" />
 
         <Box component="nav" aria-label="Main" sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5, ml: 2, flexGrow: 1 }}>
           {NAV.map((n) => (
             <Button key={n.to} component={NavLink} to={n.to} end={n.end}
-              sx={{ color: 'rgba(255,255,255,0.78)', fontWeight: 600, borderRadius: 2, px: 1.5, position: 'relative',
-                '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.06)' },
-                '&.active': { color: '#fff', '&::after': { content: '""', position: 'absolute', left: 12, right: 12, bottom: 4, height: 2, borderRadius: 2, background: gradients.brand } } }}>
+              sx={{ color: colors.muted, fontWeight: 600, borderRadius: 2, px: 1.5, position: 'relative',
+                '&:hover': { color: colors.navy800, bgcolor: 'rgba(27,42,65,0.06)' },
+                '&.active': { color: colors.navy800, '&::after': { content: '""', position: 'absolute', left: 12, right: 12, bottom: 4, height: 2, borderRadius: 2, background: gradients.brand } } }}>
               {n.label}
             </Button>
           ))}
           {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/inventory-ai" data-testid="nav-inventory-ai" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Inventory AI</Button>
+            <Button component={NavLink} to="/inventory-ai" data-testid="nav-inventory-ai" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Inventory AI</Button>
           )}
           {isBuyer(user?.roles) && (
-            <Button component={NavLink} to="/product-intelligence" data-testid="nav-product-intelligence" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Product Intelligence</Button>
+            <Button component={NavLink} to="/product-intelligence" data-testid="nav-product-intelligence" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Product Intelligence</Button>
           )}
           {isPlanner(user?.roles) && (
-            <Button component={NavLink} to="/sales-planning" data-testid="nav-sales-planning" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Sales Planning</Button>
+            <Button component={NavLink} to="/sales-planning" data-testid="nav-sales-planning" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Sales Planning</Button>
           )}
           {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/engineering-ai" data-testid="nav-engineering-ai" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Engineering AI</Button>
+            <Button component={NavLink} to="/engineering-ai" data-testid="nav-engineering-ai" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Engineering AI</Button>
           )}
           {user?.roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN') && (
-            <Button component={NavLink} to="/fulfilment" data-testid="nav-fulfilment" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Fulfilment</Button>
+            <Button component={NavLink} to="/fulfilment" data-testid="nav-fulfilment" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Fulfilment</Button>
           )}
           {user?.roles?.some((r) => r === 'ADMIN' || r === 'SUPPORT_EXECUTIVE' || r === 'ROLE_ADMIN' || r === 'ROLE_SUPPORT_EXECUTIVE') && (
-            <Button component={NavLink} to="/support-cases" data-testid="nav-support-console" sx={{ color: '#B8F23C', fontWeight: 700, borderRadius: 2, px: 1.5 }}>Support console</Button>
+            <Button component={NavLink} to="/support-cases" data-testid="nav-support-console" sx={{ color: colors.orangeDark, fontWeight: 700, borderRadius: 2, px: 1.5 }}>Support console</Button>
           )}
         </Box>
         <Box sx={{ flexGrow: { xs: 1, md: 0 } }} />
 
         <Button variant="contained" color="secondary" startIcon={<AutoAwesome />} onClick={() => setAiOpen(true)} data-testid="ai-header-button"
-          aria-label="Ask DSports AI" sx={{ background: gradients.ai, color: '#1b1200', fontWeight: 800, borderRadius: 999, px: { xs: 1.5, md: 2.25 }, boxShadow: '0 6px 22px rgba(255,122,26,0.38)',
+          aria-label="Ask NisumSports-AI" sx={{ background: gradients.ai, color: '#1b1200', fontWeight: 800, borderRadius: 999, px: { xs: 1.5, md: 2.25 }, boxShadow: '0 6px 22px rgba(228,87,46,0.38)',
             '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 } } }}>
-          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Ask DSports AI</Box>
+          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Ask NisumSports-AI</Box>
         </Button>
 
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -89,7 +89,7 @@ const Header = () => {
             <Badge badgeContent={totalWishlistItems} color="error"><FavoriteBorder /></Badge>
           </IconButton>
           <IconButton sx={iconSx} aria-label="cart" onClick={() => setCartOpen(true)} data-testid="cart-button">
-            <Badge badgeContent={totalCartItems} color="secondary"><ShoppingCartOutlined /></Badge>
+            <Badge badgeContent={totalCartItems} color="primary"><ShoppingCartOutlined /></Badge>
           </IconButton>
           {isAuthenticated && user ? (
             <>
@@ -112,7 +112,7 @@ const Header = () => {
               </Menu>
             </>
           ) : (
-            <Button variant="contained" size="small" component={RouterLink} to="/login" sx={{ ml: 1, background: gradients.brand, color: colors.navy900, fontWeight: 800 }}>Sign In</Button>
+            <Button variant="contained" size="small" component={RouterLink} to="/login" sx={{ ml: { xs: 0, md: 1 }, minWidth: 0, whiteSpace: 'nowrap', px: { xs: 1, md: 1.5 }, background: gradients.brand, color: colors.navy900, fontWeight: 800 }}>Sign In</Button>
           )}
         </Box>
       </Toolbar>

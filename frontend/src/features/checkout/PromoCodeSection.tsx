@@ -22,7 +22,7 @@ const fromBackend = (offers: PromotionOffer[]): OfferRecommendations => ({
   basedOn: [],
   message: offers.some((o) => o.eligible) ? null : 'No offer applies to this cart right now.',
   offers: offers.map((o) => ({ ...o, reasons: o.eligible ? [`Saves ${formatPrice(Number(o.discountAmount))} on this cart`] : [], personal: false })),
-  disclaimer: 'Offers marked DEMO are synthetic demonstration offers, not real promotions. The discount is calculated by the DSports backend.',
+  disclaimer: 'Offers marked DEMO are synthetic demonstration offers, not real promotions. The discount is calculated by the NisumSports backend.',
 });
 
 const PromoCodeSection = ({ checkout, busy, onChange }: Props) => {
@@ -144,7 +144,7 @@ const PromoCodeSection = ({ checkout, busy, onChange }: Props) => {
           <>
             {aiUnavailable && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                Personalised suggestions are unavailable right now. These are the offers DSports has for this cart.
+                Personalised suggestions are unavailable right now. These are the offers NisumSports has for this cart.
               </Alert>
             )}
             {recs?.message && !checkout.promotionCode && <Alert severity="info" sx={{ mb: 2 }} data-testid="promo-none">{recs.message}</Alert>}

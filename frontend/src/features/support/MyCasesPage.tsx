@@ -58,7 +58,7 @@ const CaseDetail = ({ reference }: { reference: string }) => {
         <Stack spacing={0.75}>
           {raw.messages.map((m) => (
             <Box key={m.id} sx={{ alignSelf: m.from === 'CUSTOMER' ? 'flex-end' : 'flex-start', maxWidth: '88%', bgcolor: m.from === 'CUSTOMER' ? 'primary.50' : 'action.hover', borderRadius: 2, px: 1.25, py: 0.75 }}>
-              <Typography variant="caption" color="text.secondary">{m.from === 'CUSTOMER' ? 'You' : 'DSports support'} · {when(m.createdAt)}</Typography>
+              <Typography variant="caption" color="text.secondary">{m.from === 'CUSTOMER' ? 'You' : 'NisumSports support'} · {when(m.createdAt)}</Typography>
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{m.body}</Typography>
             </Box>
           ))}
@@ -110,7 +110,7 @@ const MyCasesPage = () => {
         <Typography variant="h5" fontWeight={900} sx={{ flex: 1 }}>Support cases</Typography>
         <Button variant="contained" onClick={() => setRaising(true)} data-testid="raise-ticket">Raise a ticket</Button>
       </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>You can also describe the problem to the assistant (Ask DSports AI) and it will ask you to confirm before opening a ticket.</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>You can also describe the problem to the assistant (Ask NisumSports-AI) and it will ask you to confirm before opening a ticket.</Typography>
       <RaiseTicketDialog open={raising} onClose={closeRaise} onCreated={(n) => { closeRaise(); nav(`/support/${n}`); }} />
       {list.isError && <Alert severity="warning" data-testid="support-list-error">{supportError(list.error).message}</Alert>}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '340px 1fr' }, gap: 2, alignItems: 'start' }}>
@@ -122,7 +122,7 @@ const MyCasesPage = () => {
         <Box>{ref ? <CaseDetail reference={ref} key={ref} /> : <Typography color="text.secondary" data-testid="support-pick">Choose a case to see its messages and history.</Typography>}</Box>
       </Box>
       <Typography variant="caption" color="text.disabled" display="block" sx={{ mt: 2 }}>
-        Case numbers and statuses come from the DSports system. There is no official response-time commitment on this page.
+        Case numbers and statuses come from the NisumSports system. There is no official response-time commitment on this page.
       </Typography>
     </Container>
   );

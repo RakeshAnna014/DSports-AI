@@ -10,7 +10,7 @@ import { formatPrice } from '@/lib/productUtils';
 import ProductImage from '@/components/common/ProductImage';
 import { EmptyState } from '@/components/common/States';
 import RecommendationSection from '@/components/products/RecommendationSection';
-import { colors } from '@/design/tokens';
+import { colors, gradients } from '@/design/tokens';
 
 /** The cart without leaving the page: items, real savings (list price vs selling price), "complete your setup" and checkout. */
 const CartDrawer = () => {
@@ -27,17 +27,17 @@ const CartDrawer = () => {
 
   return (
     <Drawer anchor="right" open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 440 }, bgcolor: colors.surface } }} data-testid="cart-drawer">
-      <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5, bgcolor: colors.navy800, color: '#fff' }}>
+      <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5, background: gradients.template, color: colors.navy800, borderBottom: `1px solid ${colors.line}` }}>
         <ShoppingCartOutlined sx={{ mr: 1 }} />
         <Typography variant="subtitle1" fontWeight={800} sx={{ flexGrow: 1, letterSpacing: '.04em' }}>YOUR CART</Typography>
         <IconButton color="inherit" size="small" aria-label="close cart" onClick={() => setOpen(false)}><Close /></IconButton>
       </Stack>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
         {items.length === 0 ? (
-          <EmptyState title="Your cart is empty" body="Find something you will love, or ask DSports AI to recommend the right gear."
+          <EmptyState title="Your cart is empty" body="Find something you will love, or ask NisumSports-AI to recommend the right gear."
             action={<Stack direction="row" spacing={1}>
               <Button variant="contained" onClick={() => go('/products')}>Browse products</Button>
-              <Button color="secondary" startIcon={<AutoAwesome />} onClick={() => { setOpen(false); setAiOpen(true); }}>Ask DSports AI</Button>
+              <Button color="secondary" startIcon={<AutoAwesome />} onClick={() => { setOpen(false); setAiOpen(true); }}>Ask NisumSports-AI</Button>
             </Stack>} />
         ) : (
           <Stack spacing={1.25} data-testid="cart-items">

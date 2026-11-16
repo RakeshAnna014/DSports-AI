@@ -16,12 +16,12 @@ export type Tone = keyof typeof tone;
 export type ProvenanceKind = 'LIVE' | 'DEMO' | 'IMPORTED' | 'FORECAST' | 'ESTIMATE' | 'QUOTE' | 'LISTING' | 'VERIFIED' | 'MANUAL' | 'UNAVAILABLE';
 
 export const PROVENANCE: Record<ProvenanceKind, { label: string; color: string; bg: string; hint: string }> = {
-  LIVE: { label: 'Live', color: '#067647', bg: '#ECFDF3', hint: 'Recorded DSports transactions (real online orders).' },
-  DEMO: { label: 'Demonstration', color: '#B54708', bg: '#FFF4E5', hint: 'Synthetic demonstration data. Not real DSports stores, sales or stock, and never a validated prediction.' },
+  LIVE: { label: 'Live', color: '#067647', bg: '#ECFDF3', hint: 'Recorded NisumSports transactions (real online orders).' },
+  DEMO: { label: 'Demonstration', color: '#B54708', bg: '#FFF4E5', hint: 'Synthetic demonstration data. Not real NisumSports stores, sales or stock, and never a validated prediction.' },
   IMPORTED: { label: 'Imported', color: '#175CD3', bg: '#EFF8FF', hint: 'Entered through a controlled, audited import.' },
   FORECAST: { label: 'Forecast', color: '#3538CD', bg: '#EEF4FF', hint: 'A statistical forecast: an estimate, not an observation.' },
   ESTIMATE: { label: 'AI estimate', color: '#C4320A', bg: '#FEF6EE', hint: 'An estimate or hypothesis, not a recorded fact.' },
-  QUOTE: { label: 'Supplier quote', color: '#6941C6', bg: '#F4F3FF', hint: 'A price the supplier quoted to DSports.' },
+  QUOTE: { label: 'Supplier quote', color: '#6941C6', bg: '#F4F3FF', hint: 'A price the supplier quoted to NisumSports.' },
   LISTING: { label: 'Public listing', color: '#0E7090', bg: '#ECFDFF', hint: 'A publicly listed price or product detail; not a quotation.' },
   VERIFIED: { label: 'Buyer-verified', color: '#067647', bg: '#ECFDF3', hint: 'Checked by a buyer.' },
   MANUAL: { label: 'Entered', color: '#344054', bg: '#F2F4F7', hint: 'Entered by a user.' },

@@ -8,7 +8,7 @@ import type { AiComparison } from '@/types/ai';
 const MISSING = 'Not available in the product data';
 const money = (s: string | undefined): number => Number((s ?? '').replace(/[^\d.]/g, '')) || 0;
 
-/** Side-by-side comparison. Every value comes from DSports ("Not available in the product data" when it is not there). */
+/** Side-by-side comparison. Every value comes from NisumSports ("Not available in the product data" when it is not there). */
 const ComparisonTable = ({ comparison }: { comparison: AiComparison }) => {
   const addItem = useCartStore((s) => s.addItem);
   const noteAdded = useUiStore((s) => s.noteAdded);

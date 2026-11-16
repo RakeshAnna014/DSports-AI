@@ -1,10 +1,11 @@
 import { createTheme } from '@mui/material/styles';
-import { colors, motion, shadows } from '@/design/tokens';
+import { colors, motion, nisum, shadows } from '@/design/tokens';
 
 const theme = createTheme({
   palette: {
-    primary: { main: colors.green, light: '#4ADE80', dark: colors.greenDark, contrastText: '#FFFFFF' },
-    secondary: { main: colors.orange, light: '#FFA45C', dark: '#C85A00', contrastText: '#FFFFFF' },
+    primary: { main: colors.orange, light: colors.accentOnDark, dark: colors.orangeDark, contrastText: '#FFFFFF' },
+    secondary: { main: nisum.navy, light: colors.accentOnDark, dark: colors.navy900, contrastText: '#FFFFFF' },
+    info: { main: nisum.blue },
     success: { main: colors.green },
     background: { default: colors.surface, paper: colors.card },
     text: { primary: colors.ink, secondary: colors.muted },
@@ -32,8 +33,8 @@ const theme = createTheme({
       defaultProps: { disableElevation: true },
       styleOverrides: {
         root: { borderRadius: 10, transition: `transform ${motion.fast}, box-shadow ${motion.fast}, background-color ${motion.fast}`, '&:active': { transform: 'translateY(1px)' } },
-        containedPrimary: { '&:hover': { boxShadow: '0 6px 20px rgba(22,163,74,0.35)' } },
-        containedSecondary: { '&:hover': { boxShadow: '0 6px 20px rgba(255,122,26,0.40)' } },
+        containedPrimary: { '&:hover': { boxShadow: '0 6px 20px rgba(228,87,46,0.35)' } },
+        containedSecondary: { '&:hover': { boxShadow: '0 6px 20px rgba(27,42,65,0.35)' } },
       },
     },
     MuiCard: {

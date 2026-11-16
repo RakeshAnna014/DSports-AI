@@ -23,7 +23,7 @@ const Td = ({ children, right, bold }: { children?: React.ReactNode; right?: boo
 );
 const Name = ({ a, onClick }: { a: { name: string; sport?: string; category?: string }; onClick?: () => void }) => (
   <Box onClick={onClick} sx={{ cursor: onClick ? 'pointer' : 'default', minWidth: 190 }}>
-    <Typography variant="body2" fontWeight={700} sx={onClick ? { '&:hover': { color: colors.greenDark } } : undefined}>{a.name}</Typography>
+    <Typography variant="body2" fontWeight={700} sx={onClick ? { '&:hover': { color: colors.orangeDark } } : undefined}>{a.name}</Typography>
     <Typography variant="caption" color="text.secondary">{[a.sport, a.category].filter(Boolean).join(' · ')}</Typography>
   </Box>
 );

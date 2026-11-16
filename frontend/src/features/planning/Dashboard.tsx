@@ -133,7 +133,7 @@ const Dashboard = () => {
           <Typography variant="body2" component="div">{queue.data!.items.length} plan(s) are waiting for a decision. {queue.data!.items.filter((i) => i.data_scope.synthetic).length > 0 && <>Some are built on demonstration data <ProvenanceChip kind="DEMO" />.</>}</Typography>
         </SectionCard>
       )}
-      {d.freshness.last_ingest && <Typography variant="caption" color="text.secondary">Last DSports sales ingest: {String(d.freshness.last_ingest.status)} at {when(String(d.freshness.last_ingest.finished_at ?? d.freshness.last_ingest.started_at))}, {String(d.freshness.last_ingest.lines_read)} line(s) read.</Typography>}
+      {d.freshness.last_ingest && <Typography variant="caption" color="text.secondary">Last NisumSports sales ingest: {String(d.freshness.last_ingest.status)} at {when(String(d.freshness.last_ingest.finished_at ?? d.freshness.last_ingest.started_at))}, {String(d.freshness.last_ingest.lines_read)} line(s) read.</Typography>}
     </Stack>
   );
 };

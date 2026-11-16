@@ -31,7 +31,7 @@ export const ActionChip = ({ a }: { a: InvAssessment }) => {
 
 /** Always visible: what kind of data the numbers are. Synthetic data is never presented as real business data. */
 export const DataBadge = ({ source = 'POC_SYNTHETIC', note }: { source?: string; note?: string }) => (
-  <Tooltip title={note ?? 'Demand history, stock positions, purchase orders, cost, suppliers, lead times, regions and events are generated POC data, not real DSports business data. The catalogue and prices are real DSports data.'}>
+  <Tooltip title={note ?? 'Demand history, stock positions, purchase orders, cost, suppliers, lead times, regions and events are generated POC data, not real NisumSports business data. The catalogue and prices are real NisumSports data.'}>
     <Chip size="small" label={source === 'POC_SYNTHETIC' ? 'POC synthetic data' : source.replace('_', ' ').toLowerCase()} data-testid="data-badge"
       sx={{ bgcolor: colors.orangeSoft, color: '#B54708', fontWeight: 800, border: '1px solid #FEC84B', height: 22 }} />
   </Tooltip>
@@ -39,7 +39,7 @@ export const DataBadge = ({ source = 'POC_SYNTHETIC', note }: { source?: string;
 
 export const RecommendationBadge = () => (
   <Chip size="small" label="AI Recommendation · nothing executed" data-testid="ai-recommendation-badge"
-    sx={{ bgcolor: colors.navy800, color: colors.lime, fontWeight: 800, height: 22 }} />
+    sx={{ bgcolor: colors.orangeSoft, color: colors.orangeDark, fontWeight: 800, height: 22 }} />
 );
 
 export const Card = ({ title, subtitle, action, children, testId, sx }: { title?: ReactNode; subtitle?: ReactNode; action?: ReactNode; children: ReactNode; testId?: string; sx?: object }) => (

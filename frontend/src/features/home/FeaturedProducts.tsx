@@ -6,7 +6,7 @@ const trending = ({ products }: ShelfData) =>
 
 /** "Trending now": the default storefront, real products with live prices and stock (no AI involved). */
 const FeaturedProducts = () => (
-  <ProductShelf title="Trending now" subtitle="Popular picks from the DSports catalogue" testId="featured-products" limit={8}
+  <ProductShelf title="Trending now" subtitle="Popular picks from the NisumSports catalogue" testId="featured-products" limit={8}
     action={{ label: 'View all products', to: '/products' }} pick={trending} />
 );
 

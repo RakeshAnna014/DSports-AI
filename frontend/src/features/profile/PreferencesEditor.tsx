@@ -53,7 +53,7 @@ const PreferencesEditor = ({ profile }: { profile: ShopperProfile }) => {
         All optional. {profile.kind === 'FAMILY' ? `${profile.displayName}'s` : 'Your'} answers only tune recommendations: nothing here is needed to shop.
       </Typography>
       <Autocomplete multiple filterSelectedOptions options={(sports.data ?? []).map((s) => s.name)} value={form.sports} onChange={(_, v) => setForm({ ...form, sports: v })}
-        renderInput={(params) => <TextField {...params} label="Sports" helperText="Only sports DSports sells" />}
+        renderInput={(params) => <TextField {...params} label="Sports" helperText="Only sports NisumSports sells" />}
         renderTags={(v, getProps) => v.map((o, i) => <Chip {...getProps({ index: i })} key={o} label={o} size="small" />)} data-testid="pref-sports" />
       <Autocomplete multiple filterSelectedOptions options={(brands.data ?? []).map((b) => b.name)} value={form.brands} onChange={(_, v) => setForm({ ...form, brands: v })}
         renderInput={(params) => <TextField {...params} label="Favourite brands" />} renderTags={(v, getProps) => v.map((o, i) => <Chip {...getProps({ index: i })} key={o} label={o} size="small" />)} />

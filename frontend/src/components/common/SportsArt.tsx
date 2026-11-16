@@ -9,12 +9,12 @@ export const HeroArt = ({ className }: { className?: string }) => (
     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
     <defs>
       <linearGradient id="haPitch" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#16A34A" stopOpacity="0" />
-        <stop offset="1" stopColor="#16A34A" stopOpacity=".38" />
+        <stop offset="0" stopColor="#E4572E" stopOpacity="0" />
+        <stop offset="1" stopColor="#E4572E" stopOpacity=".38" />
       </linearGradient>
       <radialGradient id="haLight" cx=".5" cy=".5" r=".5">
-        <stop offset="0" stopColor="#B8F23C" stopOpacity=".55" />
-        <stop offset="1" stopColor="#B8F23C" stopOpacity="0" />
+        <stop offset="0" stopColor="#F58A68" stopOpacity=".55" />
+        <stop offset="1" stopColor="#F58A68" stopOpacity="0" />
       </radialGradient>
       <linearGradient id="haBat" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#F5D7A1" />
@@ -26,7 +26,7 @@ export const HeroArt = ({ className }: { className?: string }) => (
     <circle cx="820" cy="150" r="110" fill="url(#haLight)" opacity=".7" />
     {/* pitch in perspective */}
     <path d="M0 560V380C220 330 520 330 900 380V560Z" fill="url(#haPitch)" />
-    <g stroke="#B8F23C" strokeOpacity=".18" strokeWidth="1.5" fill="none">
+    <g stroke="#F58A68" strokeOpacity=".18" strokeWidth="1.5" fill="none">
       <path d="M450 330L180 560M450 330L330 560M450 330L450 560M450 330L570 560M450 330L720 560" />
       <path d="M0 410C260 372 640 372 900 410M0 470C280 430 620 430 900 470" />
     </g>
@@ -52,10 +52,10 @@ export const HeroArt = ({ className }: { className?: string }) => (
     {/* a football, a racket and a runner's motion lines for the other sports */}
     <g transform="translate(150 190)" opacity=".9">
       <circle r="46" fill="#F8FAFC" />
-      <path d="M0 -18l16 12-6 18h-20l-6-18z" fill="#0B1426" />
-      <path d="M0-18V-46M16-6l30-10M10 12l22 28M-10 12L-32 40M-16-6L-46-16" stroke="#0B1426" strokeWidth="3" />
+      <path d="M0 -18l16 12-6 18h-20l-6-18z" fill="#1B2A41" />
+      <path d="M0-18V-46M16-6l30-10M10 12l22 28M-10 12L-32 40M-16-6L-46-16" stroke="#1B2A41" strokeWidth="3" />
     </g>
-    <g stroke="#B8F23C" strokeOpacity=".35" strokeWidth="3" strokeLinecap="round">
+    <g stroke="#F58A68" strokeOpacity=".35" strokeWidth="3" strokeLinecap="round">
       <path d="M40 90h120M70 112h110M20 134h90" />
     </g>
   </svg>
@@ -113,7 +113,7 @@ export const SportIcon = ({ sport, size = 44 }: { sport: string; size?: number }
 );
 
 export const SPORT_THEMES: Record<string, { from: string; to: string }> = {
-  cricket: { from: '#0F7A38', to: '#B8F23C' },
+  cricket: { from: '#1B2A41', to: '#E4572E' },
   football: { from: '#1D4ED8', to: '#38BDF8' },
   badminton: { from: '#7C3AED', to: '#F0ABFC' },
   tennis: { from: '#B45309', to: '#FDE047' },

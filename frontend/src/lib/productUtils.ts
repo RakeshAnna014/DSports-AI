@@ -1,6 +1,6 @@
 import type { InventoryRecord } from '@/types/catalog';
 
-/** Shown when a product has no image of its own: a DSports visual, never the product name painted on a coloured block. */
+/** Shown when a product has no image of its own: a NisumSports visual, never the product name painted on a coloured block. */
 export const FALLBACK_IMAGE = '/products/placeholder.svg';
 
 export const getProductImageUrl = (_name: string, images?: { url: string; primary?: boolean }[]): string => {

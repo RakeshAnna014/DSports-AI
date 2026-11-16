@@ -106,7 +106,7 @@ export const Copilot = () => {
 
   return (
     <Paper elevation={0} data-testid="inventory-copilot" sx={{ display: 'flex', flexDirection: 'column', height: '100%', borderRadius: 3, border: `1px solid ${colors.line}`, overflow: 'hidden', bgcolor: '#F7F9FC' }}>
-      <Box sx={{ p: 1.5, background: gradients.aiPanel, color: '#fff' }}>
+      <Box sx={{ p: 1.5, background: gradients.aiPanel, color: colors.navy800, borderBottom: `1px solid ${colors.line}` }}>
         <Typography fontWeight={900}>AI Inventory Copilot</Typography>
         <Typography variant="caption" sx={{ opacity: 0.85 }}>Ask about inventory, demand, replenishment, events and promotions. Answers come from the forecasting models; the AI explains, it does not calculate.</Typography>
       </Box>
@@ -119,7 +119,7 @@ export const Copilot = () => {
         )}
         <Stack spacing={1.75}>
           {msgs.map((m) => m.role === 'user' ? (
-            <Box key={m.id} sx={{ alignSelf: 'flex-end', maxWidth: '88%', ml: 'auto', bgcolor: colors.navy800, color: '#fff', px: 1.5, py: 0.9, borderRadius: 3 }} data-testid="copilot-message-user"><Typography variant="body2">{m.text}</Typography></Box>
+            <Box key={m.id} sx={{ alignSelf: 'flex-end', maxWidth: '88%', ml: 'auto', bgcolor: colors.orangeSoft, color: colors.navy800, border: `1px solid ${colors.line}`, px: 1.5, py: 0.9, borderRadius: 3 }} data-testid="copilot-message-user"><Typography variant="body2">{m.text}</Typography></Box>
           ) : <ContainBoundary key={m.id} label="This answer could not be displayed."><Assistant m={m} onAsk={ask} /></ContainBoundary>)}
           {busy && <Stack direction="row" spacing={1} alignItems="center" data-testid="copilot-busy"><CircularProgress size={16} /><Typography variant="caption" color="text.secondary">Reading the forecasts and explaining…</Typography></Stack>}
         </Stack>
@@ -129,7 +129,7 @@ export const Copilot = () => {
         <TextField fullWidth size="small" placeholder="Ask about inventory, demand, replenishment…" value={text} onChange={(e) => setText(e.target.value)}
           inputProps={{ 'data-testid': 'copilot-input', 'aria-label': 'Ask the inventory copilot', maxLength: 600 }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(text); } }} />
-        <IconButton onClick={() => ask(text)} disabled={busy || !text.trim()} data-testid="copilot-send" aria-label="Send" sx={{ bgcolor: colors.green, color: '#fff', '&:hover': { bgcolor: colors.greenDark } }}><SendIcon fontSize="small" /></IconButton>
+        <IconButton onClick={() => ask(text)} disabled={busy || !text.trim()} data-testid="copilot-send" aria-label="Send" sx={{ bgcolor: colors.orange, color: '#fff', '&:hover': { bgcolor: colors.orangeDark } }}><SendIcon fontSize="small" /></IconButton>
       </Stack>
     </Paper>
   );

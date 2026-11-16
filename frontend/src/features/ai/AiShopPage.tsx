@@ -6,7 +6,7 @@ import { AssistantMessage } from '@/features/ai/MessageList';
 import UnderstoodRequest from '@/features/ai/UnderstoodRequest';
 import { ErrorState, Thinking } from '@/components/common/States';
 import { useAiStore } from '@/store/aiStore';
-import { gradients } from '@/design/tokens';
+import { colors, gradients } from '@/design/tokens';
 
 /**
  * The AI Shop: one continuous shopping conversation, full width. Each answer is a component (products, comparison, timeline, return
@@ -24,10 +24,10 @@ const AiShopPage = () => {
 
   return (
     <Box>
-      <Paper sx={{ p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: '#fff', background: gradients.aiPanel, borderRadius: 5 }}>
-        <Stack direction="row" spacing={1} alignItems="center"><AutoAwesome sx={{ color: 'secondary.light' }} /><Typography variant="overline" fontWeight={800} sx={{ letterSpacing: '.14em' }}>AI SHOP</Typography></Stack>
+      <Paper sx={{ p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: colors.navy800, background: gradients.aiPanel, border: `1px solid ${colors.line}`, borderRadius: 5 }}>
+        <Stack direction="row" spacing={1} alignItems="center"><AutoAwesome sx={{ color: colors.orange }} /><Typography variant="overline" fontWeight={800} sx={{ letterSpacing: '.14em' }}>AI SHOP</Typography></Stack>
         <Typography variant="h3" component="h1">What are you looking for?</Typography>
-        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)', mt: 0.5, mb: 2 }}>Ask for products, advice, orders, tracking or returns. Prices, stock and order facts are always live from DSports.</Typography>
+        <Typography variant="body2" sx={{ color: colors.muted, mt: 0.5, mb: 2 }}>Ask for products, advice, orders, tracking or returns. Prices, stock and order facts are always live from NisumSports.</Typography>
         <AiSearchBox variant="compact" tone="dark" examples={entries.length ? [] : POPULAR} />
       </Paper>
 
@@ -41,12 +41,12 @@ const AiShopPage = () => {
           if (e.role === 'user') {
             return (
               <Box key={e.id} sx={{ alignSelf: 'flex-end', maxWidth: { xs: '92%', md: '70%' } }} data-testid="ai-user-message">
-                <Chip label={e.text} sx={{ height: 'auto', py: 1, px: 0.5, color: '#fff', background: gradients.aiPanel, '& .MuiChip-label': { whiteSpace: 'normal' } }} />
+                <Chip label={e.text} sx={{ height: 'auto', py: 1, px: 0.5, color: colors.navy800, background: gradients.aiPanel, border: `1px solid ${colors.line}`, '& .MuiChip-label': { whiteSpace: 'normal' } }} />
               </Box>
             );
           }
           if (e.role === 'error') {
-            return <ErrorState key={e.id} title={e.unavailable ? 'DSports AI is taking a break' : "DSports AI couldn't finish that"}
+            return <ErrorState key={e.id} title={e.unavailable ? 'NisumSports-AI is taking a break' : "NisumSports-AI couldn't finish that"}
               body={e.unavailable ? 'AI assistance is temporarily unavailable. You can still browse and search products normally.' : e.text} onRetry={() => void retry()} />;
           }
           return (

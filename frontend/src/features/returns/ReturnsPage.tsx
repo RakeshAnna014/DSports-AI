@@ -11,12 +11,12 @@ import ProductImage from '@/components/common/ProductImage';
 import { colors } from '@/design/tokens';
 
 const STATUS: Record<string, { color: 'warning' | 'success' | 'error' | 'default'; hint: string }> = {
-  REQUESTED: { color: 'warning', hint: 'Waiting for DSports to review it' },
+  REQUESTED: { color: 'warning', hint: 'Waiting for NisumSports to review it' },
   APPROVED: { color: 'success', hint: 'Approved. Any refund follows the refund process' },
   REJECTED: { color: 'error', hint: 'Not approved' },
 };
 
-/** Your return requests exactly as DSports holds them. Starting one goes through the AI (pick the product, check eligibility, confirm). */
+/** Your return requests exactly as NisumSports holds them. Starting one goes through the AI (pick the product, check eligibility, confirm). */
 const ReturnsPage = () => {
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -35,12 +35,12 @@ const ReturnsPage = () => {
           <Typography variant="h3" component="h1">Returns</Typography>
           <Typography variant="body2" color="text.secondary">Start a return in a few taps, then follow it here.</Typography>
         </Box>
-        <Button variant="contained" color="secondary" startIcon={<AutoAwesome />} onClick={start} data-testid="start-return">Start a return with DSports AI</Button>
+        <Button variant="contained" color="secondary" startIcon={<AutoAwesome />} onClick={start} data-testid="start-return">Start a return with NisumSports-AI</Button>
       </Stack>
       {isError && <ErrorState body="We couldn't load your returns right now." onRetry={() => void refetch()} />}
       {isLoading && <Stack spacing={1.5}>{[0, 1].map((i) => <Skeleton key={i} variant="rounded" height={96} />)}</Stack>}
       {!isLoading && !isError && data?.length === 0 && (
-        <EmptyState icon={<KeyboardReturn sx={{ fontSize: 56 }} />} title="No returns yet" body="If something is not right with a delivered order, DSports AI can check whether it can be returned." />
+        <EmptyState icon={<KeyboardReturn sx={{ fontSize: 56 }} />} title="No returns yet" body="If something is not right with a delivered order, NisumSports-AI can check whether it can be returned." />
       )}
       <Stack spacing={1.5}>
         {data?.map((r) => {

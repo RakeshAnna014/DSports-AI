@@ -137,7 +137,7 @@ const Actions = ({ c }: { c: StaffCase }) => {
           <Button size="small" variant="outlined" disabled={!text.trim() || reply.isPending} onClick={() => reply.mutate()} data-testid="staff-reply">Send reply to customer</Button>
         </Stack>
         {!resolved && (
-          <Paper variant="outlined" sx={{ p: 1.25, bgcolor: 'rgba(22,163,74,0.04)' }}>
+          <Paper variant="outlined" sx={{ p: 1.25, bgcolor: 'rgba(35,118,220,0.05)' }}>
             <Typography variant="subtitle2" fontWeight={800}>Resolve</Typography>
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
               Recording an outcome does not move money or change an order. Refunds and return approvals use their own flows. The text above is saved as the resolution note.
@@ -192,7 +192,7 @@ const Detail = ({ reference }: { reference: string }) => {
       <Paper variant="outlined" sx={{ p: 1.5 }} data-testid="staff-evidence">
         <Typography variant="subtitle2" fontWeight={900} sx={{ mb: 0.5 }}>Investigation evidence</Typography>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
-          Backend-verified items were read from DSports' own records when the case was opened. AI-investigation items were gathered by the assistant and are not re-checked: verify them before a financial decision.
+          Backend-verified items were read from NisumSports' own records when the case was opened. AI-investigation items were gathered by the assistant and are not re-checked: verify them before a financial decision.
         </Typography>
         {['BACKEND_VERIFIED', 'AI_INVESTIGATION', 'CUSTOMER', 'STAFF'].map((src) => by(src).length === 0 ? null : (
           <Box key={src} sx={{ mb: 0.75 }} data-testid={`evidence-${src}`}>
@@ -251,9 +251,9 @@ const SupportApp = () => {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', bgcolor: colors.surface, p: 2 }} data-testid="staff-signin">
         <Stack spacing={2} alignItems="center" sx={{ maxWidth: 420, textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={900}>DSports Support Console</Typography>
+          <Typography variant="h5" fontWeight={900}>NisumSports Support Console</Typography>
           <Typography color="text.secondary">Sign in with a support account to continue.</Typography>
-          <Button variant="contained" component={RouterLink} to="/login" sx={{ bgcolor: colors.green }}>Sign in</Button>
+          <Button variant="contained" component={RouterLink} to="/login" sx={{ bgcolor: colors.orange, '&:hover': { bgcolor: colors.orangeDark } }}>Sign in</Button>
         </Stack>
       </Box>
     );
@@ -263,7 +263,7 @@ const SupportApp = () => {
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', bgcolor: colors.surface, p: 2 }} data-testid="staff-restricted">
         <Stack spacing={2} alignItems="center" sx={{ maxWidth: 460, textAlign: 'center' }}>
           <Typography variant="h5" fontWeight={900}>Restricted</Typography>
-          <Alert severity="warning">The support console (all customers' cases, internal notes and case operations) is restricted to DSports support staff.</Alert>
+          <Alert severity="warning">The support console (all customers' cases, internal notes and case operations) is restricted to NisumSports support staff.</Alert>
           <Button component={RouterLink} to="/support">Go to my support cases</Button>
         </Stack>
       </Box>
@@ -272,13 +272,13 @@ const SupportApp = () => {
   const set = (patch: StaffFilters) => setFilters((f) => ({ ...f, ...patch, page: 0 }));
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.surface }} data-testid="staff-app">
-      <Box component="header" sx={{ background: gradients.hero, color: '#fff', px: { xs: 2, md: 4 }, py: 2 }}>
+      <Box component="header" sx={{ background: gradients.hero, color: colors.navy800, borderBottom: `1px solid ${colors.line}`, px: { xs: 2, md: 4 }, py: 2 }}>
         <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap>
           <Box sx={{ flex: 1, minWidth: 220 }}>
-            <Typography variant="overline" sx={{ color: colors.lime, fontWeight: 800, letterSpacing: 1.5 }}>INTERNAL · SUPPORT STAFF</Typography>
-            <Typography variant="h5" fontWeight={900} data-testid="staff-title">DSports Support Console</Typography>
+            <Typography variant="overline" sx={{ color: colors.orangeDark, fontWeight: 800, letterSpacing: 1.5 }}>INTERNAL · SUPPORT STAFF</Typography>
+            <Typography variant="h5" fontWeight={900} data-testid="staff-title">NisumSports Support Console</Typography>
           </Box>
-          <Chip size="small" label="Case data is real; any demo cases are labelled in their subject" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff' }} />
+          <Chip size="small" label="Case data is real; any demo cases are labelled in their subject" sx={{ bgcolor: 'rgba(255,255,255,0.75)', color: colors.navy800 }} />
           <Button size="small" color="inherit" component={RouterLink} to="/">Storefront</Button>
         </Stack>
       </Box>

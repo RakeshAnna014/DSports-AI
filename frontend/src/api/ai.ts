@@ -19,7 +19,7 @@ const aiClient = installAuth(
 );
 
 export const aiApi = {
-  /** `context.selectedProductId` is only an id: the service re-reads the product from DSports; name and price are never sent. */
+  /** `context.selectedProductId` is only an id: the service re-reads the product from NisumSports; name and price are never sent. */
   chat: async (
     message: string,
     conversationId?: string | null,
@@ -40,7 +40,7 @@ export const aiApi = {
     const { data } = await aiClient.get<CaseConversation>('/v1/support/conversation', { params: { caseRef } });
     return data;
   },
-  /** Explainable recommendations from real DSports data (no model call). Guests get non-personalised ones; reasons come with each item. */
+  /** Explainable recommendations from real NisumSports data (no model call). Guests get non-personalised ones; reasons come with each item. */
   recommendations: async (productIds: string[] = [], limit = 4): Promise<AiRecommendations> => {
     const { data } = await aiClient.get<AiRecommendations>('/v1/recommendations', { params: { productIds: productIds.join(','), limit } });
     return data;
@@ -50,7 +50,7 @@ export const aiApi = {
     const { data } = await aiClient.get<AiRecommendations>('/v1/recommendations', { params: { ...options, limit } });
     return data;
   },
-  /** The backend's offers for this checkout, ordered and explained for the signed-in customer (no model call; amounts come from DSports). */
+  /** The backend's offers for this checkout, ordered and explained for the signed-in customer (no model call; amounts come from NisumSports). */
   recommendOffers: async (checkoutId: string): Promise<OfferRecommendations> => {
     const { data } = await aiClient.get<OfferRecommendations>('/v1/offers/recommend', { params: { checkoutId } });
     return data;

@@ -78,7 +78,7 @@ const PlanningApp = () => {
           actions={(
             <FormControl size="small" sx={{ minWidth: 190 }}>
               <Select value={source} onChange={(e) => ctx.setSource(e.target.value as Source)} aria-label="Data scope" SelectDisplayProps={{ 'data-testid': 'pln-source' } as React.HTMLAttributes<HTMLDivElement>}
-                sx={{ color: '#fff', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.4)' }, '.MuiSvgIcon-root': { color: '#fff' }, fontWeight: 700 }}>
+                sx={{ color: colors.navy800, bgcolor: 'rgba(255,255,255,0.75)', '.MuiOutlinedInput-notchedOutline': { borderColor: colors.line }, '.MuiSvgIcon-root': { color: colors.navy800 }, fontWeight: 700 }}>
                 {(['POC_SYNTHETIC', 'DSPORTS_LIVE'] as Source[]).map((s) => <MenuItem key={s} value={s}>Data scope: {SOURCE_LABEL[s]}</MenuItem>)}
               </Select>
             </FormControl>

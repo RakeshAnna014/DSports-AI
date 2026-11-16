@@ -11,7 +11,7 @@ export const ProvenanceChip = ({ kind, label, hint, dark }: { kind: ProvenanceKi
   return (
     <Tooltip title={hint ?? p.hint} arrow>
       <Chip size="small" label={label ?? p.label} data-testid={`prov-${kind}`} data-provenance={kind}
-        sx={{ height: 20, fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: dark ? '#fff' : p.color, bgcolor: dark ? 'rgba(255,255,255,0.16)' : p.bg, border: `1px solid ${dark ? 'rgba(255,255,255,0.3)' : p.color}33` }} />
+        sx={{ height: 20, fontSize: 11, fontWeight: 800, letterSpacing: 0.2, color: p.color, bgcolor: dark ? '#fff' : p.bg, border: `1px solid ${p.color}33` }} />
     </Tooltip>
   );
 };
@@ -56,8 +56,8 @@ export const KpiCard = ({ label, value, sub, delta, deltaTone, provenance, accen
   <Paper elevation={0} onClick={onClick} onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
     role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} data-testid={testId}
     sx={{ p: 1.75, pt: 2.1, borderRadius: 3, border: `1px solid ${colors.line}`, boxShadow: shadows.card, cursor: onClick ? 'pointer' : 'default', position: 'relative', overflow: 'hidden', height: '100%', minWidth: 0,
-      '&::before': { content: '""', position: 'absolute', left: 0, right: 0, top: 0, height: 4, bgcolor: accent ?? colors.green },
-      '&:hover': onClick ? { boxShadow: shadows.cardHover } : undefined, '&:focus-visible': { outline: `2px solid ${colors.green}`, outlineOffset: 2 } }}>
+      '&::before': { content: '""', position: 'absolute', left: 0, right: 0, top: 0, height: 4, bgcolor: accent ?? colors.orange },
+      '&:hover': onClick ? { boxShadow: shadows.cardHover } : undefined, '&:focus-visible': { outline: `2px solid ${colors.orange}`, outlineOffset: 2 } }}>
     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={0.5}>
       <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Typography>
       {provenance && <ProvenanceChip kind={provenance} />}
@@ -103,15 +103,15 @@ export const ErrorPanel = ({ message, onRetry, testId = 'error' }: { message: st
 
 export interface HeroTab { key: string; label: string; testId?: string; badge?: number | string }
 
-/** The shared header of the internal screens: dark brand band, title, scope badges, actions, tabs. Planning, Inventory and Product Intelligence all use it. */
+/** The shared header of the internal screens: template-gradient brand band, title, scope badges, actions, tabs. Planning, Inventory and Product Intelligence all use it. */
 export const PageHero = ({ overline, title, subtitle, badges, actions, tabs, tab, onTab, testId, tabsTestId, homeTestId, titleTestId }:
   { overline: string; title: string; subtitle?: ReactNode; badges?: ReactNode; actions?: ReactNode; tabs: HeroTab[]; tab: string; onTab: (key: string) => void; testId?: string; tabsTestId?: string; homeTestId?: string; titleTestId?: string }) => (
-  <Box component="header" data-testid={testId} sx={{ background: gradients.hero, color: '#fff', px: { xs: 2, md: 4 }, pt: 2, pb: 0 }}>
+  <Box component="header" data-testid={testId} sx={{ background: gradients.hero, color: colors.navy800, borderBottom: `1px solid ${colors.line}`, px: { xs: 2, md: 4 }, pt: 2, pb: 0 }}>
     <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ pb: 1 }}>
       <Box sx={{ flex: 1, minWidth: 240 }}>
-        <Typography variant="overline" sx={{ color: colors.lime, fontWeight: 800, letterSpacing: 1.5 }}>{overline}</Typography>
+        <Typography variant="overline" sx={{ color: colors.orangeDark, fontWeight: 800, letterSpacing: 1.5 }}>{overline}</Typography>
         <Typography variant="h5" fontWeight={900} data-testid={titleTestId}>{title}</Typography>
-        {subtitle && <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.74)', maxWidth: 880, mt: 0.25 }}>{subtitle}</Typography>}
+        {subtitle && <Typography variant="body2" sx={{ color: colors.muted, maxWidth: 880, mt: 0.25 }}>{subtitle}</Typography>}
       </Box>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
         {badges}
@@ -120,9 +120,9 @@ export const PageHero = ({ overline, title, subtitle, badges, actions, tabs, tab
       </Stack>
     </Stack>
     <Tabs value={tab} onChange={(_, v: string) => onTab(v)} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile textColor="inherit" data-testid={tabsTestId}
-      TabIndicatorProps={{ sx: { bgcolor: colors.lime, height: 3 } }}>
+      TabIndicatorProps={{ sx: { bgcolor: colors.orange, height: 3 } }}>
       {tabs.map((t) => (
-        <Tab key={t.key} value={t.key} data-testid={t.testId} sx={{ color: '#fff', opacity: tab === t.key ? 1 : 0.72, fontWeight: 700, textTransform: 'none', minHeight: 44 }}
+        <Tab key={t.key} value={t.key} data-testid={t.testId} sx={{ color: colors.navy800, opacity: tab === t.key ? 1 : 0.72, fontWeight: 700, textTransform: 'none', minHeight: 44 }}
           label={t.badge !== undefined && t.badge !== 0 ? <Stack direction="row" spacing={0.75} alignItems="center"><span>{t.label}</span><Chip size="small" label={t.badge} sx={{ height: 18, fontSize: 11, fontWeight: 800, bgcolor: colors.orange, color: '#fff' }} /></Stack> : t.label} />
       ))}
     </Tabs>
@@ -135,7 +135,7 @@ export const WorkflowSteps = ({ steps, current, testId = 'workflow' }: { steps: 
     {steps.map((s, i) => (
       <Stack key={s} direction="row" alignItems="center" spacing={0.5}>
         <Chip size="small" label={`${i < current ? '✓ ' : ''}${s}`} data-state={i < current ? 'done' : i === current ? 'current' : 'todo'}
-          sx={{ fontWeight: 800, bgcolor: i === current ? colors.green : i < current ? colors.greenSoft : '#F2F4F7', color: i === current ? '#fff' : i < current ? colors.greenDark : '#667085' }} />
+          sx={{ fontWeight: 800, bgcolor: i === current ? colors.orange : i < current ? colors.orangeSoft : '#F2F4F7', color: i === current ? '#fff' : i < current ? colors.orangeDark : '#667085' }} />
         {i < steps.length - 1 && <Typography variant="caption" color="text.disabled">›</Typography>}
       </Stack>
     ))}

@@ -130,7 +130,7 @@ const ProductsPage = () => {
       <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>
         Products {!isLoading && <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>({filtered.length})</Typography>}
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Browse every sport, or ask DSports AI in your own words.</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Browse every sport, or ask NisumSports-AI in your own words.</Typography>
 
       <AiCommerceSearch variant="compact" />
 

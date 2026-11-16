@@ -24,7 +24,7 @@ const TABS = [
 export const isBusinessUser = (roles?: string[]) => !!roles?.some((r) => r === 'ADMIN' || r === 'ROLE_ADMIN');
 
 /**
- * DSports Inventory Intelligence: the internal, business-facing area. It is NOT part of the customer storefront (own layout, no cart or
+ * NisumSports Inventory Intelligence: the internal, business-facing area. It is NOT part of the customer storefront (own layout, no cart or
  * shop navigation). The page hides itself from customers, but the real enforcement is the backend: every request needs the ADMIN role.
  */
 const InventoryApp = () => {
@@ -48,9 +48,9 @@ const InventoryApp = () => {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', bgcolor: colors.surface, p: 2 }} data-testid="inventory-signin">
         <Stack spacing={2} alignItems="center" sx={{ maxWidth: 420, textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={900}>DSports Inventory Intelligence</Typography>
+          <Typography variant="h5" fontWeight={900}>NisumSports Inventory Intelligence</Typography>
           <Typography color="text.secondary">Sign in with a business account to continue.</Typography>
-          <Button variant="contained" component={RouterLink} to="/login" sx={{ bgcolor: colors.green }}>Sign in</Button>
+          <Button variant="contained" component={RouterLink} to="/login" sx={{ bgcolor: colors.orange, '&:hover': { bgcolor: colors.orangeDark } }}>Sign in</Button>
         </Stack>
       </Box>
     );
@@ -71,7 +71,7 @@ const InventoryApp = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.surface }} data-testid="inventory-app">
-      <PageHero overline="INTERNAL · BUSINESS USERS" title="DSports Inventory Intelligence" titleTestId="inventory-title" homeTestId="inventory-home" tabsTestId="inventory-tabs" tab={current.key} onTab={(k) => nav(`/inventory-ai/${k}`)}
+      <PageHero overline="INTERNAL · BUSINESS USERS" title="NisumSports Inventory Intelligence" titleTestId="inventory-title" homeTestId="inventory-home" tabsTestId="inventory-tabs" tab={current.key} onTab={(k) => nav(`/inventory-ai/${k}`)}
         subtitle="Stock-out risk, replenishment, overstock and what-if scenarios from the Inventory AI's forecasts. Decision support: nothing here changes prices, orders or stock."
         badges={<DataBadge />}
         actions={<Button size="small" variant="outlined" color="inherit" disabled={train.isPending} onClick={() => train.mutate()} data-testid="retrain">{train.isPending ? 'Refreshing…' : 'Refresh forecast'}</Button>}

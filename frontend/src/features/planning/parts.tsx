@@ -33,7 +33,7 @@ export const ScopeBanner = ({ source }: { source: Source }) => (
       <Alert severity="warning" icon={false} sx={{ py: 0.5, borderRadius: 2.5, border: '1px solid #FEC84B', bgcolor: '#FFFAEB' }} data-testid="scope-banner-demo">
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <ProvenanceChip kind="DEMO" />
-          <span><b>DEMONSTRATION DATA.</b> Synthetic stores and sales generated for the proof of concept. These are not real DSports stores, sales or validated predictions, and approving a plan built on them is a demonstration decision.</span>
+          <span><b>DEMONSTRATION DATA.</b> Synthetic stores and sales generated for the proof of concept. These are not real NisumSports stores, sales or validated predictions, and approving a plan built on them is a demonstration decision.</span>
         </Stack>
       </Alert>
     )
@@ -41,7 +41,7 @@ export const ScopeBanner = ({ source }: { source: Source }) => (
       <Alert severity="info" icon={false} sx={{ py: 0.5, borderRadius: 2.5 }} data-testid="scope-banner-live">
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <ProvenanceChip kind="LIVE" />
-          <span><b>Live online orders.</b> Real DSports web orders (no physical stores). With only a few weeks of history, forecasts are low-confidence fallbacks.</span>
+          <span><b>Live online orders.</b> Real NisumSports web orders (no physical stores). With only a few weeks of history, forecasts are low-confidence fallbacks.</span>
         </Stack>
       </Alert>
     )

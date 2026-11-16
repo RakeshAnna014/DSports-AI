@@ -1,4 +1,4 @@
-# DSports frontend
+# NisumSports frontend
 
 React 19 + TypeScript + Vite + MUI 6 + React Router 7 + TanStack Query + Zustand + Axios. Serves the storefront and the staff workspaces on port 3000 and proxies `/api` to the Java backend (8080) and `/ai-api` to the AI service (8090).
 

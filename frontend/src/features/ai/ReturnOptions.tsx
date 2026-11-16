@@ -4,8 +4,8 @@ import { formatDate } from '@/lib/productUtils';
 import type { AiEligibility, AiSuggestion } from '@/types/ai';
 
 /**
- * The return decision, exactly as the DSports Returns service made it, and the one real next step it supports: start the return
- * (which still needs the customer's confirmation). Refund method, exchange and wallet are NOT offered: DSports has no such APIs;
+ * The return decision, exactly as the NisumSports Returns service made it, and the one real next step it supports: start the return
+ * (which still needs the customer's confirmation). Refund method, exchange and wallet are NOT offered: NisumSports has no such APIs;
  * a refund follows the existing refund process once the return is approved.
  */
 const ReturnOptions = ({ eligibility, action, onAction, disabled }: {
@@ -35,11 +35,11 @@ const ReturnOptions = ({ eligibility, action, onAction, disabled }: {
         <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.75 }}>What would you like to do?</Typography>
         <Button variant="contained" disabled={disabled} onClick={() => onAction(action)} data-testid="ai-return-action">{action.label}</Button>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
-          You will be asked to confirm. DSports reviews the return; any refund follows the refund policy once it is approved.
+          You will be asked to confirm. NisumSports reviews the return; any refund follows the refund policy once it is approved.
         </Typography>
       </Box>
     )}
-    {!eligibility.eligible && <Alert severity="info" sx={{ mt: 1.5 }}>This decision comes from DSports&apos; return rules and cannot be overridden here.</Alert>}
+    {!eligibility.eligible && <Alert severity="info" sx={{ mt: 1.5 }}>This decision comes from NisumSports&apos; return rules and cannot be overridden here.</Alert>}
   </Paper>
 );
 

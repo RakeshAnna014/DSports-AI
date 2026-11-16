@@ -31,14 +31,14 @@ export const ErrorState = ({ title = 'Something went wrong', body, onRetry }: { 
 
 const pulse = keyframes`0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1)}`;
 
-/** "DSports AI is thinking..." with three pulsing dots (respects reduced motion through the global theme rule). */
-export const Thinking = ({ label = 'DSports AI is thinking…' }: { label?: string }) => (
+/** "NisumSports-AI is thinking..." with three pulsing dots (respects reduced motion through the global theme rule). */
+export const Thinking = ({ label = 'NisumSports-AI is thinking…' }: { label?: string }) => (
   <Stack direction="row" spacing={1.25} alignItems="center" data-testid="ai-thinking"
     sx={{ px: 1.5, py: 1, borderRadius: 3, background: gradients.glass, border: `1px solid ${colors.line}`, width: 'fit-content', bgcolor: 'background.paper' }}>
     <AutoAwesome fontSize="small" color="secondary" />
     <Typography variant="body2" color="text.secondary">{label}</Typography>
     <Stack direction="row" spacing={0.5}>
-      {[0, 1, 2].map((i) => <Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'secondary.main', animation: `${pulse} 1.2s ${i * 0.18}s infinite` }} />)}
+      {[0, 1, 2].map((i) => <Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: colors.orange, animation: `${pulse} 1.2s ${i * 0.18}s infinite` }} />)}
     </Stack>
   </Stack>
 );

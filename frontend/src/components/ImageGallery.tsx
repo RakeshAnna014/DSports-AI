@@ -9,7 +9,7 @@ interface ImageGalleryProps {
   images?: { url: string; primary?: boolean }[];
 }
 
-/** A large product image with a thumbnail strip; the primary image comes first. Every image falls back to the DSports visual if it fails. */
+/** A large product image with a thumbnail strip; the primary image comes first. Every image falls back to the NisumSports visual if it fails. */
 const ImageGallery = ({ productName, images = [] }: ImageGalleryProps) => {
   const ordered = [...images].sort((a, b) => Number(!!b.primary) - Number(!!a.primary));
   const urls = ordered.length > 0 ? ordered.map((i) => i.url) : [undefined];

@@ -11,7 +11,7 @@ interface Step { key: string; label: string; done: boolean; time?: string | null
 const ORDER_CONFIRMED = new Set(['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']);
 const RANK: Record<string, number> = { CREATED: 0, READY_FOR_PICKUP: 1, PICKED_UP: 2, IN_TRANSIT: 3, OUT_FOR_DELIVERY: 4, DELIVERED: 5 };
 
-/** The ladder is derived ONLY from the real order status and shipment events; a step is "done" when DSports says it happened. */
+/** The ladder is derived ONLY from the real order status and shipment events; a step is "done" when NisumSports says it happened. */
 export const buildSteps = (t: AiTracking): Step[] => {
   const events = t.shipment?.events ?? [];
   const reached = Math.max(-1, ...events.map((e) => RANK[e.status] ?? -1), t.shipment ? RANK[t.shipment.status] ?? -1 : -1);
@@ -47,7 +47,7 @@ const OrderTimeline = ({ tracking, onNavigate }: { tracking: AiTracking; onNavig
               {step.done
                 ? <CheckCircle sx={{ color: 'success.main', zIndex: 1, bgcolor: 'background.paper', borderRadius: '50%' }} />
                 : active
-                  ? <Box sx={{ width: 24, height: 24, display: 'grid', placeItems: 'center', zIndex: 1 }}><Box sx={{ width: 14, height: 14, borderRadius: '50%', background: gradients.ai, boxShadow: '0 0 0 4px rgba(255,122,26,0.22)' }} /></Box>
+                  ? <Box sx={{ width: 24, height: 24, display: 'grid', placeItems: 'center', zIndex: 1 }}><Box sx={{ width: 14, height: 14, borderRadius: '50%', background: gradients.ai, boxShadow: '0 0 0 4px rgba(228,87,46,0.22)' }} /></Box>
                   : <RadioButtonUnchecked sx={{ color: 'text.disabled', zIndex: 1, bgcolor: 'background.paper', borderRadius: '50%' }} />}
               <Box>
                 <Typography variant="body2" fontWeight={step.done || active ? 700 : 500} color={step.done || active ? 'text.primary' : 'text.disabled'}>{step.label}</Typography>

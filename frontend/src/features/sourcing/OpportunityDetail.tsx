@@ -134,7 +134,7 @@ const OpportunityDetail = ({ id, onBack }: { id: string; onBack: () => void }) =
               {o.product_url && <Typography variant="body2"><b>Source page:</b> <Link href={safeHref(o.product_url)} target="_blank" rel="noopener noreferrer" data-testid="opp-product-url">{o.product_url}</Link></Typography>}
               {o.description && <Typography variant="body2" sx={{ mt: 0.75 }}>{o.description}</Typography>}
               {o.trend_note && <Typography variant="body2" sx={{ mt: 0.5 }}><b>Signal:</b> {o.trend_note}</Typography>}
-              <Typography variant="body2" sx={{ mt: 0.5 }} data-testid="opp-relevance"><b>Why it may matter to DSports:</b> {o.relevance ?? 'Not assessed yet.'}</Typography>
+              <Typography variant="body2" sx={{ mt: 0.5 }} data-testid="opp-relevance"><b>Why it may matter to NisumSports:</b> {o.relevance ?? 'Not assessed yet.'}</Typography>
               {o.unanswered?.length > 0 && <Box sx={{ mt: 1 }} data-testid="opp-unanswered"><Typography variant="caption" fontWeight={800}>Unanswered questions</Typography>
                 <Box component="ul" sx={{ m: 0, pl: 2.25 }}>{o.unanswered.map((u) => <Typography key={u} component="li" variant="body2">{u}</Typography>)}</Box></Box>}
             </Box>

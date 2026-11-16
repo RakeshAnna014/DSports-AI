@@ -22,7 +22,7 @@ interface BoxProps {
   variant?: 'hero' | 'compact';
   /** `dark` for the navy hero (glass input, light chips), `light` for normal pages. */
   tone?: 'dark' | 'light';
-  /** A product page: the AI search starts out knowing which product the customer is looking at (id only; DSports supplies the facts). */
+  /** A product page: the AI search starts out knowing which product the customer is looking at (id only; NisumSports supplies the facts). */
   product?: { productId: string; name: string };
   /** Replaces the default suggestions (for example product-specific questions). */
   examples?: string[];
@@ -61,7 +61,7 @@ export const AiSearchBox = ({ variant = 'hero', tone = 'light', product, example
 
   const placeholder = comparison.length >= 2 ? 'Ask about these products or compare them...'
     : productContext ? 'Ask about this product, compare it, or find alternatives...'
-      : entries.length ? 'Ask a follow-up, e.g. "show me something cheaper"' : 'Ask DSports AI anything: find gear, track an order, start a return…';
+      : entries.length ? 'Ask a follow-up, e.g. "show me something cheaper"' : 'Ask NisumSports-AI anything: find gear, track an order, start a return…';
   const chips = examples ?? (entries.length === 0 ? POPULAR : []);
 
   const submit = (text: string) => {
@@ -87,12 +87,12 @@ export const AiSearchBox = ({ variant = 'hero', tone = 'light', product, example
           placeholder={placeholder}
           size={hero ? 'medium' : 'small'}
           inputRef={inputRef}
-          inputProps={{ 'aria-label': 'Ask DSports AI', maxLength: 1000, 'data-testid': 'ai-search-input' }}
+          inputProps={{ 'aria-label': 'Ask NisumSports-AI', maxLength: 1000, 'data-testid': 'ai-search-input' }}
           InputProps={{
             startAdornment: <InputAdornment position="start"><AutoAwesome color="secondary" /></InputAdornment>,
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton type="submit" disabled={sending || !draft.trim()} aria-label="search with DSports AI" data-testid="ai-search-submit"
+                <IconButton type="submit" disabled={sending || !draft.trim()} aria-label="search with NisumSports-AI" data-testid="ai-search-submit"
                   sx={{ background: gradients.ai, color: '#1b1200', '&:hover': { opacity: 0.9, background: gradients.ai }, '&.Mui-disabled': { background: colors.line, color: colors.muted } }}>
                   <Send fontSize="small" />
                 </IconButton>
@@ -106,7 +106,7 @@ export const AiSearchBox = ({ variant = 'hero', tone = 'light', product, example
           <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: 1.5, justifyContent: hero ? 'center' : 'flex-start' }} data-testid="ai-examples">
             {chips.map((x) => (
               <Chip key={x} label={x} size="small" variant={dark ? 'filled' : 'outlined'} clickable onClick={() => submit(x)}
-                sx={dark ? { bgcolor: 'rgba(255,255,255,0.10)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)', '&:hover': { bgcolor: 'rgba(184,242,60,0.22)' } } : undefined} />
+                sx={dark ? { bgcolor: 'rgba(255,255,255,0.75)', color: colors.navy800, border: `1px solid ${colors.line}`, backdropFilter: 'blur(6px)', '&:hover': { bgcolor: colors.orangeSoft } } : undefined} />
             ))}
           </Stack>
         )}
@@ -141,7 +141,7 @@ export const AiSearchResults = () => {
       </>}
       {latest.role === 'error' && (
         <Box data-testid="ai-error">
-          <ErrorState title={latest.unavailable ? 'DSports AI is taking a break' : "DSports AI couldn't finish that"}
+          <ErrorState title={latest.unavailable ? 'NisumSports-AI is taking a break' : "NisumSports-AI couldn't finish that"}
             body={latest.unavailable ? 'AI assistance is temporarily unavailable. You can still use standard product search.' : latest.text}
             onRetry={() => void retry()} />
         </Box>

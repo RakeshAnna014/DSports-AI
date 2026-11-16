@@ -138,7 +138,7 @@ export const useAiStore = create<AiState>((set, get) => ({
       const response = await aiApi.chat(message, get().conversationId, { selectedProductId: pendingSelectId, clearProductContext: pendingClear, choiceId, caseRef: get().caseContext?.caseNumber ?? null });
       saveConversation(response.conversationId);
       set((s) => ({
-        // The service is the source of truth for what the conversation is about (it re-validated the product against DSports).
+        // The service is the source of truth for what the conversation is about (it re-validated the product against NisumSports).
         productContext: response.context?.selectedProduct ?? null,
         comparisonProducts: response.context?.comparisonProducts ?? [],
         pendingSelectId: null,

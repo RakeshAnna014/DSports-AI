@@ -44,9 +44,9 @@ const AssistantPanel = () => {
 
   return (
     <Drawer anchor="right" open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 440 } } }} data-testid="ai-panel">
-      <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.25, background: gradients.aiPanel, color: '#fff' }}>
-        <SmartToy sx={{ mr: 1, color: 'secondary.light' }} />
-        <Typography variant="subtitle1" fontWeight={800} sx={{ flexGrow: 1 }}>DSports AI</Typography>
+      <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.25, background: gradients.aiPanel, color: colors.navy800, borderBottom: `1px solid ${colors.line}` }}>
+        <SmartToy sx={{ mr: 1, color: colors.orange }} />
+        <Typography variant="subtitle1" fontWeight={800} sx={{ flexGrow: 1 }}>NisumSports-AI</Typography>
         <Tooltip title="New conversation"><IconButton color="inherit" size="small" onClick={reset} aria-label="new conversation"><RestartAlt /></IconButton></Tooltip>
         <IconButton color="inherit" size="small" onClick={() => setOpen(false)} aria-label="close assistant"><Close /></IconButton>
       </Stack>
@@ -73,8 +73,8 @@ const AssistantPanel = () => {
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
               {caseContext
-                ? `I can look into case ${caseContext.caseNumber} with you: check its status and your order, explain what the DSports records show, and add a message or ask for a person to review it once you confirm.`
-                : 'Welcome to DSports AI. Ask me to find or compare products, explain care and policies, or check an order. Prices, stock and order details always come live from DSports.'}
+                ? `I can look into case ${caseContext.caseNumber} with you: check its status and your order, explain what the NisumSports records show, and add a message or ask for a person to review it once you confirm.`
+                : 'Welcome to NisumSports-AI. Ask me to find or compare products, explain care and policies, or check an order. Prices, stock and order details always come live from NisumSports.'}
             </Typography>
             <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
               {(caseContext ? CASE_SUGGESTIONS : isAuthenticated ? MEMBER_SUGGESTIONS : GUEST_SUGGESTIONS).map((s) => (

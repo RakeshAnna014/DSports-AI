@@ -1,4 +1,4 @@
-/** Mirrors the AI service response (ai-service/app/agent/schemas.py). Everything except `message` is VERIFIED data from DSports. */
+/** Mirrors the AI service response (ai-service/app/agent/schemas.py). Everything except `message` is VERIFIED data from NisumSports. */
 import type { AiSupport } from '@/types/support';
 
 export type AiStatus = 'ok' | 'refused' | 'needs_login' | 'ai_unavailable' | 'error';
@@ -58,7 +58,7 @@ export interface AiSuggestion {
 export interface AiRecommendationItem extends AiProduct {
   reasons: string[];
   anchor?: string;
-  /** Scenario pipeline only. All of these come from DSports data computed by code, never from a model. */
+  /** Scenario pipeline only. All of these come from NisumSports data computed by code, never from a model. */
   original_price?: number | null;
   discount_pct?: number | null;
   availability?: string;

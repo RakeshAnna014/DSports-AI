@@ -277,7 +277,7 @@ export const PromotionsTab = () => {
   const run = useMutation({ mutationFn: () => inventoryAiApi.scenario({ sport: sport || undefined, category: category || undefined, discounts, days, slowMovingOnly: slowOnly }) });
   return (
     <Box2>
-      <Card title="Promotion and clearance what-if" subtitle="A calculation from the persisted forecast and the estimated price elasticity. It never changes a price: the DSports pricing engine remains authoritative." testId="promotion-builder">
+      <Card title="Promotion and clearance what-if" subtitle="A calculation from the persisted forecast and the estimated price elasticity. It never changes a price: the NisumSports pricing engine remains authoritative." testId="promotion-builder">
         <Stack spacing={1.5}>
           <Filters sport={sport} category={category} onChange={(s, c) => { setSport(s); setCategory(c); }} extra={
             <ToggleButton size="small" value="slow" selected={slowOnly} onChange={() => setSlowOnly(!slowOnly)} data-testid="slow-only">Slow-moving & aged only</ToggleButton>} />
@@ -286,7 +286,7 @@ export const PromotionsTab = () => {
             {[10, 20, 30, 40, 50].map((d) => <Chip key={d} label={`${d}%`} clickable data-testid={`discount-${d}`} color={discounts.includes(d) ? 'primary' : 'default'}
               onClick={() => setDiscounts(discounts.includes(d) ? discounts.filter((x) => x !== d) : [...discounts, d].sort((a, b) => a - b))} />)}
             <TextField size="small" type="number" label="Days" value={days} onChange={(e) => setDays(Math.max(3, Math.min(60, Number(e.target.value) || 14)))} sx={{ width: 90 }} />
-            <Button variant="contained" disabled={!discounts.length || run.isPending} onClick={() => run.mutate()} data-testid="run-scenario" sx={{ bgcolor: colors.green }}>Run scenario</Button>
+            <Button variant="contained" disabled={!discounts.length || run.isPending} onClick={() => run.mutate()} data-testid="run-scenario" sx={{ bgcolor: colors.orange, '&:hover': { bgcolor: colors.orangeDark } }}>Run scenario</Button>
           </Stack>
         </Stack>
       </Card>

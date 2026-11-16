@@ -23,7 +23,7 @@ export const ConfirmationCard = ({ response }: { response: AiResponse }) => {
   if (action && response.requiresConfirmation) {
     // The confirmation itself happens in the dialog (one place, one set of buttons); this is the summary of what is waiting.
     return (
-      <Paper variant="outlined" sx={{ p: 2, borderColor: 'secondary.light', bgcolor: 'rgba(255,122,26,0.05)' }} data-testid="ai-confirmation">
+      <Paper variant="outlined" sx={{ p: 2, borderColor: 'secondary.light', bgcolor: 'rgba(228,87,46,0.05)' }} data-testid="ai-confirmation">
         <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 0.5 }}>Waiting for your confirmation</Typography>
         <Typography variant="body2">{action.summary}</Typography>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>Nothing happens until you confirm. This option expires in a few minutes.</Typography>
@@ -47,7 +47,7 @@ export const ResponseError = ({ response, onRetry }: { response: AiResponse; onR
   const down = response.status === 'ai_unavailable';
   return (
     <ErrorState
-      title={down ? 'DSports AI is taking a break' : "DSports AI couldn't finish that"}
+      title={down ? 'NisumSports-AI is taking a break' : "NisumSports-AI couldn't finish that"}
       body={down ? 'AI assistance is temporarily unavailable. You can still use standard product search; orders, cart and checkout are not affected.'
         : 'Something went wrong while handling your request. Please try again.'}
       onRetry={onRetry} />

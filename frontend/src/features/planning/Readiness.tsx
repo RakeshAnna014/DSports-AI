@@ -38,12 +38,12 @@ const Readiness = () => {
         {forecast.isError && <Alert severity="warning" sx={{ mt: 1 }} data-testid="forecast-error">{planningError(forecast.error)}</Alert>}
         {forecast.data && <Alert severity="success" sx={{ mt: 1 }} data-testid="forecast-result">Forecast run {String(forecast.data.status).toLowerCase()}: {n(Number(forecast.data.series))} series ({n(Number(forecast.data.ok))} own pattern, {n(Number(forecast.data.fallback))} fallback, {n(Number(forecast.data.insufficient))} none).</Alert>}
       </Section>
-      <Section title="Live DSports sales feed" id="ready-live">
+      <Section title="Live NisumSports sales feed" id="ready-live">
         <Typography variant="body2">{n(Number(d.live.lines ? (d.live.lines as unknown as Record<string, number>).orders : 0))} order(s) on {n(Number(d.live.lines ? (d.live.lines as unknown as Record<string, number>).order_days : 0))} distinct day(s) → {n(Number(d.live.weeks))} week(s) of online sales, data through {day(String(d.live.data_through ?? ''))}.</Typography>
         <Typography variant="body2" data-testid="reconcile">Reconciliation of the weekly aggregates with the stored order lines: <b>{d.reconciliation.reconciled ? 'exact (units and money agree)' : 'DOES NOT AGREE'}</b> ({n(d.reconciliation.lines)} line(s), {n(d.reconciliation.excluded)} not a sale).</Typography>
         {d.last_ingest && <Typography variant="caption" color="text.secondary" display="block">Last ingest {pretty(String(d.last_ingest.status))} at {when(String(d.last_ingest.finished_at ?? d.last_ingest.started_at))}: {String(d.last_ingest.lines_read)} read, {String(d.last_ingest.lines_changed)} changed.</Typography>}
         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-          {isAdmin(roles) && <Button size="small" variant="outlined" disabled={ingest.isPending} onClick={() => ingest.mutate('INCREMENTAL')} data-testid="ingest-incremental">Refresh from DSports</Button>}
+          {isAdmin(roles) && <Button size="small" variant="outlined" disabled={ingest.isPending} onClick={() => ingest.mutate('INCREMENTAL')} data-testid="ingest-incremental">Refresh from NisumSports</Button>}
           {isAdmin(roles) && <Button size="small" variant="outlined" disabled={ingest.isPending} onClick={() => ingest.mutate('BACKFILL')} data-testid="ingest-backfill">Full backfill</Button>}
           {isAdmin(roles) && <Button size="small" variant="outlined" disabled={seed.isPending} onClick={() => seed.mutate()} data-testid="seed-demo">Build the demonstration network</Button>}
         </Stack>

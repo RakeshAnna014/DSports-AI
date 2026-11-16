@@ -19,7 +19,7 @@ const SCENARIOS: { value: RecoScenario; label: string }[] = [
 
 /**
  * Budget- and context-aware recommendations for one product. Prices, stock, discounts and the budget band are computed by the AI service
- * from DSports data (no model decides them); this component only presents them and lets the customer move the budget.
+ * from NisumSports data (no model decides them); this component only presents them and lets the customer move the budget.
  */
 const ScenarioRecommendations = ({ productId, productName }: { productId: string; productName?: string }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

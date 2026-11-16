@@ -1,38 +1,53 @@
-/** DSports AI design tokens: one place for the premium sports-tech look (dark navy hero, vibrant green, lime highlight, orange for AI). */
+/**
+ * NisumSports AI design tokens: the single source of truth for brand colours. The Nisum palette is also exposed as CSS variables
+ * (see index.html / `--nisum-*`). `green` is kept only for data and success semantics (charts, savings), never for brand chrome.
+ */
+export const nisum = {
+  navy: '#1B2A41',
+  orange: '#E4572E',
+  background: '#EEF2F6',
+  textSecondary: '#525C6B',
+  white: '#FFFFFF',
+  blue: '#2376DC',
+} as const;
+
 export const colors = {
-  navy900: '#070C18',
-  navy800: '#0B1426',
-  navy700: '#101D38',
-  navy600: '#18284A',
+  navy900: '#131F32',
+  navy800: nisum.navy,
+  navy700: '#263A55',
+  navy600: '#34495F',
+  orange: nisum.orange,
+  orangeDark: '#C2411C',
+  orangeSoft: '#FCEBE5',
+  accentOnDark: '#F58A68',
+  blue: nisum.blue,
   green: '#16A34A',
   greenDark: '#0F7A38',
   greenSoft: '#E7F8EE',
-  lime: '#B8F23C',
-  orange: '#FF7A1A',
-  orangeSoft: '#FFF1E6',
-  surface: '#F3F6FB',
-  card: '#FFFFFF',
-  ink: '#0B1426',
-  muted: '#5B677F',
-  line: '#E3E8F2',
+  surface: nisum.background,
+  card: nisum.white,
+  ink: nisum.navy,
+  muted: nisum.textSecondary,
+  line: '#DCE3EC',
 } as const;
 
+/** The Nisum template background (white to sky blue to lavender), used instead of dark navy bands. Text on it is navy. */
+const templateBg = 'url(/brand/nisum-bg.jpg) center bottom / cover no-repeat, #FFFFFF';
+
 export const gradients = {
-  hero:
-    'radial-gradient(900px 520px at 85% -10%, rgba(22,163,74,0.38), transparent 60%),' +
-    'radial-gradient(700px 420px at -5% 105%, rgba(255,122,26,0.20), transparent 60%),' +
-    'linear-gradient(160deg, #070C18 0%, #0B1A2E 55%, #0B2A22 100%)',
-  brand: 'linear-gradient(135deg, #16A34A 0%, #B8F23C 100%)',
-  ai: 'linear-gradient(135deg, #FF7A1A 0%, #FFB020 100%)',
+  template: templateBg,
+  hero: templateBg,
+  brand: 'linear-gradient(135deg, #E4572E 0%, #F58A68 100%)',
+  ai: 'linear-gradient(135deg, #E4572E 0%, #F58A68 100%)',
   glass: 'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05))',
-  section: 'linear-gradient(180deg, #F3F6FB 0%, #FFFFFF 100%)',
-  aiPanel: 'linear-gradient(135deg, #0B1426 0%, #12304A 60%, #0F4A33 100%)',
+  section: 'linear-gradient(180deg, #EEF2F6 0%, #FFFFFF 100%)',
+  aiPanel: templateBg,
 } as const;
 
 export const shadows = {
-  card: '0 1px 2px rgba(11,20,38,0.06), 0 8px 24px rgba(11,20,38,0.06)',
-  cardHover: '0 2px 4px rgba(11,20,38,0.08), 0 16px 40px rgba(11,20,38,0.14)',
-  glow: '0 0 0 1px rgba(184,242,60,0.35), 0 10px 40px rgba(22,163,74,0.35)',
+  card: '0 1px 2px rgba(27,42,65,0.06), 0 8px 24px rgba(27,42,65,0.06)',
+  cardHover: '0 2px 4px rgba(27,42,65,0.08), 0 16px 40px rgba(27,42,65,0.14)',
+  glow: '0 0 0 1px rgba(228,87,46,0.35), 0 10px 40px rgba(228,87,46,0.30)',
   glass: '0 8px 40px rgba(0,0,0,0.35)',
 } as const;
 
