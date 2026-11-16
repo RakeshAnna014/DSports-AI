@@ -81,6 +81,9 @@ public class GlobalExceptionHandler {
 
     private static final Map<ErrorCode, HttpStatus> ERROR_STATUS_MAP = Map.ofEntries(
         Map.entry(ErrorCode.DUPLICATE_EMAIL, HttpStatus.CONFLICT),
+        Map.entry(ErrorCode.USER_NOT_REGISTERED, HttpStatus.NOT_FOUND),
+        Map.entry(ErrorCode.ROLE_NOT_HELD, HttpStatus.NOT_FOUND),
+        Map.entry(ErrorCode.CANNOT_CHANGE_OWN_ROLE, HttpStatus.FORBIDDEN),
         Map.entry(ErrorCode.INVALID_EMAIL, HttpStatus.BAD_REQUEST),
         Map.entry(ErrorCode.INVALID_PHONE_NUMBER, HttpStatus.BAD_REQUEST),
         Map.entry(ErrorCode.INVALID_CUSTOMER_NAME, HttpStatus.BAD_REQUEST),

@@ -13,6 +13,10 @@ public enum ErrorCode {
     OAUTH_PROVIDER_ALREADY_LINKED,
     MAX_AUTH_PROVIDERS_EXCEEDED,
     USER_NOT_FOUND,
+    /** An administrator named an email nobody has registered with. */
+    USER_NOT_REGISTERED,
+    CANNOT_CHANGE_OWN_ROLE,
+    ROLE_NOT_HELD,
     INVALID_PASSWORD,
     ACCOUNT_LOCKED,
     INVALID_DATE_OF_BIRTH,

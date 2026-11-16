@@ -52,7 +52,7 @@ class SecurityPolicyTest {
     @RestController
     static class Probe {
         @GetMapping({"/api/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/metrics", "/actuator/info", "/actuator/env", "/api/catalog/products",
-                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/me/bookings",
+                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/me/bookings",
                 "/some/unknown/route"})
         String ok() {
             return "ok";
@@ -104,6 +104,9 @@ class SecurityPolicyTest {
             "/api/v1/owner/venues,anonymous,401", "/api/v1/owner/venues,customer,403", "/api/v1/owner/venues,admin,403", "/api/v1/owner/venues,owner,200",
             // venue administration is for administrators only (an owner cannot use it to reach other owners' venues)
             "/api/v1/admin/venues,anonymous,401", "/api/v1/admin/venues,customer,403", "/api/v1/admin/venues,owner,403", "/api/v1/admin/venues,admin,200",
+            // granting and removing the ground-owner role, and its audit log: administrators only
+            "/api/v1/admin/ground-owners,anonymous,401", "/api/v1/admin/ground-owners,customer,403", "/api/v1/admin/ground-owners,owner,403", "/api/v1/admin/ground-owners,support,403", "/api/v1/admin/ground-owners,admin,200",
+            "/api/v1/admin/ground-owners/audit,customer,403", "/api/v1/admin/ground-owners/audit,owner,403", "/api/v1/admin/ground-owners/audit,admin,200",
             "/api/v1/owner/bookings,anonymous,401", "/api/v1/owner/bookings,customer,403", "/api/v1/owner/bookings,admin,403", "/api/v1/owner/bookings,owner,200",
             // staff and admin areas
             "/api/admin/anything,anonymous,401", "/api/admin/anything,customer,403", "/api/admin/anything,support,403", "/api/admin/anything,admin,200",
