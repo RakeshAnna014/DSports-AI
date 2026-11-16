@@ -110,7 +110,7 @@ Facts that matter:
 
 ```mermaid
 flowchart LR
-  subgraph dsports["database dsports (owner: Java, Flyway V1-V47)"]
+  subgraph dsports["database dsports (owner: Java, Flyway V1-V52)"]
     C[catalog: sports, categories, brands, products, images, attributes]
     I[inventory + reservations]
     PR[prices]
