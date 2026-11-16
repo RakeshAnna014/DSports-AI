@@ -2,7 +2,7 @@
 
 Exported from the running backend's /api-docs (springdoc), which is disabled in the prod profile.
 
-Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 159 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
+Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 174 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
 
 ## Actuator
 
@@ -146,6 +146,36 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | Method | Path | Summary | Auth | Responses |
 |---|---|---|---|---|
 | GET | `/api/v1/admin/fulfilment/orders` | Orders and shipments for the fulfilment console (ADMIN) | bearer | 200 |
+
+## Ground bookings
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/bookings` | Hold a slot | bearer | 200,201,400,404,409 |
+| GET | `/api/v1/bookings/{bookingId}` | Get one of my bookings | bearer | 200,403,404 |
+| POST | `/api/v1/bookings/{bookingId}/cancel` | Cancel my booking | bearer | 200,403,404,409 |
+| GET | `/api/v1/me/bookings` | My bookings | bearer | 200 |
+
+## Ground owner
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/owner/bookings` | Bookings at one of my grounds | bearer | 200,403 |
+| POST | `/api/v1/owner/bookings/{bookingId}/cancel` | Cancel a booking at my ground | bearer | 200,403,409 |
+| POST | `/api/v1/owner/bookings/{bookingId}/no-show` | Mark a booking as a no-show | bearer | 200,403,409 |
+| GET | `/api/v1/owner/grounds` | My grounds | bearer | 200 |
+| POST | `/api/v1/owner/grounds` | Create a ground | bearer | 201,400,403 |
+| PUT | `/api/v1/owner/grounds/{groundId}` | Edit a ground | bearer | 200,403,404,409 |
+| GET | `/api/v1/owner/grounds/{groundId}/blackouts` | A ground's blackouts | bearer | 200 |
+| POST | `/api/v1/owner/grounds/{groundId}/blackouts` | Add a blackout | bearer | 201,403,409 |
+
+## Grounds
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/grounds` | Search grounds | bearer | 200,400 |
+| GET | `/api/v1/grounds/{groundId}` | Get a ground | bearer | 200,404 |
+| GET | `/api/v1/grounds/{groundId}/slots` | Slots of a ground on a day | bearer | 200,400,404 |
 
 ## Inventory
 

@@ -50,7 +50,7 @@ cd frontend && pnpm install && pnpm exec vite     # or: pnpm dev
 Build the jar first with `cd backend && mvn -B -o clean install -DskipTests` (stop the backend before rebuilding: Windows locks the running jar).
 On Windows run the `.sh` scripts with Git Bash (`& 'C:\Program Files\Git\bin\bash.exe' e2e/ai/start-ai.sh`). Stop: `bash e2e/ai/free-port.sh 8080` (8090, 3000): it only stops processes whose command line belongs to this project and refuses to touch another project's process.
 
-**Migrations**: Flyway is forward-only and runs at backend start (current head V47, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
+**Migrations**: Flyway is forward-only and runs at backend start (current head V49, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
 
 ## 5. Seed data
 
@@ -76,7 +76,7 @@ POST /v1/sourcing/demo/seed              # labelled DEMO records (optional)
 Roles for these screens (`SALES_PLANNER`, `CATEGORY_MANAGER`, `REGIONAL_MANAGER`, `STORE_MANAGER`, `PROCUREMENT_BUYER`) are granted by SQL like the others; scoped managers also need a row in `pln_scope` (`POST /v1/planning/scope`).
 
 Privileged roles are **not** assignable through any API (only a domain method exists). Grant by SQL on purpose:
-`INSERT INTO customer_roles (customer_id, role) SELECT id,'ADMIN' FROM customers WHERE email='…'` (roles used: `ADMIN`, `SUPPORT_EXECUTIVE`).
+`INSERT INTO customer_roles (customer_id, role) SELECT id,'ADMIN' FROM customers WHERE email='…'` (roles used: `ADMIN`, `SUPPORT_EXECUTIVE`, `GROUND_OWNER`). The V48 migration needs the PostgreSQL `btree_gist` extension: it is available in the project's Docker image; a managed database may need it enabled first.
 
 ## 6. Tests: exact commands
 
@@ -103,6 +103,18 @@ URLs are the local defaults above. Customers register at `/register`; roles are 
 4. **Profiles and budget controls**: `/profile` → pick Tennis and a price range, add a family member (age band only), switch the active profile; the home page "Picked for you" follows the active profile and disappears when nothing relevant exists.
 5. **Inventory Intelligence** (`ADMIN`): `/inventory-ai`. All data is labelled POC SYNTHETIC; ask the copilot "which products will stock out in 14 days?" and open the evidence behind each answer.
 6. **Engineering AI** (`ADMIN`): `python -m app.engineering.cli synthetic`, then `/engineering-ai`, choose "Synthetic only", ask "Why did checkout fail?": clusters, a deployment-timing hypothesis (marked not confirmed), evidence records L<id> with correlation ids, synthetic labels, and a withheld injected log line. Choose "Real only" and ask "Show recurring errors in the backend in the last 3 days" for the real recurring warning.
+
+7a. **Ground booking** (customer and `GROUND_OWNER`, all payments use the demonstration gateway):
+
+   1. Register two accounts at `/register`: an owner and a customer. Grant the owner role by SQL, then sign the owner out and in again (the role is read from the token):
+      `docker exec dsports-postgres psql -U dsports -d dsports -c "INSERT INTO customer_roles (customer_id, role) SELECT id,'GROUND_OWNER' FROM customers WHERE email='owner@example.com'"`
+   2. As the owner open `/owner/grounds` (account menu, *My grounds*), choose *New ground*, fill the form (for example Bengaluru, 06:00 to 22:00, 60 minute slots, base price 1000, peak price 2000 from 18:00 to 21:00) and save.
+   3. As the customer open `/grounds`, search the city and a date at least a day ahead, open the ground, choose one or two consecutive slots and press *Hold and pay*.
+   4. On the payment page watch the 10 minute countdown, pay, and see the booking confirmed in `/bookings` and the notification bell.
+   5. Cancel it from `/bookings`: the page shows the refund share and that a refund was **requested**; approve it as an administrator (`POST /api/v1/admin/refunds/{id}/approve`).
+   6. Book another slot, then as the owner cancel it from the bookings list: the full refund is paid out **automatically** and the customer is notified.
+   7. Let a hold run out without paying: after the window the slot becomes free again (the expiry job runs every 15 seconds).
+   8. As the owner add a blackout on a free period and check the slot shows as closed; adding one over a booking is refused.
 
 ## 8. Troubleshooting
 
