@@ -3,6 +3,7 @@ package com.dsports.config;
 import com.dsports.cart.application.port.CartRepository;
 import com.dsports.cart.domain.model.CartId;
 import com.dsports.cart.domain.model.CartStatus;
+import com.dsports.ground.application.usecase.BookingPaymentUseCase;
 import com.dsports.inventory.application.usecase.FulfillOrderReservationsUseCase;
 import com.dsports.order.application.checkout.port.CheckoutRepository;
 import com.dsports.order.application.order.port.OrderRepository;
@@ -50,8 +51,33 @@ public class PaymentModuleConfig {
         this.gatewayTimeout = gatewayTimeout;
     }
 
+    /**
+     * What payment may ask about the thing it charges. Orders are looked up first and behave exactly as before; an id that is not an order is
+     * looked up as a ground booking (a temporary shortcut: bookings reuse {@code payments.order_id}; see ADR-017 and its follow-up to add a
+     * payable type to payments). A booking is charged its own price snapshot and only if it belongs to the caller and is still HELD and unexpired.
+     */
     @Bean
-    public OrderPaymentPort orderPaymentPort(OrderRepository orderRepository) {
+    public OrderPaymentPort orderPaymentPort(OrderRepository orderRepository, BookingPaymentUseCase bookingPayments) {
+        var orders = orderOnlyPaymentPort(orderRepository);
+        return new OrderPaymentPort() {
+            @Override
+            public Mono<OrderData> getOrderData(UUID orderId, UUID userId) {
+                return orderRepository.findById(OrderId.fromUUID(orderId)).hasElement().flatMap(isOrder -> isOrder
+                    ? orders.getOrderData(orderId, userId)
+                    : bookingPayments.payable(orderId, userId)
+                        .map(b -> new OrderData(b.id(), b.userId(), b.bookingNumber(), b.price(), b.currency(), b.status()))
+                        .switchIfEmpty(Mono.error(new PaymentDomainException(PaymentErrorCode.ORDER_NOT_FOUND, "Order not found: " + orderId))));
+            }
+
+            /** Only orders have a refunded state to mark; a booking id finds no order, so this is a no-op for bookings. */
+            @Override
+            public Mono<Void> markOrderRefunded(UUID orderId) {
+                return orders.markOrderRefunded(orderId);
+            }
+        };
+    }
+
+    private OrderPaymentPort orderOnlyPaymentPort(OrderRepository orderRepository) {
         return new OrderPaymentPort() {
             @Override
             public Mono<OrderData> getOrderData(UUID orderId, UUID userId) {
@@ -81,13 +107,38 @@ public class PaymentModuleConfig {
         };
     }
 
-    /** Runs inside the capture transaction: every step commits together with the payment's SUCCESS status. */
+    /**
+     * Runs inside the capture transaction: every step commits together with the payment's SUCCESS status. Orders complete exactly as before;
+     * a booking is re-checked and confirmed (or, if it can no longer be, refunded) by the booking module.
+     */
     @Bean
     public PaymentCompletionPort paymentCompletionPort(OrderRepository orderRepository,
                                                        CheckoutRepository checkoutRepository,
                                                        CartRepository cartRepository,
                                                        FulfillOrderReservationsUseCase fulfillOrderReservationsUseCase,
-                                                       OutboxWriter outboxWriter) {
+                                                       OutboxWriter outboxWriter,
+                                                       BookingPaymentUseCase bookingPayments) {
+        var orders = orderOnlyCompletionPort(orderRepository, checkoutRepository, cartRepository, fulfillOrderReservationsUseCase, outboxWriter);
+        return new PaymentCompletionPort() {
+            @Override
+            public Mono<Void> completeOrder(UUID orderId) {
+                return orders.completeOrder(orderId);
+            }
+
+            @Override
+            public Mono<Boolean> complete(UUID orderId, UUID paymentId) {
+                return orderRepository.findById(OrderId.fromUUID(orderId)).hasElement().flatMap(isOrder -> isOrder
+                    ? orders.completeOrder(orderId).thenReturn(true)
+                    : bookingPayments.confirmPaid(orderId, paymentId));
+            }
+        };
+    }
+
+    private PaymentCompletionPort orderOnlyCompletionPort(OrderRepository orderRepository,
+                                                          CheckoutRepository checkoutRepository,
+                                                          CartRepository cartRepository,
+                                                          FulfillOrderReservationsUseCase fulfillOrderReservationsUseCase,
+                                                          OutboxWriter outboxWriter) {
         return orderId -> orderRepository.findById(OrderId.fromUUID(orderId))
             .switchIfEmpty(Mono.error(new PaymentDomainException(PaymentErrorCode.ORDER_NOT_FOUND,
                 "Order not found: " + orderId)))

@@ -5,6 +5,7 @@ import com.dsports.notification.application.usecase.CreateNotificationUseCase;
 import com.dsports.notification.domain.model.NotificationChannel;
 import com.dsports.notification.domain.model.NotificationType;
 import com.dsports.payment.application.payment.port.PaymentGateway;
+import com.dsports.payment.application.refund.ProcessRefundUseCase;
 import com.dsports.shared.application.outbox.OutboxMessageTypes;
 import com.dsports.shipment.application.command.CreateShipmentCommand;
 import com.dsports.shipment.application.usecase.CreateShipmentUseCase;
@@ -25,13 +26,16 @@ public class OutboxHandlers {
     private final CreateNotificationUseCase createNotificationUseCase;
     private final CreateShipmentUseCase createShipmentUseCase;
     private final PaymentGateway paymentGateway;
+    private final ProcessRefundUseCase processRefundUseCase;
 
     public OutboxHandlers(CreateNotificationUseCase createNotificationUseCase,
                           CreateShipmentUseCase createShipmentUseCase,
-                          PaymentGateway paymentGateway) {
+                          PaymentGateway paymentGateway,
+                          ProcessRefundUseCase processRefundUseCase) {
         this.createNotificationUseCase = createNotificationUseCase;
         this.createShipmentUseCase = createShipmentUseCase;
         this.paymentGateway = paymentGateway;
+        this.processRefundUseCase = processRefundUseCase;
     }
 
     public Mono<Void> handle(String type, String aggregateId, Map<String, String> payload) {
@@ -42,6 +46,14 @@ public class OutboxHandlers {
                 .flatMap(result -> result.success()
                     ? Mono.<Void>empty()
                     : Mono.<Void>error(new IllegalStateException("Gateway refused void: " + result.message())));
+            case OutboxMessageTypes.PROCESS_REFUND -> processRefundUseCase.execute(UUID.fromString(aggregateId)).then();
+            case OutboxMessageTypes.NOTIFY_BOOKING_CONFIRMED -> notify(payload, aggregateId, "BOOKING",
+                NotificationType.BOOKING_CONFIRMED, "Booking Confirmed - " + payload.get("bookingNumber"),
+                "Your booking " + payload.get("bookingNumber") + " at " + payload.get("groundName") + " on " + payload.get("when") + " is confirmed.");
+            case OutboxMessageTypes.NOTIFY_BOOKING_CANCELLED -> notify(payload, aggregateId, "BOOKING",
+                NotificationType.BOOKING_CANCELLED, "Booking Cancelled - " + payload.get("bookingNumber"),
+                "Your booking " + payload.get("bookingNumber") + " at " + payload.get("groundName") + " on " + payload.get("when") + " has been cancelled. "
+                    + payload.getOrDefault("note", ""));
             case OutboxMessageTypes.NOTIFY_ORDER_PLACED -> notify(payload, aggregateId, "ORDER",
                 NotificationType.ORDER_PLACED, "Order Placed - " + payload.get("orderNumber"),
                 "Your order " + payload.get("orderNumber") + " has been placed. Total: "

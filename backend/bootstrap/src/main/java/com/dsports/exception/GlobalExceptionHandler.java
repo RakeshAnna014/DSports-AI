@@ -20,6 +20,8 @@ import com.dsports.review.domain.exception.ReviewDomainException;
 import com.dsports.review.domain.exception.ReviewErrorCode;
 import com.dsports.returns.domain.exception.ReturnsDomainException;
 import com.dsports.returns.domain.exception.ReturnsErrorCode;
+import com.dsports.ground.domain.exception.GroundDomainException;
+import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.support.domain.exception.SupportDomainException;
 import com.dsports.support.domain.exception.SupportErrorCode;
 import com.dsports.shipment.domain.exception.ShipmentDomainException;
@@ -356,6 +358,7 @@ public class GlobalExceptionHandler {
         Map.entry(PaymentErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND),
         Map.entry(PaymentErrorCode.ORDER_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
         Map.entry(PaymentErrorCode.ORDER_ALREADY_PAID, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAID_ITEM_NO_LONGER_AVAILABLE, HttpStatus.CONFLICT),
         Map.entry(PaymentErrorCode.CANNOT_REFUND_NON_SUCCESS_PAYMENT, HttpStatus.BAD_REQUEST),
         Map.entry(PaymentErrorCode.CANNOT_CANCEL_TERMINAL_PAYMENT, HttpStatus.CONFLICT),
         Map.entry(PaymentErrorCode.GATEWAY_ERROR, HttpStatus.BAD_GATEWAY),
@@ -409,6 +412,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ReturnsDomainException.class)
     public Mono<ResponseEntity<ApiError>> handleReturnsDomainException(ReturnsDomainException ex, ServerWebExchange exchange) {
         var status = RETURNS_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
+        return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+    }
+
+    private static final Map<GroundErrorCode, HttpStatus> GROUND_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(GroundErrorCode.GROUND_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.BOOKING_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.GROUND_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.BOOKING_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.SLOT_UNAVAILABLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.HOLD_LIMIT_REACHED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.HOLD_EXPIRED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.BOOKING_NOT_PAYABLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.PAYMENT_IN_PROGRESS, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.BLACKOUT_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.IDEMPOTENCY_KEY_REUSED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.INVALID_SLOT, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.BOOKING_TOO_SOON, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.BOOKING_TOO_FAR, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
+    @ExceptionHandler(GroundDomainException.class)
+    public Mono<ResponseEntity<ApiError>> handleGroundDomainException(GroundDomainException ex, ServerWebExchange exchange) {
+        var status = GROUND_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
         return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
     }
 
