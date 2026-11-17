@@ -35,6 +35,12 @@ import VenueDetailPage from '@/features/venues/VenueDetailPage';
 import BookingPaymentPage from '@/features/venues/BookingPaymentPage';
 import MyBookingsPage from '@/features/venues/MyBookingsPage';
 import OwnerVenuesPage from '@/features/venues/OwnerVenuesPage';
+import TeamsPage from '@/features/cricket/TeamsPage';
+import TeamDetailPage from '@/features/cricket/TeamDetailPage';
+import PlayersPage from '@/features/cricket/PlayersPage';
+import MatchesPage from '@/features/cricket/MatchesPage';
+import NewMatchPage from '@/features/cricket/NewMatchPage';
+import MatchSetupPage from '@/features/cricket/MatchSetupPage';
 import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
 import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
 import AdminSportsPage from '@/features/admin/AdminSportsPage';
@@ -70,6 +76,12 @@ const router = createBrowserRouter([
       { path: '/bookings', element: <MyBookingsPage /> },
       { path: '/bookings/:id/pay', element: <BookingPaymentPage /> },
       { path: '/owner/venues', element: <OwnerVenuesPage /> },
+      { path: '/teams', element: <TeamsPage /> },
+      { path: '/teams/:id', element: <TeamDetailPage /> },
+      { path: '/players', element: <PlayersPage /> },
+      { path: '/matches', element: <MatchesPage /> },
+      { path: '/matches/new', element: <NewMatchPage /> },
+      { path: '/matches/:id/setup', element: <MatchSetupPage /> },
       { path: '/admin/ground-owners', element: <AdminGroundOwnersPage /> },
       { path: '/admin/venues', element: <AdminVenuesPage /> },
       { path: '/admin/sports', element: <AdminSportsPage /> },

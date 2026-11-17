@@ -115,6 +115,9 @@ const Header = () => {
                 <MenuItem disabled><Typography variant="body2" color="text.secondary">{user.email}</Typography></MenuItem>
                 <Divider />
                 <MenuItem onClick={() => goto('/orders')}><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My Orders</MenuItem>
+                <MenuItem onClick={() => goto('/teams')} data-testid="menu-teams"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My teams</MenuItem>
+                <MenuItem onClick={() => goto('/matches')} data-testid="menu-matches"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My matches</MenuItem>
+                <MenuItem onClick={() => goto('/players')} data-testid="menu-players"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Players</MenuItem>
                 <MenuItem onClick={() => goto('/bookings')} data-testid="menu-bookings"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>My bookings</MenuItem>
                 {isGroundOwner(user.roles) && <MenuItem onClick={() => goto('/owner/venues')} data-testid="menu-owner-console"><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Owner console</MenuItem>}
                 <MenuItem onClick={() => goto('/returns')}><ListItemIcon><ReceiptLongOutlined fontSize="small" /></ListItemIcon>Returns</MenuItem>
