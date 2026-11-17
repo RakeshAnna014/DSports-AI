@@ -30,6 +30,7 @@ export const cricketApi = {
     mine: () => apiClient.get<Match[]>('/v1/matches').then((r) => r.data),
     get: (id: string) => apiClient.get<Match>(`/v1/matches/${id}`).then((r) => r.data),
     create: (input: MatchInput) => apiClient.post<Match>('/v1/matches', input).then((r) => r.data),
+    update: (id: string, settings: Omit<MatchInput, 'teamAId' | 'teamBId' | 'bookingId'>, expectedVersion: number) => apiClient.put<Match>(`/v1/matches/${id}`, { ...settings, expectedVersion }).then((r) => r.data),
     toss: (id: string, winnerTeamId: string, decision: TossDecision) => apiClient.post<Match>(`/v1/matches/${id}/toss`, { winnerTeamId, decision }).then((r) => r.data),
     setPlayingXi: (id: string, teamId: string, playerIds: string[]) => apiClient.put<Match>(`/v1/matches/${id}/playing-xi`, { teamId, playerIds }).then((r) => r.data),
     addScorer: (id: string, email: string) => apiClient.post<Match>(`/v1/matches/${id}/scorers`, { email }).then((r) => r.data),

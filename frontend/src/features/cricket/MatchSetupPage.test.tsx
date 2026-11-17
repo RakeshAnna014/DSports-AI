@@ -8,7 +8,7 @@ import { cricketApi } from '@/api/cricket';
 import { apiError } from '@/test/venueFixtures';
 import { MATCH } from './cricketFixtures';
 
-vi.mock('@/api/cricket', () => ({ cricketApi: { matches: { get: vi.fn(), toss: vi.fn(), setPlayingXi: vi.fn(), addScorer: vi.fn(), removeScorer: vi.fn() } } }));
+vi.mock('@/api/cricket', () => ({ cricketApi: { matches: { get: vi.fn(), update: vi.fn(), toss: vi.fn(), setPlayingXi: vi.fn(), addScorer: vi.fn(), removeScorer: vi.fn() } } }));
 const api = vi.mocked(cricketApi.matches);
 
 const renderPage = () => renderWithProviders(
@@ -147,6 +147,61 @@ describe('MatchSetupPage', () => {
     expect(await screen.findByText(/has started, so its setup can no longer change/i)).toBeInTheDocument();
     expect(screen.queryByTestId('record-toss')).toBeNull();
     expect(screen.queryByTestId('save-xi')).toBeNull();
+  });
+
+  it('edits the overs, ball and rules before the match starts and sends the date, city and umpires back unchanged', async () => {
+    const user = userEvent.setup();
+    const base = { ...MATCH, scheduledAt: '2026-11-20T10:00:00Z', umpires: 'R. Sharma' };
+    api.get.mockResolvedValue(base);
+    api.update.mockResolvedValue({ ...base, overs: 10 });
+    renderPage();
+    await user.click(await screen.findByTestId('edit-settings'));
+    await user.clear(screen.getByLabelText('Overs per side'));
+    await user.type(screen.getByLabelText('Overs per side'), '10');
+    await user.click(screen.getByRole('combobox', { name: 'Ball' }));
+    await user.click(await screen.findByRole('option', { name: 'Leather ball' }));
+    await user.click(screen.getByLabelText('Last man stands'));
+    await user.click(screen.getByTestId('save-settings'));
+
+    await waitFor(() => expect(api.update).toHaveBeenCalled());
+    const [id, settings, version] = api.update.mock.calls[0];
+    expect([id, version]).toEqual(['m-1', 1]);
+    expect(settings).toMatchObject({ overs: 10, ballType: 'LEATHER', scheduledAt: '2026-11-20T10:00:00Z', city: 'Chennai', umpires: 'R. Sharma', rules: { lastManStands: true, playersPerSide: 3 } });
+    await waitFor(() => expect(screen.queryByTestId('edit-settings-form')).toBeNull());
+  });
+
+  it('asks to reload when someone else changed the match, and the form can be cancelled', async () => {
+    const user = userEvent.setup();
+    api.update.mockRejectedValue(apiError(409, 'OPTIMISTIC_LOCKING_CONFLICT', 'x'));
+    renderPage();
+    await user.click(await screen.findByTestId('edit-settings'));
+    await user.click(screen.getByTestId('save-settings'));
+    expect(await screen.findByTestId('settings-error')).toHaveTextContent(/open it again/i);
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByTestId('edit-settings-form')).toBeNull();
+  });
+
+  it('shows a refusal from the server of settings that do not fit the playing XI', async () => {
+    const user = userEvent.setup();
+    api.update.mockRejectedValue(apiError(400, 'VALIDATION_ERROR', 'A playing XI already has more players than the new players-per-side allows'));
+    renderPage();
+    await user.click(await screen.findByTestId('edit-settings'));
+    await user.click(screen.getByTestId('save-settings'));
+    expect(await screen.findByTestId('settings-error')).toHaveTextContent(/more players than the new players-per-side/i);
+  });
+
+  it('offers settings only to the creator and only before the match starts', async () => {
+    api.get.mockResolvedValue({ ...MATCH, canManage: false });
+    const first = renderPage();
+    await screen.findByTestId('record-toss');
+    expect(screen.queryByTestId('edit-settings')).toBeNull();
+    first.unmount();
+
+    api.get.mockResolvedValue({ ...MATCH, status: 'IN_PROGRESS' });
+    renderPage();
+    await screen.findByText(/has started/i);
+    expect(screen.queryByTestId('edit-settings')).toBeNull();
   });
 
   it('says so when the match cannot be found (a stranger gets 404)', async () => {

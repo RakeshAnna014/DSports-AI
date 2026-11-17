@@ -6,6 +6,7 @@ import { cricketApi } from '@/api/cricket';
 import { getApiError, getApiErrorMessage } from '@/api/errors';
 import { ErrorState } from '@/components/common/States';
 import type { Match, MatchSide, TossDecision } from '@/types/cricket';
+import { EditSettingsForm } from './EditSettingsForm';
 
 /** Picks a playing XI from a squad: click a player to add them at the next batting position, click again to take them out. */
 const XiPicker = ({ match, side, disabled, saving, onSave }: { match: Match; side: MatchSide; disabled: boolean; saving: boolean; onSave: (ids: string[]) => void }) => {
@@ -49,6 +50,7 @@ const MatchSetupPage = () => {
   const [winner, setWinner] = useState('');
   const [decision, setDecision] = useState<TossDecision>('BAT');
   const [email, setEmail] = useState('');
+  const [editing, setEditing] = useState(false);
 
   const match = useQuery({ queryKey: ['match', id], queryFn: () => cricketApi.matches.get(id) });
   const refresh = () => { void queryClient.invalidateQueries({ queryKey: ['match', id] }); void queryClient.invalidateQueries({ queryKey: ['my-matches'] }); };
@@ -85,6 +87,14 @@ const MatchSetupPage = () => {
       {message && <Alert severity="warning" sx={{ my: 2 }} onClose={() => setMessage(null)} data-testid="setup-message">{message}</Alert>}
       {locked && <Alert severity="info" sx={{ my: 2 }}>This match has started, so its setup can no longer change.</Alert>}
       {!m.canScore && <Alert severity="info" sx={{ my: 2 }}>You can see this match because you have a team in it. Only its creator or scorer can change the setup.</Alert>}
+
+      {m.canManage && !locked && (
+        <Paper variant="outlined" sx={{ p: 2, my: 2 }}>
+          {editing
+            ? <EditSettingsForm match={m} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); setMessage(null); refresh(); }} />
+            : <Button size="small" onClick={() => setEditing(true)} data-testid="edit-settings">Edit settings</Button>}
+        </Paper>
+      )}
 
       <Paper variant="outlined" sx={{ p: 2, my: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>Toss</Typography>

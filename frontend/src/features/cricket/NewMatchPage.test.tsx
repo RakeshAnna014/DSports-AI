@@ -8,9 +8,9 @@ import { cricketApi } from '@/api/cricket';
 import { venuesApi } from '@/api/venues';
 import { useAuthStore } from '@/store/authStore';
 import { apiError, BOOKING } from '@/test/venueFixtures';
-import { MATCH, TEAM } from './cricketFixtures';
+import { MATCH, PLAYER, TEAM } from './cricketFixtures';
 
-vi.mock('@/api/cricket', () => ({ cricketApi: { teams: { mine: vi.fn() }, matches: { create: vi.fn() } } }));
+vi.mock('@/api/cricket', () => ({ cricketApi: { teams: { mine: vi.fn(), create: vi.fn(), addMember: vi.fn() }, players: { createGuest: vi.fn() }, matches: { create: vi.fn() } } }));
 vi.mock('@/api/venues', async (orig) => {
   const real = await orig<typeof import('@/api/venues')>();
   return { ...real, venuesApi: { myBookings: vi.fn() } };
@@ -114,6 +114,24 @@ describe('NewMatchPage', () => {
     await user.click(screen.getByTestId('create-match'));
 
     expect(await screen.findByTestId('match-error')).toHaveTextContent(/already hosts another match/i);
+  });
+
+  it('creates an opponent team from names only and picks it for the empty side', async () => {
+    const user = userEvent.setup();
+    vi.mocked(cricketApi.teams.create).mockResolvedValue({ ...TEAM, id: 'tn', name: 'Rovers', members: [] });
+    vi.mocked(cricketApi.teams.addMember).mockResolvedValue({ ...TEAM, id: 'tn', name: 'Rovers' });
+    vi.mocked(cricketApi.players.createGuest).mockResolvedValue({ ...PLAYER, id: 'g-1', name: 'Arjun' });
+    renderPage();
+    await user.click(await screen.findByRole('combobox', { name: 'Team A' }));
+    await user.click(await screen.findByRole('option', { name: 'Lions' }));
+    vi.mocked(cricketApi.teams.mine).mockResolvedValue([...TEAMS, { ...TEAM, id: 'tn', name: 'Rovers' }]);
+    await user.click(screen.getByTestId('new-team'));
+    await user.type(await screen.findByLabelText('Team name'), 'Rovers');
+    await user.type(screen.getByLabelText(/players \(one name per line\)/i), 'Arjun');
+    await user.click(screen.getByTestId('quick-team-create'));
+
+    await waitFor(() => expect(cricketApi.teams.addMember).toHaveBeenCalledWith('tn', 'g-1'));
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Team B' })).toHaveTextContent('Rovers'));
   });
 
   it('tells someone with fewer than two teams to create teams first', async () => {

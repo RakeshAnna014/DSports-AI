@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Box, Button, FormControlLabel, MenuItem, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { cricketApi } from '@/api/cricket';
 import { venuesApi } from '@/api/venues';
@@ -8,9 +8,8 @@ import { getApiError, getApiErrorMessage } from '@/api/errors';
 import { useAuthStore } from '@/store/authStore';
 import { ErrorState } from '@/components/common/States';
 import { STANDARD_RULES, type BallType, type MatchRules } from '@/types/cricket';
-
-const num = (v: string) => (v.trim() === '' ? NaN : Number(v));
-const show = (n: number) => (Number.isNaN(n) ? '' : n);
+import { RulesFields } from './RulesFields';
+import { QuickTeamDialog } from './QuickTeamDialog';
 
 /**
  * Set up a match: two of my teams, the overs, the ball and the rules (standard ones unless changed), and optionally a paid cricket booking so the match
@@ -29,12 +28,12 @@ const NewMatchPage = () => {
   const [bookingId, setBookingId] = useState('');
   const [rules, setRules] = useState<MatchRules>(STANDARD_RULES);
   const [error, setError] = useState<string | null>(null);
+  const [quickTeam, setQuickTeam] = useState(false);
 
   const teams = useQuery({ queryKey: ['my-teams'], queryFn: cricketApi.teams.mine, enabled: isAuthenticated });
   const bookings = useQuery({ queryKey: ['my-bookings'], queryFn: venuesApi.myBookings, enabled: isAuthenticated });
   const usable = (teams.data ?? []).filter((t) => t.status === 'ACTIVE');
   const cricketBookings = (bookings.data ?? []).filter((b) => b.status === 'CONFIRMED' && b.sportName === 'Cricket' && new Date(b.endAt).getTime() > Date.now());
-  const set = <K extends keyof MatchRules>(key: K, value: MatchRules[K]) => setRules((r) => ({ ...r, [key]: value }));
 
   const create = useMutation({
     mutationFn: () => cricketApi.matches.create({
@@ -65,6 +64,7 @@ const NewMatchPage = () => {
             {usable.map((t) => <MenuItem key={t.id} value={t.id} disabled={t.id === teamA}>{t.name}</MenuItem>)}
           </TextField>
         </Stack>
+        <Box><Button size="small" onClick={() => setQuickTeam(true)} data-testid="new-team">New team (names only)</Button></Box>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <TextField size="small" label="Overs per side" type="number" value={overs} onChange={(e) => setOvers(e.target.value)} inputProps={{ min: 1, max: 100 }} fullWidth />
           <TextField size="small" select label="Ball" value={ballType} onChange={(e) => setBallType(e.target.value as BallType)} fullWidth>
@@ -83,29 +83,12 @@ const NewMatchPage = () => {
           {cricketBookings.map((b) => <MenuItem key={b.id} value={b.id}>{b.venueName}, {b.courtName} · {new Date(b.startAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</MenuItem>)}
         </TextField>
 
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Rules (standard unless you change them)</Typography>
-          <Stack spacing={1.5}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <TextField size="small" label="Players per side" type="number" value={show(rules.playersPerSide)} onChange={(e) => set('playersPerSide', num(e.target.value))} inputProps={{ min: 2, max: 11 }} fullWidth />
-              <TextField size="small" label="Balls per over" type="number" value={show(rules.ballsPerOver)} onChange={(e) => set('ballsPerOver', num(e.target.value))} inputProps={{ min: 4, max: 10 }} fullWidth />
-              <TextField size="small" label="Max overs per bowler" type="number" value={rules.maxOversPerBowler ?? ''} placeholder="a fifth of the match"
-                onChange={(e) => set('maxOversPerBowler', e.target.value.trim() === '' ? null : Number(e.target.value))} fullWidth />
-            </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <TextField size="small" label="Wide penalty (runs)" type="number" value={show(rules.widePenalty)} onChange={(e) => set('widePenalty', num(e.target.value))} inputProps={{ min: 0, max: 5 }} fullWidth />
-              <TextField size="small" label="No-ball penalty (runs)" type="number" value={show(rules.noBallPenalty)} onChange={(e) => set('noBallPenalty', num(e.target.value))} inputProps={{ min: 0, max: 5 }} fullWidth />
-            </Stack>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-              <FormControlLabel control={<Switch checked={rules.freeHitEnabled} onChange={(e) => set('freeHitEnabled', e.target.checked)} />} label="Free hit after a no-ball" />
-              <FormControlLabel control={<Switch checked={rules.lastManStands} onChange={(e) => set('lastManStands', e.target.checked)} />} label="Last man stands" />
-            </Stack>
-          </Stack>
-        </Paper>
+        <RulesFields rules={rules} onChange={setRules} />
 
         {error && <Alert severity="error" onClose={() => setError(null)} data-testid="match-error">{error}</Alert>}
         <Box><Button type="submit" variant="contained" disabled={!ready || create.isPending} data-testid="create-match">Create match</Button></Box>
       </Stack>
+      <QuickTeamDialog open={quickTeam} onClose={() => setQuickTeam(false)} onCreated={(team) => { if (teamA === '') setTeamA(team.id); else if (teamB === '') setTeamB(team.id); }} />
     </Box>
   );
 };
