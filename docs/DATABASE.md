@@ -9,7 +9,7 @@ One PostgreSQL server (`pgvector/pgvector:pg16-trixie`, container `dsports-postg
 | `dsports_ai_test`, `dsports_ai_src_test`, `dsports_ai_pln_test` | Python integration tests | created by hand or by `validate-all.sh` | **throwaway**: tests drop and recreate their tables. Never point a `*_TEST_DATABASE_URL` at `dsports_ai` |
 | `dsports_e2e_val` | consolidated validation | `validate-all.sh` | disposable copy used for destructive checks |
 
-## 1. Java database `dsports` (Flyway, forward-only, V1 to V52)
+## 1. Java database `dsports` (Flyway, forward-only, V1 to V54)
 
 Migrations live in each module's `src/main/resources/db/migration` (one shared version sequence; `bootstrap` holds V33 and V43). Flyway runs when the backend starts; there is no down-migration. Never drop `dsports`; use a throwaway database for destructive experiments.
 
@@ -27,6 +27,8 @@ Migrations live in each module's `src/main/resources/db/migration` (one shared v
 | review | `reviews`, `review_helpful_votes` (V24) | one review per customer and product (V37) |
 | wishlist | `wishlists`, `wishlist_items` (V25) | |
 | notification | `notifications`, `notification_templates` (V26) | unique per user, type and reference (V38); type constraint widened for booking notifications (V49) |
+| cricket | `players`, `teams`, `team_members`, `player_claims` (V53) | phone unique per creator (`(created_by, phone)`), one linked player per customer, unique team name per creator (any case), one captain per team (partial unique index), one open claim per player and claimant; no foreign keys to other modules' tables (ADR-019) |
+| cricket (matches) | `matches`, `match_players` (the playing XIs, in batting order), `match_scorers` (V54) | two different teams; overs 1 to 100; toss winner and decision both set or both null; status CHECK lists the whole lifecycle; one match per venue booking (partial unique index, no foreign key to the ground module); a player in at most one side of a match and one batting position each |
 | catalog (sports) | `sports.bookable` (V50, default false); Pickleball added | which catalogue sports can be booked as courts; the shop lists a bookable sport only once it has an active product (ADR-018) |
 | identity (roles) | `role_audit_log` (V52) | append-only: who gave or removed a role, for whom and when, in the same transaction as the change; no foreign keys on purpose |
 | support | `support_cases`, `support_case_messages`, `support_case_events` (V44, V45) | |

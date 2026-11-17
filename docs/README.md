@@ -11,7 +11,7 @@ Start here. Documents are grouped by purpose, and each group says how far to tru
 | [services/README.md](services/README.md) | one guide per service: frontend, Java backend, AI platform, customer AI, support, inventory, engineering, sourcing, planning |
 | [DATABASE.md](DATABASE.md) | databases, ownership, tables by migration, live / imported / derived / synthetic data |
 | [api/README.md](api/README.md) | endpoint tables generated from OpenAPI, the AI tool registry, real example requests and responses |
-| [adr/](adr/) | architecture decisions ADR-008 … ADR-018 (AI service, inventory, support, profiles, engineering, sourcing, planning, ground booking, venues and courts with administrator-managed owners) |
+| [adr/](adr/) | architecture decisions ADR-008 … ADR-019 (AI service, inventory, support, profiles, engineering, sourcing, planning, ground booking, venues and courts with administrator-managed owners, cricket players, teams and scoring) |
 
 ## 2. Run, operate and test
 

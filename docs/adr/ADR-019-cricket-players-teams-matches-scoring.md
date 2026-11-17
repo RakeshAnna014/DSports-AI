@@ -1,0 +1,48 @@
+# ADR-019: Cricket players, teams, matches and ball-by-ball scoring
+
+Status: accepted; steps 2a (players and teams, V53) and 2b (match setup, V54) implemented, 2c to 2e planned. Plan: `docs/plans/cricket-features.md`. Builds on ADR-017 and ADR-018.
+
+## Context
+
+Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scoring and a public scorecard. Where the plan file differed from the code is recorded in "Differences from the plan" below.
+
+## Decisions (whole phase)
+
+* **One module, `backend/cricket`** (`com.dsports.cricket`, layered like `ground` and `support`), not three: players, teams, matches and scoring reference each other too closely to be separate modules. The scoring rules engine will live in `domain.rules`, pure Java with no framework imports (enforced by a test).
+* **Event log, state folded from events** (2d): an append-only `ball_events` table, a stored snapshot written in the same transaction, unique `(match_id, seq)` and `(match_id, client_event_id)`, a per-match advisory lock, `expectedSeq` conflicts as `409 SCORE_CONFLICT`. The server derives striker, bowler and over/ball; a client sends only the outcome.
+* **No new role.** Ownership is checked in the use cases (creator, captain's account, assigned scorer), as in the ground module.
+* **Scorecards are public by link, names only** (2e). Phone numbers are never in a public response.
+
+## Step 2a: players and teams (V53)
+
+* **A player exists without an account** (a guest, created by someone who vouches for them) and may be linked to a registered customer. A customer is linked to at most one player (unique index).
+* **A phone number is a search hint, never proof.** `customers.phone` is unverified and there is no OTP, so linking by phone alone would let anyone take over another person's profile. Instead a **claim** is requested by the registered customer and **approved by the person who created the guest** (or an administrator); approving rejects the other pending claims on that guest, in one transaction. The phone search (`GET /players/claimable`) returns only a shortened name ("Arjun K.") and at most 5 results, so it cannot be used to look up names from numbers.
+* **Phones are unique per creator, not globally** (`(created_by, phone)`): two captains can each add the same real person. This replaces the plan's "unique phone per player". Phone numbers are normalised (`+91` assumed for 10 digits) and only ever shown to whoever created the profile.
+* **Two profiles cannot be merged yet**: a customer who already has a linked player cannot claim a guest (merging would mean rewriting match history once matches exist).
+* **Visibility returns 404, not 403**, for strangers (players, teams, claims), so ids cannot be probed. A member whose account is linked can see a team but not change it (403); the creator and the captain's own account can change it.
+* **Teams:** unique name per creator (any case), at most 30 players, at most one captain (a partial unique index in the database as well as in the domain), the captain cannot be removed before another is chosen, an archived team is frozen, every change is version-checked through the team row.
+* A claimant's name and email are shown only to the person who must decide the claim, through a port (`CustomerDirectoryPort`) implemented in bootstrap; the cricket module does not depend on identity.
+
+## Step 2b: match setup (V54)
+
+* **A match** has two different teams, overs (1 to 100), a ball type (LEATHER or TENNIS) and rules stored as columns (balls per over, players per side, bowler overs limit, wide and no-ball penalties, free hit, last man stands), all defaulting to the standard values and validated against the match length. Umpires are an optional text, not a table.
+* **Lifecycle:** this step covers `SCHEDULED` and `TOSS_DONE`. The CHECK already lists the whole lifecycle so it never has to be widened. `start` arrives in 2d with the first scoring event, because the openers only exist once scoring does. Setup (settings, toss, XIs) is locked once the match leaves those two states.
+* **Who can do what:** the creator changes settings and scorers; the creator or an assigned scorer records the toss (correctable until the start) and the playing XIs; people with a team in the match (as creator, or through a linked player) can only look. Everyone else gets 404. Scorers are found by registered email (`404 USER_NOT_REGISTERED` otherwise); there are no invite links.
+* **Teams:** a creator can only pick teams they can see (created by them, or with a linked player of theirs), so a match against someone else's team needs that team to be visible to the creator for now; invitations are a later feature. An archived team cannot play a new match.
+* **Playing XI:** between 2 and the players per side, in batting order, all members of that team, nobody twice, nobody on both sides (primary key and unique batting order in the database too). Scorers who are not on a team get each side's squad in the match view (`squad`, scorers only) so they can pick from it.
+* **Venue booking (optional):** must be the creator's own, `CONFIRMED`, for cricket, and not already hosting another match (unique index). The venue name and city are copied onto the match, and the start time too when none was given. The cricket module reads the booking through `BookingLookupPort` (implemented in bootstrap over the ground module's tables); it has no foreign key to it.
+
+## Differences from the plan
+
+| Plan | Code |
+|---|---|
+| migrations V49 to V53 | head was V52, so Phase 2 uses V53 onward |
+| packages `.team`, `.match`, `.scoring` | one module `cricket` with layered packages |
+| unique phone per player | unique per creator; claims need approval |
+| PWA with an offline queue | no PWA support exists in the repo; a localStorage retry queue in 2d, installable PWA later |
+| `match_officials`, shot x/y, `innings_snapshots` | umpires as optional names, no shot map, one snapshot row per match (2b/2d) |
+
+## Consequences
+
+* Claiming a profile needs the guest's creator to act; an unresponsive creator blocks it (an administrator can decide any claim).
+* No penetration test or certification has been performed; the security tests are the project's own (`SecurityPolicyTest` classifies the routes; `CricketPlayersAndTeamsHttpIntegrationTest` covers visibility over real auth).
