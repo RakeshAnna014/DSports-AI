@@ -69,6 +69,10 @@
         </dependency>
         <dependency>
             <groupId>com.dsports</groupId>
+            <artifactId>dsports-cricket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dsports</groupId>
             <artifactId>dsports-franchise</artifactId>
         </dependency>
         <dependency>
