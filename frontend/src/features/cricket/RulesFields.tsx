@@ -14,7 +14,7 @@ export const RulesFields = ({ rules, onChange }: { rules: MatchRules; onChange: 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <TextField size="small" label="Players per side" type="number" value={show(rules.playersPerSide)} onChange={(e) => set('playersPerSide', num(e.target.value))} inputProps={{ min: 2, max: 11 }} fullWidth />
           <TextField size="small" label="Balls per over" type="number" value={show(rules.ballsPerOver)} onChange={(e) => set('ballsPerOver', num(e.target.value))} inputProps={{ min: 4, max: 10 }} fullWidth />
-          <TextField size="small" label="Max overs per bowler" type="number" value={rules.maxOversPerBowler ?? ''} placeholder="a fifth of the match"
+          <TextField size="small" label="Max overs per bowler" type="number" value={rules.maxOversPerBowler ?? ''} placeholder="set by match and team size"
             onChange={(e) => set('maxOversPerBowler', e.target.value.trim() === '' ? null : Number(e.target.value))} fullWidth />
         </Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>

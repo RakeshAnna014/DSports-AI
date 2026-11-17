@@ -2,7 +2,7 @@
 
 Players (guests and registered), teams, matches and ball-by-ball scoring. Plan: [docs/plans/cricket-features.md](../../docs/plans/cricket-features.md). Decisions: [ADR-019](../../docs/adr/ADR-019-cricket-players-teams-matches-scoring.md).
 
-**Status:** steps 2a (players, teams, claims; V53) and 2b (match setup; V54) are implemented. The scoring rules engine (2c), the ball-by-ball API (2d) and the scorecard (2e) come next.
+**Status:** steps 2a (players, teams, claims; V53), 2b (match setup; V54) and 2c (the scoring rules engine) are implemented. The ball-by-ball API (2d) and the scorecard (2e) come next.
 
 | | |
 |---|---|
@@ -26,3 +26,9 @@ Players (guests and registered), teams, matches and ball-by-ball scoring. Plan: 
 * The creator changes settings (version-checked) and scorers; the creator or a scorer records the toss and the playing XIs. A match is visible to its creator, its scorers and people with a team in it; everyone else gets 404.
 * A playing XI is in batting order, 2 to players-per-side players, all from that team, none on both sides. Setup is locked once the match has started.
 * An optional booking must be the creator's own confirmed cricket booking and hosts one match only; its venue is copied onto the match.
+
+## The scoring rules engine (2c)
+
+`com.dsports.cricket.domain.rules` is plain Java with no database, framework or clock. `ScoringEngine.apply(InningsState, ScoringCommand)` returns the new state or the rule that was broken (`RuleViolation`); `replay(commands)` rebuilds an innings from its log, and `MatchResultCalculator` and `Scorecard` read a finished state. See `docs/plans/cricket-2c-scoring-engine.md` for the rules, the dismissal table and the worked example, and ADR-019 for the decisions.
+
+Tests: one class per area under `src/test/.../domain/rules` (dismissal table, counting and strike, bowlers and overs, free hit, retirements, innings end and result), the hand-scored golden innings and chase, seeded property tests over random commands, and a test that the package imports nothing but `java.*` and the cricket domain.

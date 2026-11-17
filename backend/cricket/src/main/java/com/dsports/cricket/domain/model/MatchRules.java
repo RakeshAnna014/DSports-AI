@@ -4,7 +4,7 @@ import static com.dsports.cricket.domain.model.Rules.require;
 
 /**
  * The rules a match is played under. Everything has a standard default and is configurable per match, because local cricket varies (tennis ball,
- * 8-a-side, last man stands, two-run no-balls). {@code maxOversPerBowler} null means the usual one fifth of the match, rounded up.
+ * 8-a-side, last man stands, two-run no-balls). {@code maxOversPerBowler} null means the default limit, which grows for small sides (see {@link #bowlerLimit}).
  */
 public record MatchRules(int ballsPerOver, int playersPerSide, Integer maxOversPerBowler, int widePenalty, int noBallPenalty, boolean freeHitEnabled, boolean lastManStands) {
 
@@ -20,8 +20,19 @@ public record MatchRules(int ballsPerOver, int playersPerSide, Integer maxOversP
         require(widePenalty >= 0 && widePenalty <= 5 && noBallPenalty >= 0 && noBallPenalty <= 5, "Wide and no-ball penalties must be between 0 and 5 runs");
     }
 
-    /** The most overs one bowler may bowl: the configured limit, or a fifth of the match rounded up. */
+    /**
+     * The most overs one bowler may bowl: the configured limit, or by default the larger of a fifth of the match and the match shared between all
+     * the bowlers a side can field (players per side minus the wicket-keeper), each rounded up. An 11-a-side match keeps the usual fifth;
+     * a 4-a-side 20-over match allows 7, so a small side can still complete its overs.
+     */
     public int bowlerLimit(int overs) {
-        return maxOversPerBowler != null ? maxOversPerBowler : (overs + 4) / 5;
+        if (maxOversPerBowler != null) {
+            return maxOversPerBowler;
+        }
+        return Math.max(ceilDiv(overs, 5), ceilDiv(overs, playersPerSide - 1));
+    }
+
+    private static int ceilDiv(int a, int b) {
+        return (a + b - 1) / b;
     }
 }

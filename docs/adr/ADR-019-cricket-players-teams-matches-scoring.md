@@ -1,6 +1,6 @@
 # ADR-019: Cricket players, teams, matches and ball-by-ball scoring
 
-Status: accepted; steps 2a (players and teams, V53) and 2b (match setup, V54) implemented, 2c to 2e planned. Plan: `docs/plans/cricket-features.md`. Builds on ADR-017 and ADR-018.
+Status: accepted; steps 2a (players and teams, V53), 2b (match setup, V54) and 2c (scoring rules engine) implemented, 2d and 2e planned. Plan: `docs/plans/cricket-features.md`. Builds on ADR-017 and ADR-018.
 
 ## Context
 
@@ -31,6 +31,18 @@ Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scori
 * **Teams:** a creator can only pick teams they can see (created by them, or with a linked player of theirs), so a match against someone else's team needs that team to be visible to the creator for now; invitations are a later feature. An archived team cannot play a new match.
 * **Playing XI:** between 2 and the players per side, in batting order, all members of that team, nobody twice, nobody on both sides (primary key and unique batting order in the database too). Scorers who are not on a team get each side's squad in the match view (`squad`, scorers only) so they can pick from it.
 * **Venue booking (optional):** must be the creator's own, `CONFIRMED`, for cricket, and not already hosting another match (unique index). The venue name and city are copied onto the match, and the start time too when none was given. The cricket module reads the booking through `BookingLookupPort` (implemented in bootstrap over the ground module's tables); it has no foreign key to it.
+
+## Step 2c: the scoring rules engine
+
+* **Pure functions in `domain.rules`.** `ScoringEngine.apply(state, command)` returns `Accepted(newState)` or `Rejected(violation, message)`; a rejection changes nothing. No framework, clock or randomness (a test reads the package's imports and source). The full design, the dismissal table and a hand-scored innings are in `docs/plans/cricket-2c-scoring-engine.md`; that innings is a golden test.
+* **The client sends outcomes only.** Striker, non-striker, bowler and over are derived. The next batter or bowler is a separate command, required when the state says it is needed, and a ball is refused until it is given.
+* **Replayable.** The state is a fold of accepted commands (`replay`), which is what the 2d event log will rely on; property tests check this with thousands of random commands.
+* **Dismissals** follow the approved table (no separate "handled the ball"), with the free hit restricting it further. A run out names the batter and the end, which decides who is left where and so who faces next.
+* **Strike:** one swap per run actually run, none for a boundary, and one at the end of an over. A lone last-man-stands batter never swaps.
+* **Bowlers:** none twice in a row, and a limit of credited overs: unless set for the match, the larger of a fifth of the match and the match shared between the bowlers a side can field (players per side minus one), each rounded up, so an 11-a-side 20-over match allows 4 and a 4-a-side one allows 7. An over with a mid-over change counts for the bowler with most legal balls (a tie goes to whoever started it). The injured bowler may bowl again later; only the one who finished the over cannot bowl the next. If nobody is under the limit, the limit is waived as a last resort so the innings can finish (and, if only one bowler is left who bowled the previous over, that rule too); each waiver is returned on the command's outcome so it is stored on its event, kept in the innings state and listed on the scorecard.
+* **Bat runs are at most 7 per ball; the wide and no-ball penalties are added on top.**
+* **Retired hurt** is not a wicket and the batter may come back; **retired out** is a wicket and he cannot. Both are accepted between balls only.
+* **Result** is computed from the two innings every time and never stored on its own, so an undo re-derives it. A revised target is the scorer's number (no DLS calculation).
 
 ## Differences from the plan
 
