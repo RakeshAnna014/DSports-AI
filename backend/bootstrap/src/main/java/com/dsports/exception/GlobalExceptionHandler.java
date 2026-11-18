@@ -447,6 +447,13 @@ public class GlobalExceptionHandler {
         Map.entry(CricketErrorCode.TEAM_ARCHIVED, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.CANNOT_REMOVE_CAPTAIN, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SCORE_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CLIENT_EVENT_REUSED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SCORING_REJECTED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(CricketErrorCode.MATCH_LOCKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.NOT_LOCKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.NOTHING_TO_UNDO, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.MATCH_NOT_READY, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
         Map.entry(CricketErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
     );
@@ -454,7 +461,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CricketDomainException.class)
     public Mono<ResponseEntity<ApiError>> handleCricketDomainException(CricketDomainException ex, ServerWebExchange exchange) {
         var status = CRICKET_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
-        return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        if (ex.getDetails() == null) {
+            return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        }
+        logStatus(status, ex.getMessage(), null);
+        return respond(ApiErrors.of(status, ex.getErrorCode().name(), ex.getMessage(), exchange).withDetails(ex.getDetails()));
     }
 
     private static final Map<GroundErrorCode, HttpStatus> GROUND_ERROR_STATUS_MAP = Map.ofEntries(

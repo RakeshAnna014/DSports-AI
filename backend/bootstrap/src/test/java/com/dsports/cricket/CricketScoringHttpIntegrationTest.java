@@ -1,0 +1,636 @@
+package com.dsports.cricket;
+
+import com.dsports.DSportsApplication;
+import com.dsports.cricket.application.port.MatchRepository;
+import com.dsports.cricket.application.port.ScoringStore;
+import com.dsports.cricket.domain.scoring.MatchScoring;
+import com.dsports.cricket.domain.scoring.MatchSetup;
+import com.dsports.cricket.domain.scoring.ScoringLog;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Scoring over real HTTP with real authentication, on the whole application against a throwaway PostgreSQL: the hand-scored match from the first ball to the
+ * result, who may do what, what a rule violation and a stale or repeated request look like, undo, the 24-hour lock and the administrator's unlock, and above all
+ * several scorers hitting one match at the same moment.
+ */
+@Tag("integration")
+@SpringBootTest(classes = DSportsApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+    "app.ground.expiry-initial-delay=PT24H", "app.orders.expiry-initial-delay=PT24H", "app.outbox.initial-delay=PT24H", "app.rate-limit.enabled=false"})
+class CricketScoringHttpIntegrationTest {
+
+    private static final String PASSWORD = "Sup3rSecret!pass";
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+
+    static {
+        POSTGRES.start();
+    }
+
+    @DynamicPropertySource
+    static void database(DynamicPropertyRegistry registry) {
+        registry.add("spring.r2dbc.url", () -> "r2dbc:postgresql://" + POSTGRES.getHost() + ":" + POSTGRES.getFirstMappedPort() + "/" + POSTGRES.getDatabaseName());
+        registry.add("spring.r2dbc.username", POSTGRES::getUsername);
+        registry.add("spring.r2dbc.password", POSTGRES::getPassword);
+        registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.flyway.user", POSTGRES::getUsername);
+        registry.add("spring.flyway.password", POSTGRES::getPassword);
+    }
+
+    @Autowired private WebTestClient web;
+    @Autowired private DatabaseClient db;
+    @Autowired private ScoringStore store;
+    @Autowired private MatchRepository matches;
+
+    // ---- plumbing ---------------------------------------------------------------------------------------------------
+
+    private record Account(UUID id, String email, String token) {
+    }
+
+    private record Squad(String teamId, List<String> playerIds) {
+    }
+
+    private record Resp(int status, Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map(String key) {
+            return (Map<String, Object>) body.get(key);
+        }
+    }
+
+    private Account register(String prefix) {
+        var email = prefix + "-" + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
+        web.post().uri("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(Map.of("email", email, "password", PASSWORD, "firstName", prefix, "lastName", "Tester")).exchange().expectStatus().isCreated();
+        return login(email);
+    }
+
+    private Account login(String email) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = web.post().uri("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(Map.of("email", email, "password", PASSWORD)).exchange().expectStatus().isOk().expectBody(Map.class).returnResult().getResponseBody();
+        return new Account(UUID.fromString((String) body.get("userId")), email, (String) body.get("accessToken"));
+    }
+
+    private Account administrator() {
+        var account = register("admin");
+        db.sql("INSERT INTO customer_roles (customer_id, role) VALUES (:id, 'ADMIN')").bind("id", account.id()).fetch().rowsUpdated().block();
+        return login(account.email());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Resp call(HttpMethod method, Account who, String uri, Object body) {
+        var spec = web.method(method).uri(uri).contentType(MediaType.APPLICATION_JSON);
+        if (who != null) {
+            spec = spec.headers(h -> h.setBearerAuth(who.token()));
+        }
+        var result = (body == null ? spec.exchange() : spec.bodyValue(body).exchange()).returnResult(Map.class);
+        return new Resp(result.getStatus().value(), (Map<String, Object>) result.getResponseBody().blockFirst());
+    }
+
+    private Resp get(Account who, String uri) {
+        return call(HttpMethod.GET, who, uri, null);
+    }
+
+    private Resp post(Account who, String uri, Object body) {
+        return call(HttpMethod.POST, who, uri, body);
+    }
+
+    private Squad squad(Account owner, String teamName, int size) {
+        var team = post(owner, "/api/v1/teams", Map.of("name", teamName));
+        assertThat(team.status()).isEqualTo(201);
+        var teamId = (String) team.body().get("id");
+        var ids = new ArrayList<String>();
+        for (int i = 0; i < size; i++) {
+            var p = post(owner, "/api/v1/players", Map.of("name", teamName + " player " + (i + 1)));
+            assertThat(post(owner, "/api/v1/teams/" + teamId + "/members", Map.of("playerId", p.body().get("id"))).status()).isEqualTo(201);
+            ids.add((String) p.body().get("id"));
+        }
+        return new Squad(teamId, ids);
+    }
+
+    /** Everyone and everything needed to score one match: an organiser, an added scorer, a team member who cannot score, a stranger, and a match with the toss and XIs done. */
+    private record Setup(Account organiser, Account scorer, Account viewer, Account stranger, Squad lions, Squad tigers, String matchId) {
+        String scoring() {
+            return "/api/v1/matches/" + matchId + "/scoring";
+        }
+    }
+
+    private Setup setup(int overs) {
+        var organiser = register("organiser");
+        var scorer = register("scorer");
+        var viewer = register("viewer");
+        var stranger = register("stranger");
+        var lions = squad(organiser, "Lions", 11);
+        var tigers = squad(organiser, "Tigers", 11);
+        var claim = post(viewer, "/api/v1/players/" + lions.playerIds().get(0) + "/claims", null);
+        assertThat(post(organiser, "/api/v1/players/claims/" + claim.body().get("id") + "/approve", null).status()).isEqualTo(200);
+        var match = post(organiser, "/api/v1/matches", Map.of("teamAId", lions.teamId(), "teamBId", tigers.teamId(), "overs", overs, "ballType", "TENNIS"));
+        assertThat(match.status()).isEqualTo(201);
+        var matchId = (String) match.body().get("id");
+        assertThat(post(organiser, "/api/v1/matches/" + matchId + "/scorers", Map.of("email", scorer.email())).status()).isEqualTo(201);
+        assertThat(post(scorer, "/api/v1/matches/" + matchId + "/toss", Map.of("winnerTeamId", lions.teamId(), "decision", "BAT")).status()).isEqualTo(200);
+        assertThat(call(HttpMethod.PUT, scorer, "/api/v1/matches/" + matchId + "/playing-xi", Map.of("teamId", lions.teamId(), "playerIds", lions.playerIds())).status()).isEqualTo(200);
+        assertThat(call(HttpMethod.PUT, scorer, "/api/v1/matches/" + matchId + "/playing-xi", Map.of("teamId", tigers.teamId(), "playerIds", tigers.playerIds())).status()).isEqualTo(200);
+        return new Setup(organiser, scorer, viewer, stranger, lions, tigers, matchId);
+    }
+
+    private static Map<String, Object> envelope(UUID clientEventId, int expectedSeq, Map<String, Object> command) {
+        return Map.of("clientEventId", clientEventId.toString(), "expectedSeq", expectedSeq, "command", command);
+    }
+
+    private Resp score(Setup s, Account who, int expectedSeq, Map<String, Object> command) {
+        return post(who, s.scoring() + "/commands", envelope(UUID.randomUUID(), expectedSeq, command));
+    }
+
+    private Resp undo(Setup s, Account who, int expectedSeq) {
+        return post(who, s.scoring() + "/undo", Map.of("clientEventId", UUID.randomUUID().toString(), "expectedSeq", expectedSeq));
+    }
+
+    // ---- command bodies -----------------------------------------------------------------------------------------------
+
+    private static Map<String, Object> cmd(String type, Object... keyValues) {
+        var m = new LinkedHashMap<String, Object>();
+        m.put("type", type);
+        for (int i = 0; i < keyValues.length; i += 2) {
+            m.put((String) keyValues[i], keyValues[i + 1]);
+        }
+        return m;
+    }
+
+    private static Map<String, Object> delivery(String kind, int runs, String runsType, boolean boundary, Map<String, Object> dismissal) {
+        var d = new LinkedHashMap<String, Object>();
+        d.put("kind", kind);
+        d.put("runs", runs);
+        if (runsType != null) {
+            d.put("runsType", runsType);
+        }
+        d.put("boundary", boundary);
+        if (dismissal != null) {
+            d.put("dismissal", dismissal);
+        }
+        return d;
+    }
+
+    private static Map<String, Object> ball(String kind, int runs, String runsType) {
+        return cmd("DELIVER", "delivery", delivery(kind, runs, runsType, false, null));
+    }
+
+    private static Map<String, Object> dot() {
+        return ball("NORMAL", 0, "BAT");
+    }
+
+    private static Map<String, Object> out(int runs, Map<String, Object> dismissal) {
+        return cmd("DELIVER", "delivery", delivery("NORMAL", runs, "BAT", false, dismissal));
+    }
+
+    /** The hand-scored match of the plan as commands, with the real player ids: Lions make 22/2, Tigers chase 23 and win off the last ball. */
+    private static List<Map<String, Object>> goldenMatch(Squad lions, Squad tigers) {
+        java.util.function.IntFunction<String> l = n -> lions.playerIds().get(n - 1);
+        java.util.function.IntFunction<String> t = n -> tigers.playerIds().get(n - 1);
+        return List.of(
+            cmd("START_INNINGS", "striker", l.apply(1), "nonStriker", l.apply(2), "bowler", t.apply(1)),
+            ball("WIDE", 0, null),
+            ball("NORMAL", 1, "BAT"),
+            cmd("DELIVER", "delivery", delivery("NO_BALL", 4, "BAT", true, null)),
+            ball("NORMAL", 2, "BAT"),
+            ball("NORMAL", 1, "BYE"),
+            out(1, Map.of("type", "RUN_OUT", "batterOut", l.apply(1), "end", "BATTING_END", "fielderId", t.apply(3))),
+            cmd("SELECT_BATTER", "batterId", l.apply(3)),
+            out(0, Map.of("type", "BOWLED")),
+            cmd("SELECT_BATTER", "batterId", l.apply(4)),
+            dot(),
+            cmd("SELECT_BOWLER", "bowlerId", t.apply(2)),
+            ball("NORMAL", 1, "BAT"),
+            ball("NORMAL", 2, "BAT"),
+            cmd("RETIRE_BATTER", "batterId", l.apply(4), "retirement", "HURT"),
+            cmd("SELECT_BATTER", "batterId", l.apply(5)),
+            cmd("CHANGE_BOWLER", "bowlerId", t.apply(3)),
+            dot(),
+            ball("NORMAL", 1, "BAT"),
+            cmd("DELIVER", "delivery", delivery("NORMAL", 6, "BAT", true, null)),
+            ball("NORMAL", 1, "BAT"),
+            cmd("START_INNINGS", "striker", t.apply(1), "nonStriker", t.apply(2), "bowler", l.apply(1)),
+            cmd("DELIVER", "delivery", delivery("NORMAL", 6, "BAT", true, null)),
+            cmd("DELIVER", "delivery", delivery("NORMAL", 4, "BAT", true, null)),
+            ball("NORMAL", 1, "BAT"), ball("NORMAL", 1, "BAT"),
+            cmd("DELIVER", "delivery", delivery("NORMAL", 6, "BAT", true, null)),
+            dot(),
+            cmd("SELECT_BOWLER", "bowlerId", l.apply(2)),
+            ball("WIDE", 0, null), ball("NORMAL", 1, "BAT"), dot(), dot(), dot(), dot(),
+            ball("NORMAL", 3, "BAT"));
+    }
+
+    private int eventCount(String matchId) {
+        return db.sql("SELECT count(*) AS n FROM ball_events WHERE match_id = :m").bind("m", UUID.fromString(matchId)).map((r, m) -> r.get("n", Long.class).intValue()).one().block();
+    }
+
+    private void assertSnapshotEqualsFold(String matchId) {
+        var id = UUID.fromString(matchId);
+        var entries = store.entries(id).collectList().block();
+        var snapshot = store.snapshot(id).block();
+        var match = matches.findById(id).block();
+        assertThat(snapshot.seq()).isEqualTo(entries.get(entries.size() - 1).seq());
+        assertThat(snapshot.score()).as("the stored snapshot equals the fold of the stored events")
+            .isEqualTo(MatchScoring.fold(MatchSetup.from(match), ScoringLog.commands(entries)));
+        assertThat(match.getStatus()).isEqualTo(snapshot.score().status());
+    }
+
+    private void assertSeqIsContiguous(String matchId, int expected) {
+        var row = db.sql("SELECT count(*) AS n, min(seq) AS lo, max(seq) AS hi, count(DISTINCT client_event_id) AS ids FROM ball_events WHERE match_id = :m")
+            .bind("m", UUID.fromString(matchId)).map((r, m) -> List.of(r.get("n", Long.class), (long) r.get("lo", Integer.class), (long) r.get("hi", Integer.class), r.get("ids", Long.class))).one().block();
+        assertThat(row).as("count, first seq, last seq, distinct client ids").containsExactly((long) expected, 1L, (long) expected, (long) expected);
+    }
+
+    // ---- the whole match ------------------------------------------------------------------------------------------------
+
+    @Test
+    void theHandScoredMatchIsScoredOverHttpFromTheFirstBallToTheResultAndTheSnapshotAlwaysEqualsTheLog() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        assertThat(commands).hasSize(36);
+
+        Resp last = null;
+        for (int i = 0; i < commands.size(); i++) {
+            last = score(s, i % 2 == 0 ? s.organiser() : s.scorer(), i, commands.get(i));
+            assertThat(last.status()).as("command %d %s: %s", i + 1, commands.get(i), last.body()).isEqualTo(200);
+            assertThat(last.body().get("eventSeq")).isEqualTo(i + 1);
+            assertThat(last.body().get("replayed")).isEqualTo(false);
+            if (i % 5 == 0) {
+                assertSnapshotEqualsFold(s.matchId());
+            }
+        }
+
+        var view = last.map("view");
+        assertThat(view.get("matchStatus")).isEqualTo("COMPLETED");
+        assertThat(view.get("seq")).isEqualTo(36);
+        assertThat(((Map<?, ?>) view.get("result")).get("text")).isEqualTo("Tigers won by 10 wickets (0 balls left)");
+        @SuppressWarnings("unchecked")
+        var innings = (List<Map<String, Object>>) view.get("innings");
+        assertThat(innings.get(0).get("runs")).isEqualTo(22);
+        assertThat(innings.get(1).get("runs")).isEqualTo(23);
+        @SuppressWarnings("unchecked")
+        var batters = (List<Map<String, Object>>) innings.get(0).get("batters");
+        assertThat(batters.get(0).get("howOut")).isEqualTo("run out (Tigers player 3)");
+        assertThat(batters.get(2).get("howOut")).isEqualTo("b Tigers player 1");
+        assertSeqIsContiguous(s.matchId(), 36);
+        assertSnapshotEqualsFold(s.matchId());
+        assertThat(get(s.organiser(), "/api/v1/matches/" + s.matchId()).body().get("status")).isEqualTo("COMPLETED");
+    }
+
+    // ---- who may do what ------------------------------------------------------------------------------------------------
+
+    @Test
+    void scoringRoutesNeedASignInAMemberWhoCannotScoreIsForbiddenAndAStrangerIsToldThereIsNoSuchMatch() {
+        var s = setup(2);
+        var start = envelope(UUID.randomUUID(), 0, goldenMatch(s.lions(), s.tigers()).get(0));
+
+        assertThat(get(null, s.scoring()).status()).isEqualTo(401);
+        assertThat(call(HttpMethod.POST, null, s.scoring() + "/commands", start).status()).isEqualTo(401);
+        assertThat(call(HttpMethod.POST, null, s.scoring() + "/undo", Map.of("clientEventId", UUID.randomUUID().toString(), "expectedSeq", 0)).status()).isEqualTo(401);
+
+        assertThat(get(s.viewer(), s.scoring()).status()).isEqualTo(403);
+        assertThat(call(HttpMethod.POST, s.viewer(), s.scoring() + "/commands", start).status()).isEqualTo(403);
+        assertThat(undo(s, s.viewer(), 0).status()).isEqualTo(403);
+
+        assertThat(get(s.stranger(), s.scoring()).status()).isEqualTo(404);
+        assertThat(call(HttpMethod.POST, s.stranger(), s.scoring() + "/commands", start).status()).isEqualTo(404);
+        assertThat(undo(s, s.stranger(), 0).status()).isEqualTo(404);
+        assertThat(get(s.organiser(), "/api/v1/matches/" + UUID.randomUUID() + "/scoring").status()).isEqualTo(404);
+
+        assertThat(get(s.organiser(), s.scoring()).status()).isEqualTo(200);
+        assertThat(get(s.scorer(), s.scoring()).status()).isEqualTo(200);
+        assertThat(eventCount(s.matchId())).isZero();
+        assertThat(post(s.organiser(), "/api/v1/admin/matches/" + s.matchId() + "/scoring/unlock", Map.of("reason", "scorer phone died during the final over")).status()).isEqualTo(403);
+        assertThat(post(null, "/api/v1/admin/matches/" + s.matchId() + "/scoring/unlock", Map.of("reason", "scorer phone died during the final over")).status()).isEqualTo(401);
+    }
+
+    @Test
+    void aMatchWithoutAnInningsStartedShowsTheTossAndNothingElse() {
+        var s = setup(2);
+
+        var view = get(s.organiser(), s.scoring()).body();
+
+        assertThat(view.get("seq")).isEqualTo(0);
+        assertThat(view.get("matchStatus")).isEqualTo("TOSS_DONE");
+        assertThat((List<?>) view.get("innings")).isEmpty();
+        assertThat(view.get("matchId")).isEqualTo(s.matchId());
+    }
+
+    // ---- what bad requests look like -------------------------------------------------------------------------------------
+
+    @Test
+    void aRuleOfCricketIsA422WithItsCodeAndNothingIsWrittenAndMalformedInputIsA4xxNeverA500() {
+        var s = setup(2);
+        var start = goldenMatch(s.lions(), s.tigers()).get(0);
+        assertThat(score(s, s.organiser(), 0, start).status()).isEqualTo(200);
+
+        var tooMany = score(s, s.organiser(), 1, ball("NORMAL", 8, "BAT"));
+        assertThat(tooMany.status()).isEqualTo(422);
+        assertThat(tooMany.body().get("code")).isEqualTo("SCORING_REJECTED");
+        assertThat(tooMany.map("details").get("violation")).isEqualTo("RUNS_OUT_OF_RANGE");
+        var notOnAFreeHit = score(s, s.organiser(), 1, cmd("SELECT_BATTER", "batterId", s.lions().playerIds().get(5)));
+        assertThat(notOnAFreeHit.map("details").get("violation")).isEqualTo("NO_BATTER_NEEDED");
+        assertThat(score(s, s.organiser(), 1, cmd("START_INNINGS", "striker", s.lions().playerIds().get(0), "nonStriker", s.lions().playerIds().get(1), "bowler", s.tigers().playerIds().get(0)))
+            .map("details").get("violation")).isEqualTo("PREVIOUS_INNINGS_NOT_COMPLETE");
+        assertThat(eventCount(s.matchId())).isEqualTo(1);
+
+        assertThat(score(s, s.organiser(), 1, cmd("TELEPORT")).status()).isEqualTo(400);
+        assertThat(score(s, s.organiser(), 1, cmd("START_INNINGS", "striker", s.lions().playerIds().get(0))).status()).isEqualTo(400);
+        assertThat(score(s, s.organiser(), 1, cmd("DELIVER")).status()).isEqualTo(400);
+        assertThat(score(s, s.organiser(), 1, cmd("END_MATCH", "reason", "TUESDAY")).status()).isEqualTo(400);
+        assertThat(score(s, s.organiser(), -1, dot()).status()).isEqualTo(400);
+        assertThat(post(s.organiser(), s.scoring() + "/commands", Map.of("expectedSeq", 1, "command", dot())).status()).isEqualTo(400);
+        assertThat(post(s.organiser(), s.scoring() + "/commands", Map.of("clientEventId", "not-a-uuid", "expectedSeq", 1, "command", dot())).status()).isEqualTo(400);
+        assertThat(post(s.organiser(), s.scoring() + "/commands", "{ not json").status()).isEqualTo(400);
+        assertThat(get(s.organiser(), "/api/v1/matches/not-a-uuid/scoring").status()).isEqualTo(400);
+        assertThat(eventCount(s.matchId())).isEqualTo(1);
+    }
+
+    @Test
+    void aStaleSeqIsAConflictThatCarriesTheCurrentScoreAndWhatHappenedSinceAndARetryIsAnsweredAsDone() {
+        var s = setup(2);
+        var start = goldenMatch(s.lions(), s.tigers()).get(0);
+        var startId = UUID.randomUUID();
+        assertThat(post(s.organiser(), s.scoring() + "/commands", envelope(startId, 0, start)).status()).isEqualTo(200);
+        assertThat(score(s, s.organiser(), 1, dot()).status()).isEqualTo(200);
+
+        var stale = score(s, s.scorer(), 1, ball("NORMAL", 4, "BAT"));
+        assertThat(stale.status()).isEqualTo(409);
+        assertThat(stale.body().get("code")).isEqualTo("SCORE_CONFLICT");
+        assertThat(stale.map("details").get("currentSeq")).isEqualTo(2);
+        assertThat(((Map<?, ?>) stale.map("details").get("view")).get("seq")).isEqualTo(2);
+        @SuppressWarnings("unchecked")
+        var since = (List<Map<String, Object>>) stale.map("details").get("eventsSince");
+        assertThat(since).extracting(e -> e.get("seq")).containsExactly(2);
+        assertThat(since.get(0).get("text")).isEqualTo("no run");
+
+        var retry = post(s.organiser(), s.scoring() + "/commands", envelope(startId, 0, start));
+        assertThat(retry.status()).isEqualTo(200);
+        assertThat(retry.body().get("replayed")).isEqualTo(true);
+        assertThat(retry.body().get("eventSeq")).isEqualTo(1);
+        assertThat(eventCount(s.matchId())).isEqualTo(2);
+
+        var reused = post(s.organiser(), s.scoring() + "/commands", envelope(startId, 2, dot()));
+        assertThat(reused.status()).isEqualTo(409);
+        assertThat(reused.body().get("code")).isEqualTo("CLIENT_EVENT_REUSED");
+        assertThat(eventCount(s.matchId())).isEqualTo(2);
+    }
+
+    // ---- many scorers at the same moment ---------------------------------------------------------------------------------
+
+    private List<Resp> parallel(int n, IntFunction<Resp> job) {
+        var pool = Executors.newFixedThreadPool(n);
+        var ready = new CountDownLatch(n);
+        var go = new CountDownLatch(1);
+        try {
+            var futures = new ArrayList<Future<Resp>>();
+            for (int i = 0; i < n; i++) {
+                int index = i;
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return job.apply(index);
+                }));
+            }
+            assertThat(ready.await(30, TimeUnit.SECONDS)).isTrue();
+            go.countDown();
+            var results = new ArrayList<Resp>();
+            for (var f : futures) {
+                results.add(f.get(120, TimeUnit.SECONDS));
+            }
+            return results;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    private static long count(List<Resp> responses, int status) {
+        return responses.stream().filter(r -> r.status() == status).count();
+    }
+
+    @Test
+    void twentyRequestsFromTheSameViewAtTheSameMomentLetExactlyOneThroughAndTheRestAreConflicts() {
+        var s = setup(20);
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+
+        var responses = parallel(20, i -> score(s, i % 2 == 0 ? s.organiser() : s.scorer(), 1, dot()));
+
+        assertThat(count(responses, 200)).isEqualTo(1);
+        assertThat(count(responses, 409)).isEqualTo(19);
+        assertThat(responses.stream().filter(r -> r.status() == 409)).allSatisfy(r -> assertThat(r.body().get("code")).isEqualTo("SCORE_CONFLICT"));
+        assertSeqIsContiguous(s.matchId(), 2);
+        assertSnapshotEqualsFold(s.matchId());
+    }
+
+    @Test
+    void theSameRequestSentTenTimesAtOnceIsCountedOnceAndEveryCallerIsToldItWorked() {
+        var s = setup(20);
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+        var body = envelope(UUID.randomUUID(), 1, ball("NORMAL", 2, "BAT"));
+
+        var responses = parallel(10, i -> post(s.organiser(), s.scoring() + "/commands", body));
+
+        assertThat(count(responses, 200)).isEqualTo(10);
+        assertThat(responses.stream().filter(r -> Boolean.TRUE.equals(r.body().get("replayed"))).count()).isEqualTo(9);
+        assertThat(responses).allSatisfy(r -> assertThat(r.body().get("eventSeq")).isEqualTo(2));
+        assertSeqIsContiguous(s.matchId(), 2);
+        assertThat(((Map<?, ?>) ((List<?>) responses.get(0).map("view").get("innings")).get(0)).get("runs")).isEqualTo(2);
+    }
+
+    @Test
+    void twoScorersScoringTheSameMatchTogetherWithRetriesLeaveAContiguousLogAndAScoreEqualToWhatEachWasTold() throws Exception {
+        var s = setup(20);
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+        int each = 40;
+        var accepted = Collections.synchronizedMap(new java.util.HashMap<UUID, Integer>());
+        var conflicts = new java.util.concurrent.atomic.AtomicInteger();
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var jobs = new ArrayList<Future<?>>();
+            for (var who : List.of(s.organiser(), s.scorer())) {
+                jobs.add(pool.submit(() -> {
+                    var view = get(who, s.scoring()).body();
+                    int mine = 0;
+                    while (mine < each) {
+                        var command = nextCommandFor(view);
+                        var r = post(who, s.scoring() + "/commands", envelope(UUID.randomUUID(), (Integer) view.get("seq"), command));
+                        if (r.status() == 200) {
+                            mine++;
+                            view = r.map("view");
+                        } else if (r.status() == 409 && "SCORE_CONFLICT".equals(r.body().get("code"))) {
+                            conflicts.incrementAndGet();
+                            view = r.map("details").get("view") instanceof Map<?, ?> v ? castView(v) : get(who, s.scoring()).body();
+                        } else {
+                            throw new IllegalStateException("Unexpected " + r.status() + " " + r.body());
+                        }
+                    }
+                    accepted.put(who.id(), mine);
+                    return null;
+                }));
+            }
+            for (var job : jobs) {
+                job.get(180, TimeUnit.SECONDS);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(accepted.values()).containsExactly(each, each);
+        assertThat(conflicts.get()).as("two scorers racing must have collided at least once").isGreaterThan(0);
+        assertSeqIsContiguous(s.matchId(), 1 + 2 * each);
+        assertSnapshotEqualsFold(s.matchId());
+        for (var who : List.of(s.organiser(), s.scorer())) {
+            long mine = db.sql("SELECT count(*) AS n FROM ball_events WHERE match_id = :m AND actor_id = :a").bind("m", UUID.fromString(s.matchId())).bind("a", who.id())
+                .map((r, m) -> r.get("n", Long.class)).one().block();
+            assertThat(mine).isEqualTo(who.equals(s.organiser()) ? each + 1 : each);
+        }
+        var legal = ((Map<?, ?>) ((List<?>) get(s.organiser(), s.scoring()).body().get("innings")).get(0));
+        assertThat(legal.get("runs")).isEqualTo(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> castView(Map<?, ?> view) {
+        return (Map<String, Object>) view;
+    }
+
+    /** What a sensible scorer does next, read from the view alone: choose the batter or bowler asked for, otherwise bowl a dot ball. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> nextCommandFor(Map<String, Object> view) {
+        var needs = (String) view.get("needs");
+        if ("BATTER".equals(needs)) {
+            var first = ((List<Map<String, Object>>) view.get("eligibleBatters")).get(0);
+            return cmd("SELECT_BATTER", "batterId", ((Map<String, Object>) first.get("player")).get("id"));
+        }
+        if ("BOWLER".equals(needs)) {
+            var next = ((List<Map<String, Object>>) view.get("bowlers")).stream().filter(b -> Boolean.TRUE.equals(b.get("canBowlNext"))).findFirst().orElseThrow();
+            return cmd("SELECT_BOWLER", "bowlerId", ((Map<String, Object>) next.get("player")).get("id"));
+        }
+        return dot();
+    }
+
+    @Test
+    void tenUndosFromTheSameViewAtOnceTakeOffExactlyOneBallAndAnUndoRacingABallLosesOrWinsCleanly() {
+        var s = setup(20);
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+        for (int i = 1; i <= 3; i++) {
+            assertThat(score(s, s.organiser(), i, dot()).status()).isEqualTo(200);
+        }
+
+        var undos = parallel(10, i -> undo(s, i % 2 == 0 ? s.organiser() : s.scorer(), 4));
+        assertThat(count(undos, 200)).isEqualTo(1);
+        assertThat(count(undos, 409)).isEqualTo(9);
+        assertSeqIsContiguous(s.matchId(), 5);
+        assertSnapshotEqualsFold(s.matchId());
+        assertThat(((Map<?, ?>) ((List<?>) undos.stream().filter(r -> r.status() == 200).findFirst().orElseThrow().map("view").get("innings")).get(0)).get("overs")).isEqualTo("0.2");
+
+        var race = parallel(2, i -> i == 0 ? undo(s, s.organiser(), 5) : score(s, s.scorer(), 5, dot()));
+        assertThat(count(race, 200)).isEqualTo(1);
+        assertThat(count(race, 409)).isEqualTo(1);
+        assertSeqIsContiguous(s.matchId(), 6);
+        assertSnapshotEqualsFold(s.matchId());
+    }
+
+    // ---- undo and the 24-hour lock -------------------------------------------------------------------------------------------
+
+    @Test
+    void undoReopensAFinishedMatchAndAMatchFinishedOverADayAgoIsLockedUntilAnAdministratorUnlocksItWithAReason() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        for (int i = 0; i < commands.size(); i++) {
+            assertThat(score(s, s.organiser(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        var done = get(s.organiser(), s.scoring()).body();
+        assertThat(((Map<?, ?>) done.get("canUndo")).get("crossesInnings")).isEqualTo(true);
+        assertThat(done.get("locked")).isEqualTo(false);
+
+        var reopened = undo(s, s.organiser(), 36);
+        assertThat(reopened.status()).isEqualTo(200);
+        assertThat(reopened.map("view").get("matchStatus")).isEqualTo("IN_PROGRESS");
+        assertThat(reopened.map("view").get("result")).isNull();
+        assertThat(score(s, s.organiser(), 37, commands.get(35)).map("view").get("matchStatus")).isEqualTo("COMPLETED");
+        assertSnapshotEqualsFold(s.matchId());
+
+        db.sql("UPDATE match_snapshots SET first_finished_at = now() - interval '25 hours' WHERE match_id = :m").bind("m", UUID.fromString(s.matchId())).fetch().rowsUpdated().block();
+        var locked = get(s.organiser(), s.scoring()).body();
+        assertThat(locked.get("locked")).isEqualTo(true);
+        assertThat(((Map<?, ?>) locked.get("canUndo")).get("blockedReason")).isEqualTo("LOCKED");
+        var refused = undo(s, s.organiser(), 38);
+        assertThat(refused.status()).isEqualTo(409);
+        assertThat(refused.body().get("code")).isEqualTo("MATCH_LOCKED");
+        assertThat(score(s, s.scorer(), 38, dot()).body().get("code")).isEqualTo("MATCH_LOCKED");
+
+        var admin = administrator();
+        var unlockUrl = "/api/v1/admin/matches/" + s.matchId() + "/scoring/unlock";
+        assertThat(post(s.organiser(), unlockUrl, Map.of("reason", "scorer phone died during the final over")).status()).isEqualTo(403);
+        assertThat(post(admin, unlockUrl, Map.of("reason", "short")).status()).isEqualTo(400);
+        var unlocked = post(admin, unlockUrl, Map.of("reason", "scorer phone died during the final over"));
+        assertThat(unlocked.status()).isEqualTo(200);
+        assertThat(unlocked.map("view").get("locked")).isEqualTo(false);
+        assertThat(unlocked.body().get("eventSeq")).isEqualTo(39);
+        var again = post(admin, unlockUrl, Map.of("reason", "scorer phone died during the final over"));
+        assertThat(again.status()).as("it is not locked any more").isEqualTo(409);
+        assertThat(again.body().get("code")).isEqualTo("NOT_LOCKED");
+
+        var corrected = undo(s, s.organiser(), 39);
+        assertThat(corrected.status()).isEqualTo(200);
+        assertThat(corrected.map("view").get("matchStatus")).isEqualTo("IN_PROGRESS");
+        var audit = db.sql("SELECT actor_id, payload::text AS payload FROM ball_events WHERE match_id = :m AND type = 'ADMIN_UNLOCK'").bind("m", UUID.fromString(s.matchId()))
+            .map((r, m) -> r.get("actor_id", UUID.class) + " " + r.get("payload", String.class)).all().collectList().block();
+        assertThat(audit).hasSize(1).allSatisfy(row -> assertThat(row).startsWith(admin.id().toString()).contains("scorer phone died during the final over"));
+        assertSeqIsContiguous(s.matchId(), 40);
+        assertSnapshotEqualsFold(s.matchId());
+    }
+
+    @Test
+    void theLogCannotBeEditedEvenByAnAdministratorWithSql() {
+        var s = setup(2);
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> db.sql("UPDATE ball_events SET actor_id = :a WHERE match_id = :m").bind("a", UUID.randomUUID()).bind("m", UUID.fromString(s.matchId()))
+            .fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> db.sql("DELETE FROM ball_events WHERE match_id = :m").bind("m", UUID.fromString(s.matchId())).fetch().rowsUpdated().block())
+            .hasMessageContaining("append-only");
+        assertThat(eventCount(s.matchId())).isEqualTo(1);
+    }
+
+    /** The ids a phone makes without crypto.randomUUID (random bytes with the version 4 and variant bits forced on): the extreme byte values still pass the validation. */
+    @Test
+    void anIdMadeByThePhonesFallbackIsAccepted() {
+        var s = setup(2);
+        var allOnes = UUID.fromString("ffffffff-ffff-4fff-bfff-ffffffffffff");
+        var allZeros = UUID.fromString("00000000-0000-4000-8000-000000000000");
+
+        assertThat(post(s.organiser(), s.scoring() + "/commands", envelope(allOnes, 0, goldenMatch(s.lions(), s.tigers()).get(0))).status()).isEqualTo(200);
+        assertThat(post(s.organiser(), s.scoring() + "/commands", envelope(allZeros, 1, dot())).status()).isEqualTo(200);
+        var again = post(s.organiser(), s.scoring() + "/commands", envelope(allZeros, 1, dot()));
+
+        assertThat(again.status()).isEqualTo(200);
+        assertThat(again.body().get("replayed")).isEqualTo(true);
+        assertThat(eventCount(s.matchId())).isEqualTo(2);
+    }
+}

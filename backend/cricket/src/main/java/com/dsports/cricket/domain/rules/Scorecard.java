@@ -24,6 +24,32 @@ public record Scorecard(int runs, int wickets, String overs, Extras extras, List
     public record FallCard(FallOfWicket fall, String overs) {
     }
 
+    /**
+     * How a batter was dismissed, as printed on a scorecard: "b Tarun", "c Ravi b Tarun", "c & b Tarun", "st Ravi b Tarun", "caught b Tarun" (no fielder named), "run out (Ravi)", "run out",
+     * "lbw b Tarun", "hit wicket b Tarun", "hit the ball twice", "obstructing the field", "retired hurt", "retired out", or "not out".
+     */
+    public static String howOut(BatterLine line, java.util.function.Function<UUID, String> nameOf) {
+        return switch (line.status()) {
+            case NOT_OUT -> "not out";
+            case RETIRED_HURT -> "retired hurt";
+            case RETIRED_OUT -> "retired out";
+            case OUT -> {
+                var bowler = line.bowlerId() == null ? null : nameOf.apply(line.bowlerId());
+                var fielder = line.fielderId() == null ? null : nameOf.apply(line.fielderId());
+                yield switch (line.dismissal()) {
+                    case BOWLED -> "b " + bowler;
+                    case CAUGHT -> line.fielderId() == null ? "caught b " + bowler : line.fielderId().equals(line.bowlerId()) ? "c & b " + bowler : "c " + fielder + " b " + bowler;
+                    case STUMPED -> line.fielderId() == null ? "stumped b " + bowler : "st " + fielder + " b " + bowler;
+                    case LBW -> "lbw b " + bowler;
+                    case HIT_WICKET -> "hit wicket b " + bowler;
+                    case RUN_OUT -> fielder == null ? "run out" : "run out (" + fielder + ")";
+                    case HIT_BALL_TWICE -> "hit the ball twice";
+                    case OBSTRUCTING_FIELD -> "obstructing the field";
+                };
+            }
+        };
+    }
+
     public static Scorecard of(InningsState s) {
         int bpo = s.rules().ballsPerOver();
         return new Scorecard(s.runs(), s.wickets(), s.oversText(), s.extras(),

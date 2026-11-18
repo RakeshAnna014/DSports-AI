@@ -5,14 +5,18 @@ import com.dsports.cricket.application.port.ClaimRepository;
 import com.dsports.cricket.application.port.CustomerDirectoryPort;
 import com.dsports.cricket.application.port.MatchRepository;
 import com.dsports.cricket.application.port.PlayerRepository;
+import com.dsports.cricket.application.port.ScoringStore;
 import com.dsports.cricket.application.port.TeamRepository;
 import com.dsports.cricket.application.usecase.ManageMatchesUseCase;
 import com.dsports.cricket.application.usecase.ManagePlayersUseCase;
 import com.dsports.cricket.application.usecase.ManageTeamsUseCase;
 import com.dsports.cricket.application.usecase.PlayerClaimsUseCase;
+import com.dsports.cricket.application.usecase.ScoringUseCase;
 import com.dsports.cricket.infrastructure.persistence.ClaimR2dbcRepositoryAdapter;
 import com.dsports.cricket.infrastructure.persistence.MatchR2dbcRepositoryAdapter;
 import com.dsports.cricket.infrastructure.persistence.PlayerR2dbcRepositoryAdapter;
+import com.dsports.cricket.infrastructure.persistence.ScoringJsonCodec;
+import com.dsports.cricket.infrastructure.persistence.ScoringR2dbcStore;
 import com.dsports.cricket.infrastructure.persistence.SpringR2dbcMatchRepository;
 import com.dsports.cricket.infrastructure.persistence.SpringR2dbcPlayerRepository;
 import com.dsports.cricket.infrastructure.persistence.SpringR2dbcTeamRepository;
@@ -111,6 +115,17 @@ public class CricketModuleConfig {
     public PlayerClaimsUseCase playerClaimsUseCase(PlayerRepository playerRepository, ClaimRepository claimRepository, CustomerDirectoryPort customerDirectoryPort,
                                                    TransactionRunner transactionRunner, Clock clock) {
         return new PlayerClaimsUseCase(playerRepository, claimRepository, customerDirectoryPort, transactionRunner, clock);
+    }
+
+    @Bean
+    public ScoringStore scoringStore(DatabaseClient databaseClient, TransactionRunner transactionRunner, Clock clock) {
+        return new ScoringR2dbcStore(databaseClient, transactionRunner, new ScoringJsonCodec(), clock);
+    }
+
+    @Bean
+    public ScoringUseCase scoringUseCase(MatchRepository matchRepository, TeamRepository teamRepository, PlayerRepository playerRepository,
+                                         CustomerDirectoryPort customerDirectoryPort, ScoringStore scoringStore, Clock clock) {
+        return new ScoringUseCase(matchRepository, teamRepository, playerRepository, customerDirectoryPort, scoringStore, clock);
     }
 
     @Bean

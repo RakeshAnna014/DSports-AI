@@ -34,17 +34,17 @@ public record InningsState(Status status, EndReason endReason, int overs, MatchR
     }
 
     /** {@code dismissal} is null while not out and for a retirement; {@code bowlerId} is set only when the wicket is credited to a bowler. */
-    public record BatterLine(UUID playerId, int runs, int balls, int fours, int sixes, BatterStatus status, Dismissal.Type dismissal, UUID bowlerId) {
+    public record BatterLine(UUID playerId, int runs, int balls, int fours, int sixes, BatterStatus status, Dismissal.Type dismissal, UUID bowlerId, UUID fielderId) {
         static BatterLine arrives(UUID playerId) {
-            return new BatterLine(playerId, 0, 0, 0, 0, BatterStatus.NOT_OUT, null, null);
+            return new BatterLine(playerId, 0, 0, 0, 0, BatterStatus.NOT_OUT, null, null, null);
         }
 
         BatterLine scored(int addRuns, boolean faced, boolean four, boolean six) {
-            return new BatterLine(playerId, runs + addRuns, balls + (faced ? 1 : 0), fours + (four ? 1 : 0), sixes + (six ? 1 : 0), status, dismissal, bowlerId);
+            return new BatterLine(playerId, runs + addRuns, balls + (faced ? 1 : 0), fours + (four ? 1 : 0), sixes + (six ? 1 : 0), status, dismissal, bowlerId, fielderId);
         }
 
-        BatterLine with(BatterStatus newStatus, Dismissal.Type newDismissal, UUID newBowlerId) {
-            return new BatterLine(playerId, runs, balls, fours, sixes, newStatus, newDismissal, newBowlerId);
+        BatterLine with(BatterStatus newStatus, Dismissal.Type newDismissal, UUID newBowlerId, UUID newFielderId) {
+            return new BatterLine(playerId, runs, balls, fours, sixes, newStatus, newDismissal, newBowlerId, newFielderId);
         }
     }
 

@@ -51,6 +51,11 @@ public final class DismissalRules {
         return EITHER_BATTER.contains(type);
     }
 
+    /** Only a catch, a stumping and a run out can name the fielder involved. */
+    public static boolean canNameFielder(Type type) {
+        return type == Type.CAUGHT || type == Type.STUMPED || type == Type.RUN_OUT;
+    }
+
     /** False for bowled, caught, lbw, stumped and hit wicket: no run is scored, apart from a wide's penalty. */
     public static boolean keepsCompletedRuns(Type type) {
         return KEEPS_COMPLETED_RUNS.contains(type);

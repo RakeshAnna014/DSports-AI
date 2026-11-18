@@ -2,7 +2,7 @@
 
 Players (guests and registered), teams, matches and ball-by-ball scoring. Plan: [docs/plans/cricket-features.md](../../docs/plans/cricket-features.md). Decisions: [ADR-019](../../docs/adr/ADR-019-cricket-players-teams-matches-scoring.md).
 
-**Status:** steps 2a (players, teams, claims; V53), 2b (match setup; V54) and 2c (the scoring rules engine) are implemented. The ball-by-ball API (2d) and the scorecard (2e) come next.
+**Status:** steps 2a (players, teams, claims; V53), 2b (match setup; V54), 2c (the scoring rules engine) and 2d (ball-by-ball API and scorer screen; V55) are implemented. The public scorecard (2e) and offline scoring in TypeScript (2f) come next.
 
 | | |
 |---|---|
@@ -32,3 +32,15 @@ Players (guests and registered), teams, matches and ball-by-ball scoring. Plan: 
 `com.dsports.cricket.domain.rules` is plain Java with no database, framework or clock. `ScoringEngine.apply(InningsState, ScoringCommand)` returns the new state or the rule that was broken (`RuleViolation`); `replay(commands)` rebuilds an innings from its log, and `MatchResultCalculator` and `Scorecard` read a finished state. See `docs/plans/cricket-2c-scoring-engine.md` for the rules, the dismissal table and the worked example, and ADR-019 for the decisions.
 
 Tests: one class per area under `src/test/.../domain/rules` (dismissal table, counting and strike, bowlers and overs, free hit, retirements, innings end and result), the hand-scored golden innings and chase, seeded property tests over random commands, and a test that the package imports nothing but `java.*` and the cricket domain.
+
+## Scoring (2d)
+
+| | |
+|---|---|
+| Tables | `ball_events` (append-only log), `match_snapshots` (read model) (V55) |
+| API | `GET /api/v1/matches/{id}/scoring`, `POST .../scoring/commands`, `POST .../scoring/undo`, `POST /api/v1/admin/matches/{id}/scoring/unlock` |
+| Domain | `domain.scoring`: `MatchScoring` (match-level commands over the 2c engine), `ScoringLog` (the effective log and undo planning), `EditWindow` (the 24 hours from the first finish) |
+| Application | `ScoringUseCase` (one transaction and lock per request), `ScoringViewBuilder` (the screen's view) |
+| Infrastructure | `ScoringR2dbcStore` (advisory lock, append, snapshot), `ScoringJsonCodec` |
+
+Rules in force: only the creator and scorers score (someone with only a team in the match gets 403, a stranger 404); every change carries a `clientEventId` and the `expectedSeq` the scorer saw; a retry of an accepted command is `replayed`; a stale seq is a `SCORE_CONFLICT`; a rule of cricket is a `422 SCORING_REJECTED`; undo voids and never deletes; the match is locked 24 hours after it first finished until an administrator unlocks it with a reason.

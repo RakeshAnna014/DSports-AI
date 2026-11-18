@@ -180,13 +180,13 @@ public final class ScoringEngine {
             } else {
                 w.atBatting = survivor;
             }
-            w.dismiss(out, dismissal.type());
+            w.dismiss(out, dismissal);
         } else {
             w.rotate(d.boundary() ? 0 : d.runs());
             if (dismissal != null) {
                 var out = dismissal.batterOut() == null ? striker : dismissal.batterOut();
                 w.vacate(out);
-                w.dismiss(out, dismissal.type());
+                w.dismiss(out, dismissal);
             }
         }
 
@@ -237,6 +237,14 @@ public final class ScoringEngine {
         if (type == Dismissal.Type.RUN_OUT && dismissal.end() == null) {
             return reject(RuleViolation.RUN_OUT_END_REQUIRED, "Say at which end the batter was run out");
         }
+        if (dismissal.fielderId() != null) {
+            if (!DismissalRules.canNameFielder(type)) {
+                return reject(RuleViolation.FIELDER_NOT_ALLOWED, "A fielder can be named only for caught, stumped and run out");
+            }
+            if (!s.bowlingXi().contains(dismissal.fielderId())) {
+                return reject(RuleViolation.FIELDER_NOT_IN_XI, "The fielder must be in the fielding side's XI");
+            }
+        }
         if (!DismissalRules.keepsCompletedRuns(type) && d.runs() != 0) {
             return reject(RuleViolation.DISMISSAL_RUNS_NOT_ALLOWED, type + " scores no runs off the ball");
         }
@@ -266,7 +274,7 @@ public final class ScoringEngine {
         }
         var w = new Work(s);
         if (line.isPresent()) {
-            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.NOT_OUT, null, null));
+            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.NOT_OUT, null, null, null));
         } else {
             w.batters.put(id, BatterLine.arrives(id));
         }
@@ -298,10 +306,10 @@ public final class ScoringEngine {
         var w = new Work(s);
         w.vacate(id);
         if (c.type() == ScoringCommand.RetirementType.HURT) {
-            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.RETIRED_HURT, null, null));
+            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.RETIRED_HURT, null, null, null));
         } else {
             w.wickets++;
-            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.RETIRED_OUT, null, null));
+            w.batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.RETIRED_OUT, null, null, null));
             w.fow.add(new FallOfWicket(w.wickets, w.runs, id, null, w.legalBalls));
         }
         w.afterRemoval();
@@ -408,6 +416,11 @@ public final class ScoringEngine {
             return new Eligibility(underLimit, null);
         }
         return notPrevious.isEmpty() ? new Eligibility(pool, WaiverKind.CONSECUTIVE_OVER) : new Eligibility(notPrevious, WaiverKind.OVER_LIMIT);
+    }
+
+    /** Which rule would have to be set aside for the next bowler to be anyone at all, or null when ordinary choices exist. */
+    public static WaiverKind waiverNeeded(InningsState s, Set<UUID> excluded) {
+        return eligibility(s, excluded).waiver();
     }
 
     public static List<UUID> eligibleBowlers(InningsState s) {
@@ -544,10 +557,11 @@ public final class ScoringEngine {
             }
         }
 
-        void dismiss(UUID id, Dismissal.Type type) {
+        void dismiss(UUID id, Dismissal dismissal) {
+            var type = dismissal.type();
             wickets++;
             boolean credited = DismissalRules.creditedToBowler(type);
-            batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.OUT, type, credited ? currentBowler : null));
+            batters.computeIfPresent(id, (k, b) -> b.with(BatterStatus.OUT, type, credited ? currentBowler : null, dismissal.fielderId()));
             fow.add(new FallOfWicket(wickets, runs, id, type, legalBalls));
             if (credited) {
                 bowlers.computeIfPresent(currentBowler, (k, b) -> b.tookWicket());
