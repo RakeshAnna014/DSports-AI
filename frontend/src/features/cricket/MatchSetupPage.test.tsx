@@ -15,6 +15,7 @@ const renderPage = () => renderWithProviders(
   <Routes>
     <Route path="/matches/:id/setup" element={<MatchSetupPage />} />
     <Route path="/matches" element={<div>MATCHES LIST</div>} />
+    <Route path="/matches/:id/score" element={<div>SCORER PAGE</div>} />
   </Routes>, '/matches/m-1/setup');
 
 describe('MatchSetupPage', () => {
@@ -202,6 +203,32 @@ describe('MatchSetupPage', () => {
     renderPage();
     await screen.findByText(/has started/i);
     expect(screen.queryByTestId('edit-settings')).toBeNull();
+  });
+
+  it('offers to start scoring once the match is ready, and not before', async () => {
+    renderPage();
+    await screen.findByTestId('record-toss');
+    expect(screen.queryByTestId('open-scorer')).toBeNull();
+  });
+
+  it('opens the scorer screen from a ready match, and from one that has started', async () => {
+    const user = userEvent.setup();
+    api.get.mockResolvedValue({ ...MATCH, status: 'TOSS_DONE', readyToStart: true });
+    const first = renderPage();
+    await user.click(await screen.findByTestId('open-scorer'));
+    expect(await screen.findByText('SCORER PAGE')).toBeInTheDocument();
+    first.unmount();
+
+    api.get.mockResolvedValue({ ...MATCH, status: 'IN_PROGRESS' });
+    renderPage();
+    expect(await screen.findByTestId('open-scorer')).toHaveTextContent('Open the scorer screen');
+  });
+
+  it('does not offer scoring to someone who cannot score', async () => {
+    api.get.mockResolvedValue({ ...MATCH, status: 'TOSS_DONE', readyToStart: true, canScore: false, canManage: false, teamA: { ...MATCH.teamA, squad: [] }, teamB: { ...MATCH.teamB, squad: [] } });
+    renderPage();
+    await screen.findByText(/only its creator or scorer can change the setup/i);
+    expect(screen.queryByTestId('open-scorer')).toBeNull();
   });
 
   it('says so when the match cannot be found (a stranger gets 404)', async () => {

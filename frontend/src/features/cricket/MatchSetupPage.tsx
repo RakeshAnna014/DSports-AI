@@ -88,6 +88,12 @@ const MatchSetupPage = () => {
       {locked && <Alert severity="info" sx={{ my: 2 }}>This match has started, so its setup can no longer change.</Alert>}
       {!m.canScore && <Alert severity="info" sx={{ my: 2 }}>You can see this match because you have a team in it. Only its creator or scorer can change the setup.</Alert>}
 
+      {m.canScore && (m.readyToStart || locked) && (
+        <Button variant="contained" size="large" fullWidth sx={{ my: 2 }} onClick={() => navigate(`/matches/${id}/score`)} data-testid="open-scorer">
+          {locked ? 'Open the scorer screen' : 'Start scoring'}
+        </Button>
+      )}
+
       {m.canManage && !locked && (
         <Paper variant="outlined" sx={{ p: 2, my: 2 }}>
           {editing

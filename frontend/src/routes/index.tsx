@@ -41,6 +41,7 @@ import PlayersPage from '@/features/cricket/PlayersPage';
 import MatchesPage from '@/features/cricket/MatchesPage';
 import NewMatchPage from '@/features/cricket/NewMatchPage';
 import MatchSetupPage from '@/features/cricket/MatchSetupPage';
+import ScorerPage from '@/features/cricket/scoring/ScorerPage';
 import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
 import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
 import AdminSportsPage from '@/features/admin/AdminSportsPage';
@@ -82,6 +83,7 @@ const router = createBrowserRouter([
       { path: '/matches', element: <MatchesPage /> },
       { path: '/matches/new', element: <NewMatchPage /> },
       { path: '/matches/:id/setup', element: <MatchSetupPage /> },
+      { path: '/matches/:id/score', element: <ScorerPage /> },
       { path: '/admin/ground-owners', element: <AdminGroundOwnersPage /> },
       { path: '/admin/venues', element: <AdminVenuesPage /> },
       { path: '/admin/sports', element: <AdminSportsPage /> },
