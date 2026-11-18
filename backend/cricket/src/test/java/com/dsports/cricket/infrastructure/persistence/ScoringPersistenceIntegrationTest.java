@@ -107,9 +107,9 @@ class ScoringPersistenceIntegrationTest {
         store.exclusive(matchId, s -> s.entries().collectList().flatMap(entries -> s.snapshot().map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty()).flatMap(snap -> {
             var score = MatchScoring.fold(SETUP, ScoringLog.commands(entries));
             var outcome = (ScoreOutcome.Accepted) MatchScoring.apply(SETUP, score, command);
-            var window = snap.map(ScoringStore.Snapshot::window).orElse(EditWindow.open()).after(outcome.score(), NOW.plusSeconds(entries.size()));
             int seq = entries.size() + 1;
             var entry = LogEntry.command(seq, command, clientEventId, SCORER, NOW.plusSeconds(seq), outcome.waivers());
+            var window = snap.map(ScoringStore.Snapshot::window).orElse(EditWindow.open()).after(outcome.score(), entry.at());
             return s.append(entry, hash, new ScoringStore.Snapshot(seq, outcome.score(), window), outcome.score().status());
         }))).block();
     }
@@ -207,6 +207,38 @@ class ScoringPersistenceIntegrationTest {
         assertThat(store.entries(matchId).blockFirst().waivers()).containsExactly(waiver);
     }
 
+    // ---- the correction window can be rebuilt from the log -------------------------------------------------------------------------------
+
+    @Test
+    void a_deleted_snapshot_is_rebuilt_from_the_log_with_the_same_score_and_the_same_lock_dates() {
+        var matchId = newMatch();
+        score(matchId, GoldenMatch.wholeMatch());
+        var winning = GoldenMatch.tigersChase().get(GoldenMatch.tigersChase().size() - 1);
+        var seqBeforeUndo = store.entries(matchId).collectList().block().size();
+        var undoAt = NOW.plus(Duration.ofHours(23));
+        var recompleteAt = NOW.plus(Duration.ofHours(23)).plus(Duration.ofMinutes(30));
+        var unlockAt = NOW.plus(Duration.ofHours(30));
+        var original = store.snapshot(matchId).block();
+        var undo = LogEntry.undo(seqBeforeUndo + 1, List.of(seqBeforeUndo), UUID.randomUUID(), SCORER, undoAt);
+        var afterUndo = MatchScoring.fold(SETUP, GoldenMatch.wholeMatch().subList(0, GoldenMatch.wholeMatch().size() - 1));
+        var again = LogEntry.command(seqBeforeUndo + 2, winning, UUID.randomUUID(), SCORER, recompleteAt, List.of());
+        var unlock = LogEntry.unlock(seqBeforeUndo + 3, "scorer phone died during the final over", UUID.randomUUID(), new UUID(7, 7), unlockAt);
+        store.exclusive(matchId, s -> s.append(undo, "u", new ScoringStore.Snapshot(undo.seq(), afterUndo, original.window().after(afterUndo, undo.at())), afterUndo.status())
+            .then(s.append(again, "a", new ScoringStore.Snapshot(again.seq(), original.score(), original.window().after(original.score(), again.at())), MatchStatus.COMPLETED))
+            .then(s.append(unlock, "k", new ScoringStore.Snapshot(unlock.seq(), original.score(), original.window().unlocked(unlockAt)), MatchStatus.COMPLETED))).block();
+        var stored = store.snapshot(matchId).block();
+        assertThat(stored.window().firstFinishedAt()).as("finishing again did not restart the clock").isEqualTo(original.window().firstFinishedAt());
+        assertThat(stored.window().unlockedUntil()).isEqualTo(unlockAt.plus(EditWindow.LENGTH));
+
+        db.sql("DELETE FROM match_snapshots WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block();
+        assertThat(store.snapshot(matchId).block()).isNull();
+        var entries = store.entries(matchId).collectList().block();
+        var derived = new ScoringStore.Snapshot(entries.get(entries.size() - 1).seq(), MatchScoring.fold(SETUP, ScoringLog.commands(entries)), ScoringLog.windowOf(SETUP, entries));
+        store.exclusive(matchId, s -> s.saveSnapshot(derived, derived.score().status())).block();
+
+        assertThat(store.snapshot(matchId).block()).isEqualTo(stored);
+    }
+
     // ---- the two scorers: unique keys ---------------------------------------------------------------------------
 
     @Test
@@ -300,24 +332,20 @@ class ScoringPersistenceIntegrationTest {
     }
 
     /**
-     * A known gap, recorded so it is not forgotten: the trigger is a row-level trigger, and PostgreSQL does not fire row-level triggers for TRUNCATE.
-     * The statement is run inside a transaction that is rolled back, so no other test loses its data. If a TRUNCATE guard is added (a new migration), this
-     * test must flip to "is refused".
+     * The row-level trigger does not fire for TRUNCATE, so V56 adds a statement-level one. Each statement runs inside a transaction that is always rolled
+     * back, so if the guard ever stopped working no other test would lose its data.
      */
     @Test
-    void truncate_is_not_stopped_by_the_row_trigger_known_gap() {
+    void truncate_of_the_log_is_refused_directly_and_through_cascade() {
         var matchId = newMatch();
         score(matchId, GoldenMatch.lionsInnings().subList(0, 2));
-        var rolledBack = new IllegalStateException("roll back");
 
-        var remaining = new java.util.concurrent.atomic.AtomicLong(-1);
-        assertThatThrownBy(() -> TX.transactional(db.sql("TRUNCATE ball_events").fetch().rowsUpdated()
-            .then(db.sql("SELECT count(*) AS n FROM ball_events").map((row, meta) -> row.get("n", Long.class)).one())
-            .doOnNext(remaining::set)
-            .then(Mono.<Void>error(rolledBack))).block()).isSameAs(rolledBack);
+        for (var statement : List.of("TRUNCATE ball_events", "TRUNCATE ball_events, match_snapshots", "TRUNCATE matches CASCADE")) {
+            assertThatThrownBy(() -> TX.transactional(db.sql(statement).fetch().rowsUpdated().then(Mono.<Void>error(new IllegalStateException("not refused: " + statement)))).block())
+                .as(statement).hasMessageContaining("append-only").hasMessageContaining("TRUNCATE");
+        }
 
-        assertThat(remaining.get()).as("the table was emptied inside the transaction").isZero();
-        assertThat(store.entries(matchId).collectList().block()).as("and restored by the rollback").hasSize(2);
+        assertThat(store.entries(matchId).collectList().block()).hasSize(2);
     }
 
     // ---- the lock -----------------------------------------------------------------------------------------------

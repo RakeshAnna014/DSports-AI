@@ -84,5 +84,10 @@ final class FakeScoringStore implements ScoringStore {
                 return Mono.empty();
             });
         }
+
+        @Override
+        public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
+            return Mono.fromRunnable(() -> snapshots.put(matchId, snapshot));
+        }
     }
 }

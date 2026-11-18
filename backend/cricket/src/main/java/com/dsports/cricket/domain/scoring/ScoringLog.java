@@ -46,6 +46,24 @@ public final class ScoringLog {
         return voids;
     }
 
+    /**
+     * The correction window as the log alone says it: the clock starts at the first entry after which the match was finished (its time is the entry's own
+     * time), is never cleared, and the last admin unlock grants 24 hours from that unlock. This is what the stored snapshot holds, so a lost snapshot can be
+     * rebuilt exactly.
+     */
+    public static EditWindow windowOf(MatchSetup setup, List<LogEntry> entries) {
+        var window = EditWindow.open();
+        for (int i = 0; i < entries.size(); i++) {
+            var entry = entries.get(i);
+            if (entry.kind() == LogEntry.Kind.ADMIN_UNLOCK) {
+                window = window.unlocked(entry.at());
+            } else if (window.firstFinishedAt() == null) {
+                window = window.after(MatchScoring.fold(setup, commands(entries.subList(0, i + 1))), entry.at());
+            }
+        }
+        return window;
+    }
+
     /** True when undoing would reopen something that was closed: an innings, the innings break, a completed or ended match. */
     public static boolean reopens(MatchScore before, MatchScore after) {
         if (after.innings().size() < before.innings().size()) {

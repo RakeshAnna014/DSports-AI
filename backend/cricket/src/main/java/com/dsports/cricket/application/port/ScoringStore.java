@@ -45,5 +45,8 @@ public interface ScoringStore {
          * seq or client event id fails with {@code SCORE_CONFLICT}.
          */
         Mono<Void> append(LogEntry entry, String requestHash, Snapshot snapshot, MatchStatus status);
+
+        /** Writes (or replaces) only the snapshot: used to rebuild one that was lost from the log. The log and the match's status are not touched. */
+        Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status);
     }
 }

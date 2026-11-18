@@ -9,6 +9,7 @@ import com.dsports.cricket.application.result.ScoringView;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.Match;
+import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.model.Player;
 import com.dsports.cricket.domain.model.Team;
 import com.dsports.cricket.domain.scoring.EditWindow;
@@ -27,6 +28,7 @@ import java.time.Clock;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -57,8 +59,23 @@ public class ScoringUseCase {
     // ---- reading ------------------------------------------------------------------------------------------------
 
     public Mono<ScoringView> state(Actor actor, UUID matchId) {
-        return scoreable(actor, matchId).flatMap(match -> store.entries(matchId).collectList().zipWith(window(matchId))
-            .flatMap(t -> view(match, t.getT1(), t.getT2())));
+        return scoreable(actor, matchId).flatMap(match -> store.entries(matchId).collectList().zipWith(store.snapshot(matchId).map(Optional::of).defaultIfEmpty(Optional.empty()))
+            .flatMap(t -> view(match, t.getT1(), windowOf(match, t.getT1(), t.getT2()))));
+    }
+
+    /**
+     * Writes the snapshot again from the log alone (the score, the status and the correction window). A lost snapshot never opens a locked match, because every
+     * request derives the window from the log when there is no snapshot; this makes that derived snapshot durable.
+     */
+    public Mono<Void> rebuildSnapshot(UUID matchId) {
+        return matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))).flatMap(match -> store.exclusive(matchId, session -> session.entries().collectList().flatMap(entries -> {
+            if (entries.isEmpty()) {
+                return Mono.<Void>empty();
+            }
+            var setup = MatchSetup.from(match);
+            var score = MatchScoring.fold(setup, ScoringLog.commands(entries));
+            return session.saveSnapshot(new ScoringStore.Snapshot(nextSeq(entries) - 1, score, ScoringLog.windowOf(setup, entries)), score.status());
+        })));
     }
 
     // ---- scoring ------------------------------------------------------------------------------------------------
@@ -111,28 +128,28 @@ public class ScoringUseCase {
             return Mono.error(new CricketDomainException(CricketErrorCode.VALIDATION_ERROR, "Give a reason of 10 to 300 characters"));
         }
         var hash = fingerprint("ADMIN_UNLOCK", trimmed);
-        return matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))).flatMap(ignored -> store.exclusive(matchId, session -> session.findByClientEventId(clientEventId)
-            .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
+        return matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))).flatMap(match -> store.exclusive(matchId, session -> session.findByClientEventId(clientEventId)
+            .map(Optional::of).defaultIfEmpty(Optional.empty())
             .flatMap(existing -> {
                 if (existing.isPresent()) {
                     return replay(matchId, existing.get(), hash, session);
                 }
-                return session.snapshot().map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty()).zipWith(session.entries().collectList()).flatMap(t -> {
-                    var window = t.getT1().map(ScoringStore.Snapshot::window).orElse(EditWindow.open());
+                return session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty()).zipWith(session.entries().collectList()).flatMap(t -> {
+                    var entries = t.getT2();
+                    var window = windowOf(match, entries, t.getT1());
                     var now = clock.instant();
                     if (!window.isLocked(now)) {
                         return Mono.<ScoringView.Outcome>error(new CricketDomainException(CricketErrorCode.NOT_LOCKED, "This match is not locked"));
                     }
-                    var entries = t.getT2();
                     int seq = nextSeq(entries);
                     var entry = LogEntry.unlock(seq, trimmed, clientEventId, actor.id(), now);
-                    var snapshot = t.getT1().orElseThrow();
+                    var score = t.getT1().map(ScoringStore.Snapshot::score).orElseGet(() -> MatchScoring.fold(MatchSetup.from(match), ScoringLog.commands(entries)));
                     var unlocked = window.unlocked(now);
-                    return session.append(entry, hash, new ScoringStore.Snapshot(seq, snapshot.score(), unlocked), snapshot.score().status())
-                        .then(Mono.defer(() -> matches.findById(matchId))).flatMap(match -> {
+                    return session.append(entry, hash, new ScoringStore.Snapshot(seq, score, unlocked), score.status())
+                        .then(Mono.defer(() -> matches.findById(matchId))).flatMap(updated -> {
                             var all = new java.util.ArrayList<>(entries);
                             all.add(entry);
-                            return view(match, all, unlocked).map(v -> new ScoringView.Outcome(v, false, seq));
+                            return view(updated, all, unlocked).map(v -> new ScoringView.Outcome(v, false, seq));
                         });
                 });
             })));
@@ -150,22 +167,21 @@ public class ScoringUseCase {
     }
 
     private Mono<ScoringView.Outcome> append(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, String hash, ScoringStore.Session session, Decide decide) {
-        return session.entries().collectList().zipWith(session.snapshot().map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())).flatMap(t -> {
+        return session.entries().collectList().zipWith(session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty())).flatMap(t -> {
             var entries = t.getT1();
             int latest = entries.isEmpty() ? 0 : entries.get(entries.size() - 1).seq();
-            var window = t.getT2().map(ScoringStore.Snapshot::window).orElse(EditWindow.open());
             return matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))).flatMap(match -> {
+                var window = windowOf(match, entries, t.getT2());
                 if (expectedSeq != latest) {
                     return conflict(match, entries, window, expectedSeq);
                 }
                 var now = clock.instant();
                 if (window.isLocked(now)) {
-                    return Mono.<ScoringView.Outcome>error(new CricketDomainException(CricketErrorCode.MATCH_LOCKED,
-                        "This match was finished more than 24 hours ago and is locked. An administrator can unlock it."));
+                    return Mono.<ScoringView.Outcome>error(new CricketDomainException(CricketErrorCode.MATCH_LOCKED, lockedMessage(MatchScoring.fold(MatchSetup.from(match), ScoringLog.commands(entries)).status())));
                 }
                 return decide.decide(match, entries, window).flatMap(change -> {
                     var entry = change.entry();
-                    var newWindow = window.after(change.score(), now);
+                    var newWindow = window.after(change.score(), entry.at());
                     var status = change.score().status();
                     return session.append(entry, hash, new ScoringStore.Snapshot(entry.seq(), change.score(), newWindow), status)
                         .then(Mono.defer(() -> {
@@ -183,9 +199,9 @@ public class ScoringUseCase {
         if (!existing.requestHash().equals(hash)) {
             return Mono.error(new CricketDomainException(CricketErrorCode.CLIENT_EVENT_REUSED, "That client event id was already used for a different request"));
         }
-        return session.entries().collectList().zipWith(session.snapshot().map(ScoringStore.Snapshot::window).defaultIfEmpty(EditWindow.open()))
+        return session.entries().collectList().zipWith(session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty()))
             .zipWith(matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))))
-            .flatMap(t -> view(t.getT2(), t.getT1().getT1(), t.getT1().getT2()).map(v -> new ScoringView.Outcome(v, true, existing.entry().seq())));
+            .flatMap(t -> view(t.getT2(), t.getT1().getT1(), windowOf(t.getT2(), t.getT1().getT1(), t.getT1().getT2())).map(v -> new ScoringView.Outcome(v, true, existing.entry().seq())));
     }
 
     private Mono<ScoringView.Outcome> conflict(Match match, List<LogEntry> entries, EditWindow window, int expectedSeq) {
@@ -213,8 +229,20 @@ public class ScoringUseCase {
         });
     }
 
-    private Mono<EditWindow> window(UUID matchId) {
-        return store.snapshot(matchId).map(ScoringStore.Snapshot::window).defaultIfEmpty(EditWindow.open());
+    /** The stored window, or, when the snapshot is missing, the one the log itself says (so a lost snapshot can never reopen a locked match). */
+    private static EditWindow windowOf(Match match, List<LogEntry> entries, Optional<ScoringStore.Snapshot> snapshot) {
+        if (snapshot.isPresent()) {
+            return snapshot.get().window();
+        }
+        return entries.isEmpty() ? EditWindow.open() : ScoringLog.windowOf(MatchSetup.from(match), entries);
+    }
+
+    /** What a refused change says: a finished match, or a correction that was still in progress when the 24 hours ran out. */
+    static String lockedMessage(MatchStatus status) {
+        var finished = status == MatchStatus.COMPLETED || status == MatchStatus.ABANDONED || status == MatchStatus.NO_RESULT;
+        return finished
+            ? "This match was finished more than 24 hours ago and is locked. An administrator can unlock it."
+            : "The correction window closed while the match was in progress. An administrator can unlock it.";
     }
 
     private Mono<ScoringViewBuilder.Names> names(Match match, List<LogEntry> entries) {

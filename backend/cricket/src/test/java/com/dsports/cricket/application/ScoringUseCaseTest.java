@@ -451,6 +451,70 @@ class ScoringUseCaseTest {
         fx.score(dot());
     }
 
+    @Test
+    void the_lock_state_is_the_same_when_the_snapshot_is_deleted_and_after_it_is_rebuilt_from_the_log() {
+        var fx = new ScoringFixture();
+        var winningBall = GoldenMatch.tigersChase().get(GoldenMatch.tigersChase().size() - 1);
+        fx.scoreAll(GoldenMatch.wholeMatch());
+        fx.clock.now = T0.plus(Duration.ofHours(23));
+        fx.undo(ScoringLog.UndoMode.BALL);
+        fx.clock.now = T0.plus(Duration.ofHours(23)).plus(Duration.ofMinutes(30));
+        fx.score(winningBall);
+        fx.clock.now = T0.plus(Duration.ofHours(30));
+        var unlocked = fx.useCase.unlock(ADMIN, fx.id(), UUID.randomUUID(), "scorer phone died during the final over").block();
+        fx.seq = unlocked.eventSeq();
+        fx.clock.now = T0.plus(Duration.ofHours(31));
+        var original = fx.store.snapshots.get(fx.id());
+        var before = fx.view();
+        assertThat(original.window().firstFinishedAt()).isEqualTo(T0);
+        assertThat(original.window().unlockedUntil()).isEqualTo(T0.plus(Duration.ofHours(54)));
+
+        fx.store.snapshots.remove(fx.id());
+        var without = fx.view();
+        assertThat(without.locked()).isEqualTo(before.locked());
+        assertThat(without.editableUntil()).isEqualTo(before.editableUntil()).isEqualTo(T0.plus(Duration.ofHours(54)));
+        assertThat(without.canUndo()).isEqualTo(before.canUndo());
+
+        fx.useCase.rebuildSnapshot(fx.id()).block();
+        assertThat(fx.store.snapshots.get(fx.id())).isEqualTo(original);
+        assertThat(fx.view().editableUntil()).isEqualTo(before.editableUntil());
+    }
+
+    @Test
+    void a_lost_snapshot_never_reopens_a_locked_match_and_a_command_after_it_rewrites_the_snapshot() {
+        var fx = new ScoringFixture();
+        fx.scoreAll(GoldenMatch.wholeMatch());
+        fx.clock.now = T0.plus(Duration.ofHours(25));
+        var original = fx.store.snapshots.get(fx.id());
+        fx.store.snapshots.remove(fx.id());
+
+        assertThat(fx.view().locked()).isTrue();
+        assertCode(() -> fx.useCase.submit(ORGANISER, fx.id(), UUID.randomUUID(), fx.seq, dot()).block(), CricketErrorCode.MATCH_LOCKED);
+        assertCode(() -> fx.useCase.undo(ORGANISER, fx.id(), UUID.randomUUID(), fx.seq, ScoringLog.UndoMode.BALL).block(), CricketErrorCode.MATCH_LOCKED);
+
+        var unlocked = fx.useCase.unlock(ADMIN, fx.id(), UUID.randomUUID(), "scorer phone died during the final over").block();
+        fx.seq = unlocked.eventSeq();
+        assertThat(fx.store.snapshots.get(fx.id()).window().firstFinishedAt()).isEqualTo(original.window().firstFinishedAt());
+        assertThat(fx.undo(ScoringLog.UndoMode.BALL).view().matchStatus()).isEqualTo("IN_PROGRESS");
+    }
+
+    @Test
+    void the_locked_message_says_whether_the_match_was_finished_or_a_correction_was_still_in_progress() {
+        var finished = new ScoringFixture();
+        finished.scoreAll(GoldenMatch.wholeMatch());
+        finished.clock.now = T0.plus(Duration.ofHours(25));
+        var halfDone = new ScoringFixture();
+        halfDone.scoreAll(GoldenMatch.wholeMatch());
+        halfDone.clock.now = T0.plus(Duration.ofHours(23)).plus(Duration.ofMinutes(59));
+        halfDone.undo(ScoringLog.UndoMode.BALL);
+        halfDone.clock.now = T0.plus(Duration.ofHours(25));
+
+        assertThat(failure(() -> finished.useCase.submit(ORGANISER, finished.id(), UUID.randomUUID(), finished.seq, dot()).block()).getMessage())
+            .isEqualTo("This match was finished more than 24 hours ago and is locked. An administrator can unlock it.");
+        assertThat(failure(() -> halfDone.useCase.submit(ORGANISER, halfDone.id(), UUID.randomUUID(), halfDone.seq, dot()).block()).getMessage())
+            .isEqualTo("The correction window closed while the match was in progress. An administrator can unlock it.");
+    }
+
     // ---- the administrator's unlock ------------------------------------------------------------------------------
 
     private ScoringFixture lockedMatch() {

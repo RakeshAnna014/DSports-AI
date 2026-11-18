@@ -109,7 +109,6 @@ public class ScoringR2dbcStore implements ScoringStore {
 
         @Override
         public Mono<Void> append(LogEntry entry, String requestHash, Snapshot snapshot, MatchStatus status) {
-            var now = clock.instant();
             var insert = db.sql("""
                     INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, waivers, created_at)
                     VALUES (:id, :match, :seq, :type, CAST(:payload AS jsonb), :schema, :hash, :client, :actor, CAST(:waivers AS jsonb), :at)
@@ -117,6 +116,20 @@ public class ScoringR2dbcStore implements ScoringStore {
                 .bind("id", UUID.randomUUID()).bind("match", matchId).bind("seq", entry.seq()).bind("type", typeOf(entry)).bind("payload", payloadOf(entry))
                 .bind("schema", (short) ScoringJsonCodec.SCHEMA_VERSION).bind("hash", requestHash).bind("client", entry.clientEventId()).bind("actor", entry.actorId())
                 .bind("waivers", codec.waiversJson(entry.waivers())).bind("at", entry.at());
+            var now = clock.instant();
+            var matchStatus = db.sql("UPDATE matches SET status = :status, version = version + 1, updated_at = :now WHERE id = :match")
+                .bind("status", status.name()).bind("now", now).bind("match", matchId);
+            return insert.fetch().rowsUpdated().then(upsertSnapshot(snapshot, status, now)).then(matchStatus.fetch().rowsUpdated()).then()
+                .onErrorMap(DataIntegrityViolationException.class, e -> new CricketDomainException(CricketErrorCode.SCORE_CONFLICT,
+                    "Someone else scored at the same moment. Reload the match and try again."));
+        }
+
+        @Override
+        public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
+            return upsertSnapshot(snapshot, status, clock.instant());
+        }
+
+        private Mono<Void> upsertSnapshot(Snapshot snapshot, MatchStatus status, Instant now) {
             var result = snapshot.score().result();
             var upsert = db.sql("""
                     INSERT INTO match_snapshots (match_id, seq, match_status, score, result, first_finished_at, unlocked_until, updated_at)
@@ -129,11 +142,7 @@ public class ScoringR2dbcStore implements ScoringStore {
             upsert = result.isPresent() ? upsert.bind("result", codec.resultJson(result.get())) : upsert.bindNull("result", String.class);
             upsert = snapshot.window().firstFinishedAt() == null ? upsert.bindNull("first", Instant.class) : upsert.bind("first", snapshot.window().firstFinishedAt());
             upsert = snapshot.window().unlockedUntil() == null ? upsert.bindNull("unlocked", Instant.class) : upsert.bind("unlocked", snapshot.window().unlockedUntil());
-            var matchStatus = db.sql("UPDATE matches SET status = :status, version = version + 1, updated_at = :now WHERE id = :match")
-                .bind("status", status.name()).bind("now", now).bind("match", matchId);
-            return insert.fetch().rowsUpdated().then(upsert.fetch().rowsUpdated()).then(matchStatus.fetch().rowsUpdated()).then()
-                .onErrorMap(DataIntegrityViolationException.class, e -> new CricketDomainException(CricketErrorCode.SCORE_CONFLICT,
-                    "Someone else scored at the same moment. Reload the match and try again."));
+            return upsert.fetch().rowsUpdated().then();
         }
     }
 

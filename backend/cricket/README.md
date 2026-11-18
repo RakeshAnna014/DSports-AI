@@ -2,7 +2,7 @@
 
 Players (guests and registered), teams, matches and ball-by-ball scoring. Plan: [docs/plans/cricket-features.md](../../docs/plans/cricket-features.md). Decisions: [ADR-019](../../docs/adr/ADR-019-cricket-players-teams-matches-scoring.md).
 
-**Status:** steps 2a (players, teams, claims; V53), 2b (match setup; V54), 2c (the scoring rules engine) and 2d (ball-by-ball API and scorer screen; V55) are implemented. The public scorecard (2e) and offline scoring in TypeScript (2f) come next.
+**Status:** steps 2a (players, teams, claims; V53), 2b (match setup; V54), 2c (the scoring rules engine) and 2d (ball-by-ball API and scorer screen; V55, V56) are implemented. The public scorecard (2e) and offline scoring in TypeScript (2f) come next.
 
 | | |
 |---|---|
@@ -37,7 +37,7 @@ Tests: one class per area under `src/test/.../domain/rules` (dismissal table, co
 
 | | |
 |---|---|
-| Tables | `ball_events` (append-only log), `match_snapshots` (read model) (V55) |
+| Tables | `ball_events` (append-only log; V56 also refuses TRUNCATE), `match_snapshots` (read model, rebuildable from the log) (V55) |
 | API | `GET /api/v1/matches/{id}/scoring`, `POST .../scoring/commands`, `POST .../scoring/undo`, `POST /api/v1/admin/matches/{id}/scoring/unlock` |
 | Domain | `domain.scoring`: `MatchScoring` (match-level commands over the 2c engine), `ScoringLog` (the effective log and undo planning), `EditWindow` (the 24 hours from the first finish) |
 | Application | `ScoringUseCase` (one transaction and lock per request), `ScoringViewBuilder` (the screen's view) |

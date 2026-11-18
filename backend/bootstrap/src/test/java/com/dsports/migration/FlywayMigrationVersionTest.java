@@ -50,12 +50,34 @@ class FlywayMigrationVersionTest {
     private static final Pattern DESTRUCTIVE = Pattern.compile(
         "\\b(DROP\\s+TABLE|DROP\\s+SCHEMA|DROP\\s+COLUMN|TRUNCATE|DELETE\\s+FROM)\\b", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * The one place the word TRUNCATE may appear: the trigger that REFUSES a TRUNCATE of the append-only scoring log. Only that exact trigger definition is
+     * exempt; any other TRUNCATE (even in the same file) and every other destructive statement still fails the build.
+     */
+    private static final String TRUNCATE_GUARD_MIGRATION = "V56__cricket_ball_events_no_truncate.sql";
+    private static final Pattern TRUNCATE_GUARD = Pattern.compile(
+        "CREATE\\s+TRIGGER\\s+trg_ball_events_no_truncate\\s+BEFORE\\s+TRUNCATE\\s+ON\\s+ball_events\\s+FOR\\s+EACH\\s+STATEMENT\\s+EXECUTE\\s+FUNCTION\\s+refuse_ball_event_change\\(\\)\\s*;",
+        Pattern.CASE_INSENSITIVE);
+
+    @Test
+    void theTruncateGuardIsTheOnlyTruncateAllowedAndOnlyAsThatExactTriggerDefinition() {
+        var guard = "CREATE TRIGGER trg_ball_events_no_truncate\n    BEFORE TRUNCATE ON ball_events\n    FOR EACH STATEMENT EXECUTE FUNCTION refuse_ball_event_change();";
+
+        assertThat(TRUNCATE_GUARD.matcher(guard).replaceAll("")).doesNotContainIgnoringCase("TRUNCATE");
+        assertThat(DESTRUCTIVE.matcher(TRUNCATE_GUARD.matcher(guard + "\nTRUNCATE ball_events;").replaceAll("")).find()).isTrue();
+        var onAnotherTable = guard.replace("trg_ball_events_no_truncate", "trg_other").replace("ON ball_events", "ON orders");
+        assertThat(DESTRUCTIVE.matcher(TRUNCATE_GUARD.matcher(onAnotherTable).replaceAll("")).find()).as("a guard on any other table is not exempt").isTrue();
+    }
+
     @Test
     void migrationsContainNoDestructiveStatements() throws IOException {
         var offenders = new ArrayList<String>();
         for (var resource : new PathMatchingResourcePatternResolver().getResources("classpath*:db/migration/*.sql")) {
             var sql = new String(resource.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
                 .replaceAll("--[^\\n]*", "");
+            if (TRUNCATE_GUARD_MIGRATION.equals(resource.getFilename())) {
+                sql = TRUNCATE_GUARD.matcher(sql).replaceAll("");
+            }
             if (DESTRUCTIVE.matcher(sql).find()) {
                 offenders.add(resource.getFilename());
             }
