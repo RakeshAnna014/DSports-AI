@@ -1,6 +1,6 @@
 # ADR-019: Cricket players, teams, matches and ball-by-ball scoring
 
-Status: accepted; steps 2a (players and teams, V53), 2b (match setup, V54) and 2c (scoring rules engine) implemented, 2d and 2e planned. Plan: `docs/plans/cricket-features.md`. Builds on ADR-017 and ADR-018.
+Status: accepted; steps 2a (players and teams, V53), 2b (match setup, V54), 2c (scoring rules engine) and 2d (ball-by-ball API and scorer screen, V55) implemented, 2e and 2f planned. Plan: `docs/plans/cricket-features.md`. Builds on ADR-017 and ADR-018.
 
 ## Context
 
@@ -43,6 +43,18 @@ Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scori
 * **Bat runs are at most 7 per ball; the wide and no-ball penalties are added on top.**
 * **Retired hurt** is not a wicket and the batter may come back; **retired out** is a wicket and he cannot. Both are accepted between balls only.
 * **Result** is computed from the two innings every time and never stored on its own, so an undo re-derives it. A revised target is the scorer's number (no DLS calculation).
+
+## Step 2d: ball-by-ball scoring (V55)
+
+* **The log is the truth.** `ball_events` is append-only (a trigger refuses UPDATE and DELETE): one row per accepted command, with a unique `(match_id, seq)` and a unique `(match_id, client_event_id)`. `match_snapshots` is the read model, written in the same transaction. Every request rebuilds the state by folding the effective log with the 2c engine; a test checks that the snapshot equals that fold after every step.
+* **Two scorers cannot corrupt a match.** One transaction per request holds a per-match advisory lock. Inside it: a retry of a command already in the log is answered as done (idempotency comes first, so a lost response is never a false conflict); a request made from an old view (`expectedSeq` is not the latest) is `409 SCORE_CONFLICT` carrying the current score and what happened since; a match whose window has closed is `409 MATCH_LOCKED`; then the engine decides, and a refusal is `422 SCORING_REJECTED` with the rule's code. The two unique keys are the second line of defence if the lock were ever bypassed.
+* **Undo is an event.** An `UNDO` voids earlier commands (it deletes nothing); the state is the fold of what is left, so overs, wickets, the free hit, the over credit and the result need no special case. `BALL` mode takes off the last ball and what was chosen after it (the new batter, the new bowler); `COMMAND` mode takes off one command. It never crosses the start of an innings, and the screen asks first when it would reopen an innings or a finished match. There is no redo.
+* **The correction window is anchored to the first finish.** For 24 hours after the match first finishes (completed, abandoned or no result) commands and undo are allowed. Undoing and finishing again does **not** restart the clock (`first_finished_at` is never cleared). Only an administrator's unlock, with a reason, grants a fresh 24 hours from the unlock; it is an `ADMIN_UNLOCK` event in the log (who, when, why). A correction left half-done at the deadline is locked as it is, and an administrator can reopen it.
+* **An optional fielder** (from the fielding XI) can be named for caught, stumped and run out, and a scorecard reads "c Ravi b Tarun", "st Ravi b Tarun", "run out (Ravi)". Shot positions are not recorded.
+* **Waivers are on the record.** When every bowler left is at the over limit, the limit is set aside as a last resort; the waiver is stored on the event, kept in the innings state and listed on the scorecard.
+* **The client holds no cricket rules.** The server's view says what is needed next, which dismissals the next ball allows and who may bat or bowl. A change goes through a durable one-slot outbox on the phone (saved with its client event id, retried, cleared only when the server answers), so a ball is neither lost nor counted twice. Many balls offline would need a copy of the engine on the phone, which is step 2f. The run-out end defaults from the runs completed (striker out: bowler's end after an even number of runs, striker's end after an odd number; the non-striker the other way) and the scorer can change it.
+* **What the log protects against, and what it does not.** The row-level trigger refuses UPDATE and DELETE. The two foreign keys into `matches` have no cascade, so deleting a match (or a team a match uses) that has a log is refused by the database (no code path deletes matches, teams or players today). **`TRUNCATE ball_events` is not stopped** (PostgreSQL does not fire row-level triggers for it) and a database superuser can disable the trigger; both are outside what the application can do and are an open hardening item (a statement-level TRUNCATE guard would be a new migration). `match_snapshots` is a read model and can be rebuilt from the log, except the correction-window anchor (`first_finished_at`, `unlocked_until`), which lives only there.
+* **Routes:** `GET /api/v1/matches/{id}/scoring`, `POST .../scoring/commands`, `POST .../scoring/undo`, and `POST /api/v1/admin/matches/{id}/scoring/unlock` (ADMIN). Errors carry an optional `details` object (a new field of the shared error body).
 
 ## Differences from the plan
 

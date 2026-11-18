@@ -216,6 +216,21 @@ Live video streaming, AI video highlights and a Pro subscription stay out of the
 
 Recorded in [ADR-017](../adr/ADR-017-ground-booking.md): money is `NUMERIC(12,2)` rupees (not paise); payments are reused through `payments.order_id` as a temporary shortcut; refunds are two-step, so a customer cancel files a request for approval while an owner cancel pays out automatically; the idempotency pattern is the support-case one; the overlap constraint is on `tstzrange(start_at, end_at)` columns (the driver has no range type); owner routes are under `/api/v1/owner`; prices are columns on `grounds` (no price-rules table); notification types needed migration V49.
 
+## Phase 2 as built (steps 2a to 2f)
+
+Recorded in [ADR-019](../adr/ADR-019-cricket-players-teams-matches-scoring.md). Each step works on its own; designs are in `docs/plans/cricket-2c-scoring-engine.md` and `cricket-2d-scoring-api.md`.
+
+| Step | What | State |
+| --- | --- | --- |
+| 2a | Players (guests, claims) and teams (V53) | done |
+| 2b | Match setup: teams, overs, ball, rules, toss, playing XIs, scorers, optional booking (V54) | done |
+| 2c | Scoring rules engine as pure domain functions, with golden and property tests | done |
+| 2d | Ball-by-ball API on an append-only log (V55), undo, conflicts, client event ids, 24-hour correction window with admin unlock, mobile-first scorer screen with a one-ball outbox | done |
+| 2e | Public scorecard page (ETag and 304, polled every few seconds) and the live-matches list | next |
+| 2f | **Offline scoring engine in TypeScript**, checked against the shared golden and property test vectors, so a scorer can keep scoring many balls with no signal and send them in order when the phone reconnects | later |
+
+**2f in more detail.** Today the phone holds one unsent change (the outbox) because only the Java engine knows what comes next (a new batter, a new bowler, a free hit). 2f ports the engine to TypeScript so the screen can work that out itself. To keep the two engines honest the Java side exports its golden innings and a set of seeded random innings (commands and the expected state after each) as JSON test vectors, and both test suites replay them; a change to either engine that the vectors do not agree with fails a build. The server stays the authority: queued commands are sent in order with the seq chain and client event ids that exist today, a rejected one stops the queue and shows the scorer why, and a conflict shows the same sheet as now. Needs: the vector export (Java), the TypeScript engine and its tests, an offline queue replacing the one-slot outbox, and an "unconfirmed" look for balls the server has not yet accepted.
+
 ## Follow-up: multi-sport venues and administrator-managed owners (ADR-018)
 
 After Phase 1 the ground became a **venue with courts**: a venue is the place and the owner; a court has its own sports, slot length and prices; a booking is for one court and one chosen sport, and the overlap constraint moved to the court. Sports are the catalogue's (a new `bookable` flag; Pickleball added), customers search sport first, and the shop never shows a bookable-only sport as an empty sport. Administrators give and remove the ground-owner role by email (audited, never to themselves), can run venues on an owner's behalf, and reassign a venue whose owner lost the role (it takes no new bookings until then; existing bookings stay valid). A removed role stays in the person's token until it expires. Details, alternatives and consequences: [ADR-018](../adr/ADR-018-venues-courts-and-role-administration.md). Routes are now `/api/v1/venues`, `/api/v1/owner/venues` and `/api/v1/admin/venues`.

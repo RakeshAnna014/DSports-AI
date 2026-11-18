@@ -50,7 +50,7 @@ cd frontend && pnpm install && pnpm exec vite     # or: pnpm dev
 Build the jar first with `cd backend && mvn -B -o clean install -DskipTests` (stop the backend before rebuilding: Windows locks the running jar).
 On Windows run the `.sh` scripts with Git Bash (`& 'C:\Program Files\Git\bin\bash.exe' e2e/ai/start-ai.sh`). Stop: `bash e2e/ai/free-port.sh 8080` (8090, 3000): it only stops processes whose command line belongs to this project and refuses to touch another project's process.
 
-**Migrations**: Flyway is forward-only and runs at backend start (current head V54, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
+**Migrations**: Flyway is forward-only and runs at backend start (current head V55, confirmed against `flyway_schema_history`). Never drop `dsports`; for destructive experiments use a throwaway database (the consolidated validation creates `dsports_e2e_val`).
 
 ## 5. Seed data
 
@@ -118,6 +118,28 @@ URLs are the local defaults above. Customers register at `/register`; roles are 
    10. **Owner removal:** as the administrator remove the owner's role (Ground owners → *Remove role*). The venue disappears from the customer's search and its page says it takes no new bookings; an existing booking is still valid. Open **Admin → Venues**: the venue is flagged "owner removed"; *Reassign* it to a second owner (grant that role first) and it is bookable again. The removed owner's current sign-in keeps the role for up to 15 minutes (ADR-018).
    11. **Admin → Sports**: add a sport and leave *Bookable* on: it appears in the booking list but not in the shop until it has products.
    12. The same journey runs in a real browser with `node e2e/venues-ui.mjs [shotDir]` (backend on 8080, Vite on 3000); it removes what it created.
+
+7b. **Scoring a match on a real phone** (about 15 minutes; proves the scorer screen over a local network, a wicket, an undo and a ball sent from airplane mode). Needs the stack running (section 4) and a phone on the same Wi-Fi as the computer.
+
+   **Get the phone to the app**
+   1. Start Vite so the phone can reach it: `cd frontend && pnpm exec vite --host` (it prints a *Network* address such as `http://192.168.1.20:3000`). The phone talks only to Vite; Vite forwards `/api` to the backend, so no other port needs opening.
+   2. Allow it through the firewall once (Windows asks the first time: choose *Private networks*; or run as administrator: `New-NetFirewallRule -DisplayName "Vite dev" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private`).
+   3. Open the Network address in the phone's browser. The shop home page must load. (The page is plain `http`, so the phone has no `crypto.randomUUID`; the scorer screen has a fallback, and this test is what proves it.)
+
+   **Set up a small match** (on the computer or the phone)
+   4. Register and sign in as the organiser. **My matches → New match**. Use the *New team (names only)* button twice: "Lions" with `Arun`, `Bala`, `Chetan`, `Dev` and "Tigers" with `Tarun`, `Uday`, `Vik`, `Wasim`. Overs per side 2, tennis ball, *Players per side* 4. Create it.
+   5. On the setup page record the toss (Lions won, chose to bat), pick all four of each side as the playing XI in the order given, and save both. The *Start scoring* button appears.
+
+   **Score two overs on the phone** (sign in as the organiser on the phone, **My matches →** the match **→ Start scoring**)
+   6. *Start innings*: openers Arun (striker) and Bala, bowler Tarun.
+   7. **Over 1.** Tap `1`, `4`, `0`. Then `W` → *Bowled* → *Confirm*. The "Who bats next?" sheet blocks everything else: choose Chetan (he is on strike). Tap `3` by mistake, then **Undo** (the button reads "Undo: 3 runs"): the score goes back to 5/1 and the 3 disappears. Tap `2`, then `1`. The over is complete: "Who bowls the next over?" shows Tarun greyed ("bowled the last over"); choose Uday.
+   8. **Over 2.** Tap `1`, `0`. Now turn on **airplane mode**. Tap `1`: a yellow banner says "Saved on this phone: 1 run. Waiting for the network" and every scoring button is greyed. Turn airplane mode **off**. Within a few seconds the banner disappears by itself (or press *Retry now*) and the run is in the score. Then tap `6`, `2`, `0`: the innings ends at **Lions 18/1 (2.0 ov)** and the screen shows the innings break and "Tigers need 19 to win".
+
+   **Check it** (on the computer)
+   9. Open the same match in the computer's browser: the scorer screen shows **Lions 18/1 (2.0 ov)** and the scorecard: Arun 2 (3) not out, Bala 4 (3) b Tarun, Chetan 12 (6) not out, extras 0; Tarun 1.0-0-8-1, Uday 1.0-0-10-0. (Arun 2 + Bala 4 + Chetan 12 = 18; Tarun 8 + Uday 10 = 18.)
+   10. The log must show the airplane ball **once**. With the database up: `docker exec dsports-postgres psql -U dsports -d dsports -c "select seq, type from ball_events where match_id = '<match id from the address bar>' order by seq"`. Expect 17 rows, seq 1 to 17 with no gap: `START_INNINGS`, three `DELIVER`, `DELIVER` (the wicket), `SELECT_BATTER`, `DELIVER` (the mistaken 3), `UNDO`, two `DELIVER`, `SELECT_BOWLER`, then six `DELIVER`. The undone 3 is still in the log (an undo voids, it never deletes) and the screen's "Latest" list says "Undid: 3 runs".
+
+   **Optional extras.** Turn airplane mode on, tap a ball, then close the browser tab and reopen the page before switching airplane mode off: the banner is still there (the ball is saved on the phone) and it is sent once when the network returns. Sign in as a second scorer (add them by email on the setup page) on the computer, score a ball there while the phone is offline with a ball waiting: when the phone reconnects it shows "Someone else scored while you were away" with their ball and yours, and nothing is merged until you choose.
 
 ## 8. Troubleshooting
 
