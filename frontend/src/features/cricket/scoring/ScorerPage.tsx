@@ -16,6 +16,8 @@ import { WicketSheet } from './WicketSheet';
 import { newId } from './newId';
 import { ruleMessage } from './ruleMessages';
 import { clearOutbox, loadOutbox, saveOutbox, type OutboxItem } from './scoringOutbox';
+import { formatLeft, minutesUntil, useNow, WARN_MINUTES } from './useNow';
+import { useTabLease } from './useTabLease';
 
 const ballLabel = (d: DeliveryBody): string => {
   if (d.dismissal) {
@@ -34,14 +36,6 @@ const ballLabel = (d: DeliveryBody): string => {
   return d.runs === 0 ? 'No run' : d.boundary ? (d.runs === 4 ? 'FOUR' : 'SIX') : `${d.runs} run${d.runs === 1 ? '' : 's'}`;
 };
 
-const timeLeft = (until: string | null): string | null => {
-  if (!until) {
-    return null;
-  }
-  const minutes = Math.max(0, Math.round((new Date(until).getTime() - Date.now()) / 60000));
-  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`;
-};
-
 /**
  * The scorer's screen. It holds no cricket rules: what is needed next, which dismissals are allowed and who may bat or bowl all come from the server's view.
  * Every change goes through a durable one-slot outbox (saved on the phone, sent with a client event id, retried if the network drops, cleared only when the
@@ -52,7 +46,11 @@ const ScorerPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const match = useQuery({ queryKey: ['match', id], queryFn: () => cricketApi.matches.get(id) });
-  const state = useQuery({ queryKey: ['scoring', id], queryFn: () => scoringApi.state(id) });
+  const { owner } = useTabLease(id);
+  const readOnly = !owner;
+  const state = useQuery({ queryKey: ['scoring', id], queryFn: () => scoringApi.state(id), refetchInterval: readOnly ? 5000 : false });
+  const now = useNow();
+  const lastExpiryRefetch = useRef(0);
 
   const [outbox, setOutbox] = useState<OutboxItem | null>(() => loadOutbox(id));
   const [phase, setPhase] = useState<'idle' | 'sending' | 'waiting'>('idle');
@@ -65,6 +63,8 @@ const ScorerPage = () => {
   const attempts = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumed = useRef(false);
+  const ownerRef = useRef(owner);
+  const wasOwner = useRef(owner);
   const outboxRef = useRef<OutboxItem | null>(outbox);
   const conflictRef = useRef<ScoringConflict | null>(null);
   const deliverRef = useRef<(item: OutboxItem) => Promise<void>>(() => Promise.resolve());
@@ -117,20 +117,31 @@ const ScorerPage = () => {
     deliverRef.current = deliver;
     outboxRef.current = outbox;
     conflictRef.current = conflict;
+    ownerRef.current = owner;
   });
+
+  // This tab takes over from another one: it picks up the ball that tab left saved on the phone and sends it from the current state.
+  useEffect(() => {
+    if (owner && !wasOwner.current) {
+      resumed.current = false;
+      setOutbox(loadOutbox(id));
+      void queryClient.invalidateQueries({ queryKey: ['scoring', id] });
+    }
+    wasOwner.current = owner;
+  }, [owner, id, queryClient]);
 
   // A ball saved before a reload is sent only once the current state has loaded, so the older state cannot arrive after the answer and overwrite it.
   const stateLoaded = state.isSuccess;
   useEffect(() => {
-    if (!resumed.current && outbox && stateLoaded) {
+    if (owner && !resumed.current && outbox && stateLoaded) {
       resumed.current = true;
       void deliver(outbox);
     }
-  }, [outbox, deliver, stateLoaded]);
+  }, [owner, outbox, deliver, stateLoaded]);
 
   useEffect(() => {
     const backOnline = () => {
-      if (outboxRef.current && !conflictRef.current) {
+      if (ownerRef.current && outboxRef.current && !conflictRef.current) {
         void deliverRef.current(outboxRef.current);
       }
     };
@@ -145,7 +156,17 @@ const ScorerPage = () => {
 
   const view = state.data;
   const m = match.data;
-  const busy = outbox !== null;
+
+  // When the clock passes the end of the correction window, ask the server once (and again every 30 seconds if it still says open, in case this clock is fast).
+  const editableUntil = view?.editableUntil ?? null;
+  const lockedNow = view?.locked ?? false;
+  useEffect(() => {
+    if (editableUntil && !lockedNow && now >= new Date(editableUntil).getTime() && Date.now() - lastExpiryRefetch.current > 30000) {
+      lastExpiryRefetch.current = Date.now();
+      void queryClient.invalidateQueries({ queryKey: ['scoring', id] });
+    }
+  }, [now, editableUntil, lockedNow, id, queryClient]);
+  const busy = outbox !== null || readOnly;
 
   const enqueue = (item: OutboxItem) => {
     saveOutbox(id, item);
@@ -209,7 +230,9 @@ const ScorerPage = () => {
   const status = view.matchStatus;
   const finished = status === 'COMPLETED' || status === 'ABANDONED' || status === 'NO_RESULT';
   const locked = view.locked;
-  const left = timeLeft(view.editableUntil);
+  const minutesLeft = minutesUntil(view.editableUntil, now);
+  const left = minutesLeft === null ? null : formatLeft(minutesLeft);
+  const lockWarning = !locked && minutesLeft !== null && minutesLeft <= WARN_MINUTES;
   const startForm = (battingTeamId: string, title: string) => (
     <StartInningsForm key={title} match={m} battingTeamId={battingTeamId} title={title} busy={busy || locked}
       onStart={(striker, nonStriker, bowler) => sendCommand({ type: 'START_INNINGS', striker, nonStriker, bowler }, 'Start innings')} />
@@ -223,7 +246,7 @@ const ScorerPage = () => {
         <Chip size="small" label={status.replace('_', ' ').toLowerCase()} data-testid="match-status" />
       </Stack>
 
-      {outbox && !conflict && (
+      {outbox && !conflict && !readOnly && (
         <Alert severity="warning" sx={{ mb: 1 }} data-testid="outbox-banner"
           action={<Stack direction="row" spacing={0.5}>
             <Button color="inherit" size="small" onClick={() => void deliver(outbox)} data-testid="retry-now" disabled={phase === 'sending'}>Retry now</Button>
@@ -233,7 +256,23 @@ const ScorerPage = () => {
         </Alert>
       )}
       {notice && <Alert severity="error" sx={{ mb: 1 }} onClose={() => setNotice(null)} data-testid="scoring-notice">{notice}</Alert>}
-      {locked && <Alert severity="info" sx={{ mb: 1 }} data-testid="locked-banner">This match was finished more than 24 hours ago and is locked. An administrator can unlock it.</Alert>}
+      {readOnly && (
+        <Alert severity="info" sx={{ mb: 1 }} data-testid="other-tab-banner">
+          This match is open for scoring in another tab of this browser, so this tab is read-only. That keeps the two from overwriting each other's saved ball. Close the other tab to score here.
+        </Alert>
+      )}
+      {lockWarning && (
+        <Alert severity="warning" sx={{ mb: 1 }} data-testid="lock-warning">
+          This match locks in {formatLeft(Math.max(1, minutesLeft ?? 1))}. Finish your correction or ask an administrator to unlock it.
+        </Alert>
+      )}
+      {locked && (
+        <Alert severity="info" sx={{ mb: 1 }} data-testid="locked-banner">
+          {finished
+            ? 'This match was finished more than 24 hours ago and is locked. An administrator can unlock it.'
+            : 'The correction window closed while the match was in progress. An administrator can unlock it.'}
+        </Alert>
+      )}
 
       <Stack spacing={1.5}>
         {status === 'TOSS_DONE' && (m.battingFirstTeamId
@@ -262,9 +301,9 @@ const ScorerPage = () => {
         {finished && (
           <Paper variant="outlined" sx={{ p: 2 }} data-testid="result-panel">
             <Typography variant="h5" data-testid="result-text">{view.result?.text ?? 'Finished'}</Typography>
-            {!locked && left && <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }} data-testid="time-left">You can correct this match for {left}.</Typography>}
           </Paper>
         )}
+        {!locked && left && <Typography variant="body2" color="text.secondary" data-testid="time-left">You can correct this match for {left}.</Typography>}
 
         {view.innings.map((innings) => <InningsCard key={innings.number} innings={innings} />)}
 
@@ -282,11 +321,11 @@ const ScorerPage = () => {
         )}
       </Stack>
 
-      {status === 'IN_PROGRESS' && view.needs === 'BATTER' && (
+      {status === 'IN_PROGRESS' && view.needs === 'BATTER' && !readOnly && (
         <ChooserDialog title="Who bats next?" blocking busy={busy} choices={view.eligibleBatters.map((b) => ({ id: b.player.id, label: b.player.name, detail: b.note }))}
           onChoose={(batterId) => sendCommand({ type: 'SELECT_BATTER', batterId }, 'Next batter')} />
       )}
-      {status === 'IN_PROGRESS' && view.needs === 'BOWLER' && (
+      {status === 'IN_PROGRESS' && view.needs === 'BOWLER' && !readOnly && (
         <ChooserDialog title="Who bowls the next over?" blocking busy={busy}
           notice={view.waiverRequired ? 'Everyone left is at the over limit. Whoever you choose bowls anyway, and this is noted on the scorecard.' : null}
           choices={view.bowlers.map((b) => ({ id: b.player.id, label: b.player.name, detail: `${b.overs} ov, ${b.creditedOvers} of ${b.limit} overs${b.why === 'BOWLED_LAST_OVER' ? ' · bowled the last over' : b.why === 'AT_LIMIT' ? ' · at the limit' : ''}`, disabled: !b.canBowlNext }))}
