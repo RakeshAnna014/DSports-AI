@@ -25,7 +25,7 @@ export const cricketPublicApi = {
 
   live: (params: { city?: string; page: number; size: number }) =>
     publicClient
-      .get<PublicPage<PublicMatchSummary>>('/v1/matches', { params: { status: 'LIVE', city: params.city || undefined, page: params.page, size: params.size } })
+      .get<PublicPage<PublicMatchSummary>>('/v1/public/matches/live', { params: { city: params.city || undefined, page: params.page, size: params.size } })
       .then((r) => r.data),
 };
 
