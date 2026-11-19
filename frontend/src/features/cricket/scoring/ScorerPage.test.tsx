@@ -33,6 +33,21 @@ describe('ScorerPage', () => {
 
   const lastCommand = () => api.command.mock.calls[api.command.mock.calls.length - 1][1];
 
+  // ---- sharing -------------------------------------------------------------------------------------------------------
+
+  it('offers the public scorecard link once an innings has started, and not before', async () => {
+    api.state.mockResolvedValue(view({ matchStatus: 'TOSS_DONE', seq: 0, innings: [], canUndo: { allowed: false, describe: null, crossesInnings: false, blockedReason: 'NOTHING_TO_UNDO' } }));
+    const first = renderPage();
+    await screen.findByText('Lions bat, Tigers bowl.');
+    expect(screen.queryByTestId('share-scorecard')).toBeNull();
+    first.unmount();
+
+    api.state.mockResolvedValue(VIEW);
+    renderPage();
+    const share = await screen.findByTestId('share-scorecard');
+    expect(within(share).getByTestId('whatsapp-share').getAttribute('href')).toContain(encodeURIComponent(`${window.location.origin}/m/m-1`));
+  });
+
   // ---- starting an innings -----------------------------------------------------------------------------------------
 
   it('starts the first innings for the side that bats first, with the openers and bowler chosen', async () => {

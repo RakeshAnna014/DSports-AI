@@ -7,6 +7,7 @@ import { getApiError, getApiErrorMessage } from '@/api/errors';
 import { ErrorState } from '@/components/common/States';
 import type { Match, MatchSide, TossDecision } from '@/types/cricket';
 import { EditSettingsForm } from './EditSettingsForm';
+import { ShareScorecardButton } from './public/ShareScorecardButton';
 
 /** Picks a playing XI from a squad: click a player to add them at the next batting position, click again to take them out. */
 const XiPicker = ({ match, side, disabled, saving, onSave }: { match: Match; side: MatchSide; disabled: boolean; saving: boolean; onSave: (ids: string[]) => void }) => {
@@ -86,6 +87,7 @@ const MatchSetupPage = () => {
       {m.umpires && <Typography variant="body2" color="text.secondary">Umpires: {m.umpires}</Typography>}
       {message && <Alert severity="warning" sx={{ my: 2 }} onClose={() => setMessage(null)} data-testid="setup-message">{message}</Alert>}
       {locked && <Alert severity="info" sx={{ my: 2 }}>This match has started, so its setup can no longer change.</Alert>}
+      {locked && <Box sx={{ my: 2 }}><ShareScorecardButton matchId={id} title={`${m.teamA.teamName} vs ${m.teamB.teamName}`} size="medium" /></Box>}
       {!m.canScore && <Alert severity="info" sx={{ my: 2 }}>You can see this match because you have a team in it. Only its creator or scorer can change the setup.</Alert>}
 
       {m.canScore && (m.readyToStart || locked) && (

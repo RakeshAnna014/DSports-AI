@@ -7,6 +7,7 @@ import { cricketApi } from '@/api/cricket';
 import { classifyScoringError, scoringApi } from '@/api/cricketScoring';
 import { ErrorState } from '@/components/common/States';
 import type { CommandBody, DeliveryBody, DeliveryKind, ScoringConflict } from '@/types/cricketScoring';
+import { ShareScorecardButton } from '../public/ShareScorecardButton';
 import { BallPad } from './BallPad';
 import { ChooserDialog } from './ChooserDialog';
 import { MoreDialog } from './MoreDialog';
@@ -252,6 +253,9 @@ const ScorerPage = () => {
         <Typography variant="h5" component="h1">{m.teamA.teamName} vs {m.teamB.teamName}</Typography>
         <Chip size="small" label={status.replace('_', ' ').toLowerCase()} data-testid="match-status" />
       </Stack>
+      {view.innings.length > 0 && (
+        <Box sx={{ mb: 1 }}><ShareScorecardButton matchId={id} title={`${m.teamA.teamName} vs ${m.teamB.teamName}`} /></Box>
+      )}
 
       {outbox && !conflict && !readOnly && (
         <Alert severity="warning" sx={{ mb: 1 }} data-testid="outbox-banner"

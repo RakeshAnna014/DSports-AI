@@ -148,6 +148,15 @@ describe('MatchSetupPage', () => {
     expect(await screen.findByText(/has started, so its setup can no longer change/i)).toBeInTheDocument();
     expect(screen.queryByTestId('record-toss')).toBeNull();
     expect(screen.queryByTestId('save-xi')).toBeNull();
+    expect(screen.getByTestId('share-scorecard')).toBeInTheDocument();
+  });
+
+  it('offers the public scorecard link only once the match has started', async () => {
+    api.get.mockResolvedValue({ ...MATCH, status: 'TOSS_DONE' });
+    renderPage();
+    await screen.findByTestId('match-state');
+
+    expect(screen.queryByTestId('share-scorecard')).toBeNull();
   });
 
   it('edits the overs, ball and rules before the match starts and sends the date, city and umpires back unchanged', async () => {

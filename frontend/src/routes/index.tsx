@@ -42,6 +42,8 @@ import MatchesPage from '@/features/cricket/MatchesPage';
 import NewMatchPage from '@/features/cricket/NewMatchPage';
 import MatchSetupPage from '@/features/cricket/MatchSetupPage';
 import ScorerPage from '@/features/cricket/scoring/ScorerPage';
+import PublicScorecardPage from '@/features/cricket/public/PublicScorecardPage';
+import LiveMatchesPage from '@/features/cricket/public/LiveMatchesPage';
 import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
 import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
 import AdminSportsPage from '@/features/admin/AdminSportsPage';
@@ -80,6 +82,9 @@ const router = createBrowserRouter([
       { path: '/teams', element: <TeamsPage /> },
       { path: '/teams/:id', element: <TeamDetailPage /> },
       { path: '/players', element: <PlayersPage /> },
+      // Public, no sign-in: a started match's scorecard (the link people share) and the list of matches being played.
+      { path: '/m/:id', element: <PublicScorecardPage /> },
+      { path: '/live', element: <LiveMatchesPage /> },
       { path: '/matches', element: <MatchesPage /> },
       { path: '/matches/new', element: <NewMatchPage /> },
       { path: '/matches/:id/setup', element: <MatchSetupPage /> },

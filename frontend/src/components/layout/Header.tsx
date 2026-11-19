@@ -18,6 +18,7 @@ const NAV = [
   { label: 'Home', to: '/', end: true },
   { label: 'Products', to: '/products' },
   { label: 'Courts', to: '/venues' },
+  { label: 'Live cricket', to: '/live' },
   { label: 'AI Shop', to: '/ai' },
   { label: 'Orders', to: '/orders' },
   { label: 'Track', to: '/track' },
