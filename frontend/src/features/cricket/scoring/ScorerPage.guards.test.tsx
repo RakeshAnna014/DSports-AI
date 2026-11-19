@@ -220,6 +220,64 @@ describe('a second tab of the same match', () => {
     expect(screen.getByTestId('run-1')).toBeDisabled();
   });
 
+  describe('a tab that was frozen in the background', () => {
+    const takenOverSilently = () => localStorage.setItem(LEASE_KEY, JSON.stringify({ tab: 'another-tab', at: Date.now() }));
+    const comeBack = () => {
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+      act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+    };
+
+    it('looks at the lease as soon as it is visible again and becomes read-only if another tab took over (no storage event reached it)', async () => {
+      renderPage();
+      await screen.findByTestId('scorer-page');
+      expect(screen.getByTestId('run-1')).toBeEnabled();
+
+      takenOverSilently();
+      comeBack();
+
+      expect(await screen.findByTestId('other-tab-banner')).toBeInTheDocument();
+      expect(screen.getByTestId('run-1')).toBeDisabled();
+    });
+
+    it('does the same when the window gets focus again', async () => {
+      renderPage();
+      await screen.findByTestId('scorer-page');
+
+      takenOverSilently();
+      act(() => { window.dispatchEvent(new Event('focus')); });
+
+      expect(await screen.findByTestId('other-tab-banner')).toBeInTheDocument();
+    });
+
+    it('does not send a tapped ball if another tab took over while it was frozen, and does not save it either', async () => {
+      const user = userEvent.setup({ pointerEventsCheck: 0 });
+      renderPage();
+      await user.click(await screen.findByTestId('run-1').then((b) => { takenOverSilently(); return b; }));
+
+      expect(await screen.findByTestId('other-tab-banner')).toBeInTheDocument();
+      expect(api.command).not.toHaveBeenCalled();
+      expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+    });
+
+    it('does not retry a waiting ball when the network returns after another tab took over, and leaves it saved for that tab', async () => {
+      const user = userEvent.setup();
+      api.command.mockRejectedValue(new (await import('axios')).AxiosError('Network Error', 'ERR_NETWORK'));
+      renderPage();
+      await user.click(await screen.findByTestId('run-1'));
+      await screen.findByTestId('outbox-banner');
+      const saved = localStorage.getItem(OUTBOX_KEY);
+      expect(api.command).toHaveBeenCalledTimes(1);
+
+      takenOverSilently();
+      act(() => { window.dispatchEvent(new Event('online')); });
+
+      expect(await screen.findByTestId('other-tab-banner')).toBeInTheDocument();
+      expect(api.command).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem(OUTBOX_KEY)).toBe(saved);
+      expect(screen.queryByTestId('outbox-banner')).toBeNull();
+    });
+  });
+
   it('still lets a lease that is long out of date go: an old record from a closed tab does not lock the match', async () => {
     otherTab(60_000);
     renderPage();

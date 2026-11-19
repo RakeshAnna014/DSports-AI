@@ -46,7 +46,7 @@ const ScorerPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const match = useQuery({ queryKey: ['match', id], queryFn: () => cricketApi.matches.get(id) });
-  const { owner } = useTabLease(id);
+  const { owner, recheck } = useTabLease(id);
   const readOnly = !owner;
   const state = useQuery({ queryKey: ['scoring', id], queryFn: () => scoringApi.state(id), refetchInterval: readOnly ? 5000 : false });
   const now = useNow();
@@ -71,6 +71,10 @@ const ScorerPage = () => {
 
   const deliver = useCallback(async (item: OutboxItem) => {
     if (inFlight.current) {
+      return;
+    }
+    // Nothing is sent before the lease is looked at again: this tab may have been frozen in the background while another tab took over.
+    if (!recheck()) {
       return;
     }
     inFlight.current = true;
@@ -111,7 +115,7 @@ const ScorerPage = () => {
     } finally {
       inFlight.current = false;
     }
-  }, [id, queryClient]);
+  }, [id, queryClient, recheck]);
 
   useEffect(() => {
     deliverRef.current = deliver;
@@ -169,6 +173,9 @@ const ScorerPage = () => {
   const busy = outbox !== null || readOnly;
 
   const enqueue = (item: OutboxItem) => {
+    if (!recheck()) {
+      return;
+    }
     saveOutbox(id, item);
     setOutbox(item);
     setNotice(null);

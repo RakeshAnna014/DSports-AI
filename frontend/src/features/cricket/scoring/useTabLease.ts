@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { newId } from './newId';
 
 /**
@@ -52,13 +52,35 @@ const claim = (key: string): boolean => {
   return true;
 };
 
-export const useTabLease = (matchId: string): { owner: boolean } => {
+/**
+ * {@code owner} says whether this tab may score. {@code recheck} reads the lease again right now and returns whether this tab still holds it; it is called
+ * before anything is sent, because a background tab on a phone can be frozen for minutes (its timers and storage events do not run) while another tab takes over.
+ */
+export const useTabLease = (matchId: string): { owner: boolean; recheck: () => boolean } => {
   const key = keyOf(matchId);
   const [owner, setOwner] = useState(() => claim(key));
   const ownerRef = useRef(owner);
   useEffect(() => {
     ownerRef.current = owner;
   });
+
+  const recheck = useCallback((): boolean => {
+    if (ownerRef.current) {
+      if (heldByAnother(read(key))) {
+        ownerRef.current = false;
+        setOwner(false);
+        return false;
+      }
+      write(key);
+      return true;
+    }
+    if (claim(key)) {
+      ownerRef.current = true;
+      setOwner(true);
+      return true;
+    }
+    return false;
+  }, [key]);
 
   useEffect(() => {
     // Two tabs opened in the same instant both claimed: after a moment the one whose write survived keeps it, and the other steps aside.
@@ -68,17 +90,15 @@ export const useTabLease = (matchId: string): { owner: boolean } => {
       }
     }, SETTLE_MS);
     const check = () => {
-      if (ownerRef.current) {
-        if (heldByAnother(read(key))) {
-          setOwner(false);
-        } else {
-          write(key);
-        }
-      } else if (claim(key)) {
-        setOwner(true);
-      }
+      recheck();
     };
     const heartbeat = setInterval(check, HEARTBEAT_MS);
+    // A tab that comes back to the foreground looks at the lease before anything else happens.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        recheck();
+      }
+    };
     const onStorage = (e: StorageEvent) => {
       if (e.key === key || e.key === null) {
         check();
@@ -95,14 +115,18 @@ export const useTabLease = (matchId: string): { owner: boolean } => {
     };
     window.addEventListener('storage', onStorage);
     window.addEventListener('pagehide', release);
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       clearTimeout(settle);
       clearInterval(heartbeat);
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('pagehide', release);
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
       release();
     };
-  }, [key]);
+  }, [key, recheck]);
 
-  return { owner };
+  return { owner, recheck };
 };
