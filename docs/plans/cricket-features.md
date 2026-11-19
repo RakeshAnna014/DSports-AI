@@ -192,7 +192,7 @@ All new tables go in the Java-owned `dsports` database as forward-only Flyway mi
 | Teams | `POST /teams` · `POST /teams/{id}/members` · `GET /teams/{id}` | Customer (captain edits) |
 | Matches | `POST /matches` · `POST /matches/{id}/toss` · `PUT /matches/{id}/playing-xi` · `POST /matches/{id}/start` | Match creator or scorer |
 | Scoring | `POST /matches/{id}/balls` (expectedSeq, clientEventId) · `POST /matches/{id}/undo` · `POST /matches/{id}/end-innings` | Assigned scorer |
-| Live | `GET /matches/{id}/live` (SSE) · `GET /matches/{id}/scorecard` · `GET /matches?status=LIVE&city=` | Public |
+| Live | `GET /matches/{id}/live` (SSE) · `GET /matches/{id}/scorecard` · `GET /public/matches/live?city=` | Public |
 | Tournaments | `POST /tournaments` · `POST /tournaments/{id}/fixtures` · `GET /tournaments/{id}/points-table` | Organiser / public |
 | Stats | `GET /players/{id}/stats` · `GET /matches/{id}/analytics` | Public |
 

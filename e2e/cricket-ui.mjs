@@ -7,7 +7,9 @@
 // the live list with its city filter, the share buttons and that the public page fits a phone.
 // Use E2E_BASE=http://<laptop LAN address>:3000 (with `pnpm exec vite --host`) to go through the network address, over plain http, as a real phone would.
 // The only SQL is the clean-up: the scoring log is append-only (a trigger refuses DELETE), so this local test data is removed with session_replication_role = replica,
-// which only a database superuser may use. Everything the script creates is removed by exact id.
+// which only a database superuser may use. Everything the script creates is removed by exact id. Because that switch turns the guard off for the whole session, the script
+// REFUSES to run unless it is talking to the local test stack (see assertLocalTestDatabase): a loopback API address, the local container "dsports-postgres", the database
+// "dsports" reached over the container's own socket, and, before the clean-up, proof that the match it made is in that very database.
 // Usage: node cricket-ui.mjs [shotDir]
 import { chromium, devices } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -23,10 +25,25 @@ let failed = false;
 const log = (...a) => console.log('[cricket-ui]', ...a);
 
 const DOCKER = process.env.DOCKER_BIN || (existsSync('C:/Program Files/Rancher Desktop/resources/resources/win32/bin/docker.exe') ? 'C:/Program Files/Rancher Desktop/resources/resources/win32/bin/docker.exe' : 'docker');
-const sql = (q) => execFileSync(DOCKER, ['exec', 'dsports-postgres', 'psql', '-U', 'dsports', '-d', 'dsports', '-tAc', q], { encoding: 'utf8' }).trim();
+const sql = (q) => execFileSync(DOCKER, ['exec', TEST_CONTAINER, 'psql', '-U', 'dsports', '-d', TEST_DATABASE, '-tAc', q], { encoding: 'utf8' }).trim();
 
 const email = `cui-${run}@example.com`;
 const created = { match: null, teams: [], players: [] };
+
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+const TEST_CONTAINER = 'dsports-postgres';
+const TEST_DATABASE = 'dsports';
+
+/** Throws unless every check says this is the local test database. Run before the run starts (no match yet) and again, with the match's id, before the clean-up bypasses the guard. */
+function assertLocalTestDatabase(matchId) {
+  const apiHost = new URL(API).hostname;
+  if (!LOCAL_HOSTS.has(apiHost)) throw new Error(`refusing to run: the API host is "${apiHost}", not this machine (loopback only)`);
+  const row = sql(`SELECT current_database() || '|' || coalesce(inet_server_addr()::text, 'socket') || '|' || (SELECT rolsuper::text FROM pg_roles WHERE rolname = current_user)`);
+  const [database, address] = row.split('|');
+  if (database !== TEST_DATABASE) throw new Error(`refusing to run: the database is "${database}", not "${TEST_DATABASE}"`);
+  if (address !== 'socket') throw new Error(`refusing to run: the database was reached over the network (${address}), not the container's own socket`);
+  if (matchId && sql(`SELECT count(*) FROM matches WHERE id = '${matchId}'`) !== '1') throw new Error('refusing to clean up: the match this run made is not in this database, so it is not the one the API wrote to');
+}
 
 async function api(method, path, token, body) {
   const r = await fetch(`${API}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
@@ -60,6 +77,7 @@ async function setupMatch(token) {
   return m.id;
 }
 
+try { assertLocalTestDatabase(null); } catch (e) { log(e.message); process.exit(2); }
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 function session(label, options) {
   return browser.newContext(options).then((context) => {
@@ -125,6 +143,8 @@ try {
     await mustBe(`/api/v1/matches/${matchId}/scoring`, 401);
     await mustBe('/api/v1/matches', 401);
     await mustBe('/api/v1/matches?city=x', 401);
+    await mustBe('/api/v1/matches?status=LIVE', 401);
+    await mustBe('/api/v1/public/matches/live', 200);
     if (await laptop.evaluate(() => localStorage.getItem('accessToken'))) throw new Error('the laptop is not signed out');
     await laptop.screenshot({ path: `${shots}/cricket-1-not-started.png` });
     // The deliberate probes above answered 401 and 404; what is counted from here on is only what the page itself asks for.
@@ -258,6 +278,7 @@ try {
 } finally {
   try {
     if (created.match) {
+      assertLocalTestDatabase(created.match);
       const list = (ids) => ids.map((i) => `'${i}'`).join(',');
       const owner = sql(`SELECT id FROM customers WHERE email = '${email}'`);
       const statements = [

@@ -2,7 +2,7 @@
 
 Exported from the running backend's /api-docs (springdoc), which is disabled in the prod profile.
 
-Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 221 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
+Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 222 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
 
 ## Actuator
 
@@ -147,7 +147,7 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 
 | Method | Path | Summary | Auth | Responses |
 |---|---|---|---|---|
-| GET | `/api/v1/matches` | My matches | bearer | 200,400 |
+| GET | `/api/v1/matches` | My matches | bearer | 200 |
 | POST | `/api/v1/matches` | Create a match | bearer | 201,400,404,409 |
 | GET | `/api/v1/matches/{matchId}` | Get a match for setup | bearer | 200 |
 | PUT | `/api/v1/matches/{matchId}` | Change a match's settings | bearer | 200 |
@@ -177,6 +177,7 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | Method | Path | Summary | Auth | Responses |
 |---|---|---|---|---|
 | GET | `/api/v1/matches/{matchId}/scorecard` | A started match's scorecard (no sign-in) | bearer | 200,304,404 |
+| GET | `/api/v1/public/matches/live` | Matches being played (no sign-in) | bearer | 200,400 |
 
 ## Cricket scoring
 
