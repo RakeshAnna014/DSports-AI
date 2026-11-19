@@ -14,9 +14,6 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
-import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -24,14 +21,6 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 public class SecurityConfig {
-
-    /**
-     * {@code GET /api/v1/matches?status=...} is the public live list; the same path without a {@code status} parameter is "my matches" and needs a sign-in. The controller
-     * picks its handler with the same test (the parameter is present), so the two cannot disagree about which one a request reaches.
-     */
-    private static final ServerWebExchangeMatcher PUBLIC_LIVE_LIST = new AndServerWebExchangeMatcher(
-            ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, "/api/v1/matches"),
-            exchange -> exchange.getRequest().getQueryParams().containsKey("status") ? ServerWebExchangeMatcher.MatchResult.match() : ServerWebExchangeMatcher.MatchResult.notMatch());
 
     private final JwtWebFilter jwtWebFilter;
     private final ObjectMapper objectMapper;
@@ -63,7 +52,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/v1/venues", "/api/v1/venues/**").permitAll()
                         // Cricket: the only two public routes. Anything else under /api/v1/matches (setup, scoring, "my matches") needs a sign-in.
                         .pathMatchers(HttpMethod.GET, "/api/v1/matches/*/scorecard").permitAll()
-                        .matchers(PUBLIC_LIVE_LIST).permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/public/matches/live").permitAll()
                         .pathMatchers("/api/v1/owner/**").hasRole("GROUND_OWNER")
                         .pathMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
                         .pathMatchers("/api/v1/support/staff/**").hasAnyRole("SUPPORT_EXECUTIVE", "ADMIN")

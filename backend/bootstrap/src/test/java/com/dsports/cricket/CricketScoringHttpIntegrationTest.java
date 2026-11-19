@@ -641,7 +641,7 @@ class CricketScoringHttpIntegrationTest {
             .expectBody(Map.class).returnResult();
         @SuppressWarnings("unchecked")
         var body = (Map<String, Object>) card.getResponseBody();
-        assertThat(card.getResponseHeaders().getETag()).isEqualTo("\"6\"");
+        assertThat(card.getResponseHeaders().getETag()).matches("\"6-[0-9a-f]{16}\"");
         assertThat(body.get("seq")).isEqualTo(6);
         assertThat(body.get("teamA")).isEqualTo("Lions");
         assertThat(body.get("live")).isEqualTo(true);
@@ -661,17 +661,47 @@ class CricketScoringHttpIntegrationTest {
             assertThat(score(s, s.organiser(), i, commands.get(i)).status()).isEqualTo(200);
         }
         var etag = web.get().uri(scorecard(s)).exchange().expectStatus().isOk().returnResult(Map.class).getResponseHeaders().getETag();
-        assertThat(etag).isEqualTo("\"3\"");
+        assertThat(etag).startsWith("\"3-");
 
         web.get().uri(scorecard(s)).header("If-None-Match", etag).exchange().expectStatus().isNotModified().expectHeader().valueEquals("ETag", etag).expectBody().isEmpty();
         web.get().uri(scorecard(s)).header("If-None-Match", "\"2\"").exchange().expectStatus().isOk();
 
         assertThat(score(s, s.organiser(), 3, commands.get(3)).status()).isEqualTo(200);
         var next = web.get().uri(scorecard(s)).header("If-None-Match", etag).exchange().expectStatus().isOk().returnResult(Map.class).getResponseHeaders().getETag();
-        assertThat(next).isEqualTo("\"4\"");
+        assertThat(next).startsWith("\"4-").isNotEqualTo(etag);
 
         assertThat(undo(s, s.organiser(), 4).status()).isEqualTo(200);
-        web.get().uri(scorecard(s)).header("If-None-Match", next).exchange().expectStatus().isOk().expectHeader().valueEquals("ETag", "\"5\"");
+        var afterUndo = web.get().uri(scorecard(s)).header("If-None-Match", next).exchange().expectStatus().isOk().returnResult(Map.class).getResponseHeaders().getETag();
+        assertThat(afterUndo).startsWith("\"5-").isNotEqualTo(next);
+    }
+
+    @Test
+    void renamingAPlayerChangesTheEtagAndTheNextPollGets200WithTheNewNameAlthoughNothingWasScored() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        for (int i = 0; i < 3; i++) {
+            assertThat(score(s, s.organiser(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        var first = web.get().uri(scorecard(s)).exchange().expectStatus().isOk().returnResult(Map.class);
+        var etag = first.getResponseHeaders().getETag();
+        web.get().uri(scorecard(s)).header("If-None-Match", etag).exchange().expectStatus().isNotModified();
+
+        var playerId = s.lions().playerIds().get(0);
+        var player = get(s.organiser(), "/api/v1/players/" + playerId);
+        assertThat(call(HttpMethod.PUT, s.organiser(), "/api/v1/players/" + playerId,
+            Map.of("player", Map.of("name", "Arun Kumar"), "expectedVersion", player.body().get("version"))).status()).isEqualTo(200);
+
+        var poll = web.get().uri(scorecard(s)).header("If-None-Match", etag).exchange().expectStatus().isOk().returnResult(Map.class);
+        var renamedTag = poll.getResponseHeaders().getETag();
+        assertThat(renamedTag).as("same last event, different tag").startsWith("\"3-").isNotEqualTo(etag);
+        assertThat(poll.getResponseBody().blockFirst().toString()).contains("Arun Kumar").doesNotContain("Lions player 1,");
+        web.get().uri(scorecard(s)).header("If-None-Match", renamedTag).exchange().expectStatus().isNotModified();
+
+        var team = get(s.organiser(), "/api/v1/teams/" + s.lions().teamId());
+        assertThat(call(HttpMethod.PUT, s.organiser(), "/api/v1/teams/" + s.lions().teamId(), Map.of("name", "Lions XI", "expectedVersion", team.body().get("version"))).status()).isEqualTo(200);
+        var afterTeam = web.get().uri(scorecard(s)).header("If-None-Match", renamedTag).exchange().expectStatus().isOk().returnResult(Map.class);
+        assertThat(afterTeam.getResponseHeaders().getETag()).isNotEqualTo(renamedTag);
+        assertThat(afterTeam.getResponseBody().blockFirst().get("teamA")).isEqualTo("Lions XI");
     }
 
     @Test
@@ -703,7 +733,7 @@ class CricketScoringHttpIntegrationTest {
             assertThat(score(finished, finished.organiser(), i, all.get(i)).status()).isEqualTo(200);
         }
 
-        var here = get(null, "/api/v1/matches?status=LIVE&city=" + city.toUpperCase());
+        var here = get(null, "/api/v1/public/matches/live?city=" + city.toUpperCase());
         assertThat(here.status()).isEqualTo(200);
         @SuppressWarnings("unchecked")
         var items = (List<Map<String, Object>>) (Object) here.body().get("items");
@@ -714,38 +744,41 @@ class CricketScoringHttpIntegrationTest {
         assertThat(here.body().toString()).doesNotContain("@", "createdBy", "booking", "scorer");
         assertThat(notStarted.matchId()).isNotNull();
 
-        var allLive = get(null, "/api/v1/matches?status=LIVE&size=50");
+        var allLive = get(null, "/api/v1/public/matches/live?size=50");
         @SuppressWarnings("unchecked")
         var everyone = (List<Map<String, Object>>) (Object) allLive.body().get("items");
         assertThat(everyone).extracting(m -> m.get("matchId")).contains(live.matchId(), elsewhere.matchId()).doesNotContain(finished.matchId(), notStarted.matchId());
 
-        var paged = get(null, "/api/v1/matches?status=LIVE&size=1&page=0");
+        var paged = get(null, "/api/v1/public/matches/live?size=1&page=0");
         assertThat(((List<?>) paged.body().get("items"))).hasSize(1);
         assertThat(paged.body().get("hasNext")).isEqualTo(true);
     }
 
     @Test
-    void theSamePathWithoutAStatusIsStillMyMatchesAndNeedsASignInAndASignedInUserWithAStatusGetsThePublicList() {
+    void theMatchesPathIsAlwaysMyMatchesWhateverTheQueryStringSays() {
         var s = matchIn("Mine" + UUID.randomUUID().toString().substring(0, 6));
 
-        assertThat(get(null, "/api/v1/matches").status()).isEqualTo(401);
-        assertThat(get(null, "/api/v1/matches?city=Chennai").status()).isEqualTo(401);
+        for (var query : List.of("", "?city=Chennai", "?status=LIVE", "?status=live", "?status=LIVE&status=X", "?status=LIVE,FINISHED")) {
+            assertThat(get(null, "/api/v1/matches" + query).status()).as(query).isEqualTo(401);
+        }
         var mine = web.get().uri("/api/v1/matches").headers(h -> h.setBearerAuth(s.organiser().token())).exchange().expectStatus().isOk().expectBody(List.class).returnResult().getResponseBody();
         assertThat(mine).as("my matches is a plain list, not a page").hasSize(1);
-        assertThat(get(s.organiser(), "/api/v1/matches?status=LIVE").body()).containsKeys("items", "hasNext", "page", "size");
+        var withStatus = web.get().uri("/api/v1/matches?status=LIVE").headers(h -> h.setBearerAuth(s.organiser().token())).exchange().expectStatus().isOk().expectBody(List.class).returnResult().getResponseBody();
+        assertThat(withStatus).as("a status parameter changes nothing: still my matches").hasSize(1);
     }
 
     @Test
     void badListParametersAreRefusedWithA400NeverA500AndNoOtherCricketRouteOpened() {
-        for (var query : List.of("status=DONE", "status=", "status=live", "status=LIVE&size=0", "status=LIVE&size=51", "status=LIVE&size=abc", "status=LIVE&page=-1", "status=LIVE&page=x",
-            "status=LIVE&page=99999", "status=LIVE&city=" + "x".repeat(81))) {
-            assertThat(get(null, "/api/v1/matches?" + query).status()).as(query).isEqualTo(400);
+        for (var query : List.of("size=0", "size=51", "size=abc", "page=-1", "page=x", "page=99999", "city=" + "x".repeat(81))) {
+            assertThat(get(null, "/api/v1/public/matches/live?" + query).status()).as(query).isEqualTo(400);
         }
+        assertThat(get(null, "/api/v1/public/matches/live?status=DONE&unknown=1").status()).as("unknown parameters are ignored").isEqualTo(200);
         var s = setup(2);
         assertThat(get(null, "/api/v1/matches/" + s.matchId()).status()).isEqualTo(401);
         assertThat(get(null, s.scoring()).status()).isEqualTo(401);
         assertThat(call(HttpMethod.POST, null, scorecard(s), Map.of()).status()).isEqualTo(401);
         assertThat(call(HttpMethod.DELETE, null, scorecard(s), null).status()).isEqualTo(401);
+        assertThat(call(HttpMethod.POST, null, "/api/v1/public/matches/live", Map.of()).status()).isEqualTo(401);
     }
 
     /** A match between two fresh squads with the toss and XIs done and its city set at creation. */

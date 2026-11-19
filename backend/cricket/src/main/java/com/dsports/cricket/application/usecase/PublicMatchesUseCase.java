@@ -29,7 +29,6 @@ public class PublicMatchesUseCase {
     public static final int MAX_PAGE_SIZE = 50;
     private static final int MAX_PAGE = 10_000;
     private static final int MAX_CITY = 80;
-    private static final String LIVE = "LIVE";
 
     private final MatchRepository matches;
     private final TeamRepository teams;
@@ -66,21 +65,12 @@ public class PublicMatchesUseCase {
             .switchIfEmpty(Mono.error(notFound(matchId)));
     }
 
-    /** The seq of the last scored event of a started match: what the scorecard's ETag is made from. Reads only the snapshot in the normal case, so a poll that finds nothing new is cheap. */
-    public Mono<Integer> version(UUID matchId) {
-        return store.snapshot(matchId).flatMap(s -> s.score().hasStarted() ? Mono.just(s.seq()) : Mono.<Integer>error(notFound(matchId)))
-            .switchIfEmpty(Mono.defer(() -> started(matchId).map(Started::seq)));
-    }
-
     public Mono<PublicScorecard> scorecard(UUID matchId) {
         return started(matchId).flatMap(s -> NameLookup.forMatch(s.match(), teams, players, id -> "A scorer").map(names -> PublicScorecardBuilder.build(s.match(), s.seq(), s.score(), names)));
     }
 
-    /** Started matches that are being played now, most recently scored first, optionally in one city (any letter case). {@code status} must be {@code LIVE}. */
-    public Mono<PublicMatchSummary.Page<PublicMatchSummary>> list(String status, String city, int page, int size) {
-        if (!LIVE.equals(status)) {
-            return Mono.error(new CricketDomainException(CricketErrorCode.VALIDATION_ERROR, "status must be LIVE"));
-        }
+    /** Started matches that are being played now, most recently scored first, optionally in one city (any letter case). */
+    public Mono<PublicMatchSummary.Page<PublicMatchSummary>> list(String city, int page, int size) {
         if (page < 0 || page > MAX_PAGE || size < 1 || size > MAX_PAGE_SIZE) {
             return Mono.error(new CricketDomainException(CricketErrorCode.VALIDATION_ERROR, "page must be 0 or more and size between 1 and " + MAX_PAGE_SIZE));
         }

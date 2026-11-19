@@ -2,12 +2,14 @@ package com.dsports.cricket.application;
 
 import com.dsports.cricket.application.result.PublicMatchSummary;
 import com.dsports.cricket.application.usecase.PublicMatchesUseCase;
+import com.dsports.cricket.application.usecase.PublicScorecardEtag;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.BallType;
 import com.dsports.cricket.domain.model.Match;
 import com.dsports.cricket.domain.model.MatchRules;
 import com.dsports.cricket.domain.model.MatchStatus;
+import com.dsports.cricket.domain.model.Player;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.GoldenMatch;
 import com.dsports.cricket.domain.scoring.MatchScoring;
@@ -47,16 +49,13 @@ class PublicMatchesUseCaseTest {
     @Test
     void aMatchThatHasNotStartedIsNotFoundExactlyLikeOneThatDoesNotExist() {
         assertNotFound(() -> publicMatches.scorecard(fx.id()).block());
-        assertNotFound(() -> publicMatches.version(fx.id()).block());
         assertNotFound(() -> publicMatches.scorecard(UUID.randomUUID()).block());
-        assertNotFound(() -> publicMatches.version(UUID.randomUUID()).block());
     }
 
     @Test
     void aMatchAbandonedBeforeABallWasBowledNeverStartedSoItIsNotPublic() {
         fx.score(new ScoreCommand.EndMatch(ScoreCommand.EndMatch.Reason.ABANDONED));
         assertNotFound(() -> publicMatches.scorecard(fx.id()).block());
-        assertNotFound(() -> publicMatches.version(fx.id()).block());
     }
 
     @Test
@@ -147,31 +146,64 @@ class PublicMatchesUseCaseTest {
     // ---- the ETag -------------------------------------------------------------------------------------------------
 
     @Test
-    void theVersionIsTheSeqOfTheLastEventAndMovesOnEveryChangeIncludingAnUndo() {
+    void theEtagStartsWithTheSeqAndMovesOnEveryChangeIncludingAnUndo() {
         fx.scoreAll(GoldenMatch.lionsInnings().subList(0, 3));
-        assertThat(publicMatches.version(fx.id()).block()).isEqualTo(3);
-        assertThat(publicMatches.version(fx.id()).block()).as("nothing scored, nothing changed").isEqualTo(3);
+        var first = etag();
+        assertThat(first).startsWith("\"3-").endsWith("\"");
+        assertThat(etag()).as("nothing scored, nothing changed").isEqualTo(first);
         assertThat(publicMatches.scorecard(fx.id()).block().seq()).isEqualTo(3);
 
         fx.score(GoldenMatch.lionsInnings().get(3));
-        assertThat(publicMatches.version(fx.id()).block()).isEqualTo(4);
+        var second = etag();
+        assertThat(second).startsWith("\"4-").isNotEqualTo(first);
 
         var before = publicMatches.scorecard(fx.id()).block().innings().get(0).runs();
         fx.undo(ScoringLog.UndoMode.BALL);
         var after = publicMatches.scorecard(fx.id()).block();
         assertThat(after.seq()).as("the undo is an event of its own").isEqualTo(5);
-        assertThat(publicMatches.version(fx.id()).block()).isEqualTo(5);
+        assertThat(PublicScorecardEtag.of(after)).startsWith("\"5-").isNotEqualTo(second);
         assertThat(after.innings().get(0).runs()).isLessThan(before);
     }
 
     @Test
-    void aLostSnapshotDoesNotHideAMatchOrChangeItsVersion() {
+    void renamingAPlayerOrATeamChangesTheEtagEvenThoughNoBallWasScored() {
+        fx.scoreAll(GoldenMatch.lionsInnings().subList(0, 3));
+        var before = etag();
+        var seq = publicMatches.scorecard(fx.id()).block().seq();
+
+        var batter = fx.players.store.get(GoldenMatch.lion(1));
+        batter.update(new Player.Details("Arun Kumar", null, null, null, null, null), ScoringFixture.T0);
+        var renamed = publicMatches.scorecard(fx.id()).block();
+        assertThat(renamed.seq()).as("no event was scored").isEqualTo(seq);
+        assertThat(renamed.innings().get(0).batters().get(0).name()).isEqualTo("Arun Kumar");
+        var afterPlayer = PublicScorecardEtag.of(renamed);
+        assertThat(afterPlayer).as("same seq, different tag").startsWith("\"" + seq + "-").isNotEqualTo(before);
+
+        var team = fx.teams.store.get(GoldenMatch.LIONS);
+        team.update("Lions XI", team.getCity(), ScoringFixture.T0);
+        var afterTeam = PublicScorecardEtag.of(publicMatches.scorecard(fx.id()).block());
+        assertThat(afterTeam).isNotEqualTo(afterPlayer);
+    }
+
+    @Test
+    void theEtagIsTheSameForTheSameScorecardWhoeverAsksAndWhenever() {
+        fx.scoreAll(GoldenMatch.lionsInnings());
+        assertThat(etag()).isEqualTo(etag());
+        assertThat(PublicScorecardEtag.of(publicMatches.scorecard(fx.id()).block())).matches("\"\\d+-[0-9a-f]{16}\"");
+    }
+
+    private String etag() {
+        return PublicScorecardEtag.of(publicMatches.scorecard(fx.id()).block());
+    }
+
+    @Test
+    void aLostSnapshotDoesNotHideAMatchOrChangeItsScorecard() {
         fx.scoreAll(GoldenMatch.lionsInnings());
         var with = publicMatches.scorecard(fx.id()).block();
         fx.store.snapshots.remove(fx.id());
 
-        assertThat(publicMatches.version(fx.id()).block()).isEqualTo(with.seq());
         assertThat(publicMatches.scorecard(fx.id()).block()).isEqualTo(with);
+        assertThat(etag()).isEqualTo(PublicScorecardEtag.of(with));
     }
 
     // ---- the live list --------------------------------------------------------------------------------------------
@@ -196,7 +228,7 @@ class PublicMatchesUseCaseTest {
         liveMatch("Chennai", MatchStatus.TOSS_DONE, 0, 1);
         liveMatch("Chennai", MatchStatus.ABANDONED, 4, 1);
 
-        var page = publicMatches.list("LIVE", null, 0, 20).block();
+        var page = publicMatches.list(null, 0, 20).block();
 
         assertThat(page.items()).extracting(PublicMatchSummary::matchId).containsExactly(newer.getId(), older.getId());
         assertThat(page.hasNext()).isFalse();
@@ -218,10 +250,10 @@ class PublicMatchesUseCaseTest {
         liveMatch("Mumbai", MatchStatus.IN_PROGRESS, 5, 2);
         liveMatch(null, MatchStatus.IN_PROGRESS, 5, 3);
 
-        assertThat(publicMatches.list("LIVE", "  CHENNAI ", 0, 20).block().items()).extracting(PublicMatchSummary::matchId).containsExactly(chennai.getId());
-        assertThat(publicMatches.list("LIVE", "chennai", 0, 20).block().items()).hasSize(1);
-        assertThat(publicMatches.list("LIVE", "", 0, 20).block().items()).as("a blank city means every city").hasSize(3);
-        assertThat(publicMatches.list("LIVE", "Delhi", 0, 20).block().items()).isEmpty();
+        assertThat(publicMatches.list("  CHENNAI ", 0, 20).block().items()).extracting(PublicMatchSummary::matchId).containsExactly(chennai.getId());
+        assertThat(publicMatches.list("chennai", 0, 20).block().items()).hasSize(1);
+        assertThat(publicMatches.list("", 0, 20).block().items()).as("a blank city means every city").hasSize(3);
+        assertThat(publicMatches.list("Delhi", 0, 20).block().items()).isEmpty();
     }
 
     @Test
@@ -229,9 +261,9 @@ class PublicMatchesUseCaseTest {
         for (int i = 0; i < 5; i++) {
             liveMatch("Chennai", MatchStatus.IN_PROGRESS, 5, i);
         }
-        var first = publicMatches.list("LIVE", null, 0, 2).block();
-        var second = publicMatches.list("LIVE", null, 1, 2).block();
-        var third = publicMatches.list("LIVE", null, 2, 2).block();
+        var first = publicMatches.list(null, 0, 2).block();
+        var second = publicMatches.list(null, 1, 2).block();
+        var third = publicMatches.list(null, 2, 2).block();
 
         assertThat(first.items()).hasSize(2);
         assertThat(first.hasNext()).isTrue();
@@ -244,23 +276,22 @@ class PublicMatchesUseCaseTest {
             page.items().forEach(m -> all.add(m.matchId()));
         }
         assertThat(all).as("no match twice and none missing").doesNotHaveDuplicates().hasSize(5);
-        assertThat(publicMatches.list("LIVE", null, 3, 2).block().items()).isEmpty();
+        assertThat(publicMatches.list(null, 3, 2).block().items()).isEmpty();
     }
 
     @Test
-    void anUnknownStatusOrAnOutOfRangePageIsRefusedNotAnError() {
-        for (var args : List.<Object[]>of(new Object[] {"DONE", 0, 20}, new Object[] {null, 0, 20}, new Object[] {"live", 0, 20}, new Object[] {"LIVE", -1, 20}, new Object[] {"LIVE", 0, 0},
-            new Object[] {"LIVE", 0, 51}, new Object[] {"LIVE", 10_001, 20})) {
-            assertThatThrownBy(() -> publicMatches.list((String) args[0], null, (int) args[1], (int) args[2]).block()).as(java.util.Arrays.toString(args))
+    void anOutOfRangePageOrSizeOrALongCityIsRefusedNotAnError() {
+        for (var args : List.<int[]>of(new int[] {-1, 20}, new int[] {0, 0}, new int[] {0, 51}, new int[] {10_001, 20})) {
+            assertThatThrownBy(() -> publicMatches.list(null, args[0], args[1]).block()).as(java.util.Arrays.toString(args))
                 .isInstanceOfSatisfying(CricketDomainException.class, e -> assertThat(e.getErrorCode()).isEqualTo(CricketErrorCode.VALIDATION_ERROR));
         }
-        assertThatThrownBy(() -> publicMatches.list("LIVE", "x".repeat(81), 0, 20).block()).isInstanceOf(CricketDomainException.class);
+        assertThatThrownBy(() -> publicMatches.list("x".repeat(81), 0, 20).block()).isInstanceOf(CricketDomainException.class);
     }
 
     @Test
     void theListCarriesNoIdsButTheMatchesOwn() throws Exception {
         liveMatch("Chennai", MatchStatus.IN_PROGRESS, 8, 1);
-        var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(publicMatches.list("LIVE", null, 0, 20).block());
+        var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(publicMatches.list(null, 0, 20).block());
 
         assertThat(UUID_TEXT.matcher(json).results().count()).isEqualTo(1);
         assertThat(json).doesNotContain("@", "createdBy", "scorer", "booking");
