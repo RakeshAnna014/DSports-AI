@@ -194,6 +194,39 @@ class MatchPersistenceIntegrationTest {
         assertThat(matches.findMine(UUID.randomUUID()).collectList().block()).isEmpty();
     }
 
+    /** A match with its toss done, saved, then moved by SQL to {@code status} in {@code city} as if it had been scored, last touched at {@code touched}. */
+    private static Match matchAt(Side a, Side b, String status, String city, Instant touched) throws SQLException {
+        var match = Match.create(UUID.randomUUID(), a.team().getId(), b.team().getId(), new Match.Settings(20, BallType.TENNIS, MatchRules.standard(), null, city, null), null, NOW);
+        match.recordToss(a.team().getId(), TossDecision.BAT, NOW);
+        matches.save(match).block();
+        try (var c = DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())) {
+            c.createStatement().executeUpdate("UPDATE matches SET status = '" + status + "', updated_at = '" + touched + "' WHERE id = '" + match.getId() + "'");
+        }
+        return match;
+    }
+
+    @Test
+    void findLiveReturnsOnlyMatchesBeingPlayedByCityWithoutRegardToCaseNewestFirstAndPaged() throws SQLException {
+        var creator = UUID.randomUUID();
+        var a = side(creator, "A", 2);
+        var b = side(creator, "B", 2);
+        var city = "Live" + UUID.randomUUID().toString().substring(0, 8);
+        var oldest = matchAt(a, b, "IN_PROGRESS", city, NOW.plusSeconds(10));
+        var middle = matchAt(a, b, "INNINGS_BREAK", city.toUpperCase(), NOW.plusSeconds(20));
+        var newest = matchAt(a, b, "IN_PROGRESS", city.toLowerCase(), NOW.plusSeconds(30));
+        matchAt(a, b, "COMPLETED", city, NOW.plusSeconds(40));
+        matchAt(a, b, "TOSS_DONE", city, NOW.plusSeconds(50));
+        matchAt(a, b, "IN_PROGRESS", city + "x", NOW.plusSeconds(60));
+
+        assertThat(matches.findLive(city, 10, 0).collectList().block()).extracting(Match::getId).containsExactly(newest.getId(), middle.getId(), oldest.getId());
+        assertThat(matches.findLive(city.toUpperCase(), 10, 0).collectList().block()).hasSize(3);
+        assertThat(matches.findLive(city, 2, 0).collectList().block()).extracting(Match::getId).containsExactly(newest.getId(), middle.getId());
+        assertThat(matches.findLive(city, 2, 2).collectList().block()).extracting(Match::getId).containsExactly(oldest.getId());
+        assertThat(matches.findLive(city, 2, 3).collectList().block()).isEmpty();
+        assertThat(matches.findLive(null, 1000, 0).collectList().block()).extracting(Match::getId).contains(newest.getId(), middle.getId(), oldest.getId())
+            .allSatisfy(id -> assertThat(matches.findById(id).block().getStatus().isLive()).isTrue());
+    }
+
     @Test
     void theDatabaseRefusesInconsistentMatchesAndXis() throws SQLException {
         var creator = UUID.randomUUID();

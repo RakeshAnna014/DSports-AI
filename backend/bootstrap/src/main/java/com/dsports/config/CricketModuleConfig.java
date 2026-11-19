@@ -11,6 +11,7 @@ import com.dsports.cricket.application.usecase.ManageMatchesUseCase;
 import com.dsports.cricket.application.usecase.ManagePlayersUseCase;
 import com.dsports.cricket.application.usecase.ManageTeamsUseCase;
 import com.dsports.cricket.application.usecase.PlayerClaimsUseCase;
+import com.dsports.cricket.application.usecase.PublicMatchesUseCase;
 import com.dsports.cricket.application.usecase.ScoringUseCase;
 import com.dsports.cricket.infrastructure.persistence.ClaimR2dbcRepositoryAdapter;
 import com.dsports.cricket.infrastructure.persistence.MatchR2dbcRepositoryAdapter;
@@ -126,6 +127,11 @@ public class CricketModuleConfig {
     public ScoringUseCase scoringUseCase(MatchRepository matchRepository, TeamRepository teamRepository, PlayerRepository playerRepository,
                                          CustomerDirectoryPort customerDirectoryPort, ScoringStore scoringStore, Clock clock) {
         return new ScoringUseCase(matchRepository, teamRepository, playerRepository, customerDirectoryPort, scoringStore, clock);
+    }
+
+    @Bean
+    public PublicMatchesUseCase publicMatchesUseCase(MatchRepository matchRepository, TeamRepository teamRepository, PlayerRepository playerRepository, ScoringStore scoringStore) {
+        return new PublicMatchesUseCase(matchRepository, teamRepository, playerRepository, scoringStore);
     }
 
     @Bean

@@ -10,7 +10,6 @@ import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.Match;
 import com.dsports.cricket.domain.model.MatchStatus;
-import com.dsports.cricket.domain.model.Player;
 import com.dsports.cricket.domain.model.Team;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
@@ -27,7 +26,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -246,21 +244,8 @@ public class ScoringUseCase {
     }
 
     private Mono<ScoringViewBuilder.Names> names(Match match, List<LogEntry> entries) {
-        var playerIds = new HashSet<UUID>();
-        playerIds.addAll(match.playingXi(match.getTeamAId()));
-        playerIds.addAll(match.playingXi(match.getTeamBId()));
         var actorIds = entries.stream().map(LogEntry::actorId).collect(Collectors.toSet());
-        return Mono.zip(players.findAllById(playerIds).collectMap(Player::getId, Player::getName),
-                teams.findById(match.getTeamAId()).map(Team::getName).defaultIfEmpty("Team A"),
-                teams.findById(match.getTeamBId()).map(Team::getName).defaultIfEmpty("Team B"),
-                directory.describe(actorIds))
-            .map(t -> {
-                Map<UUID, String> playerNames = t.getT1();
-                Map<UUID, CustomerDirectoryPort.Person> people = t.getT4();
-                return new ScoringViewBuilder.Names(id -> playerNames.getOrDefault(id, "Player"),
-                    id -> id.equals(match.getTeamAId()) ? t.getT2() : t.getT3(),
-                    id -> people.containsKey(id) ? people.get(id).name() : "A scorer");
-            });
+        return directory.describe(actorIds).flatMap(people -> NameLookup.forMatch(match, teams, players, id -> people.containsKey(id) ? people.get(id).name() : "A scorer"));
     }
 
     private Mono<ScoringView> view(Match match, List<LogEntry> entries, EditWindow window) {

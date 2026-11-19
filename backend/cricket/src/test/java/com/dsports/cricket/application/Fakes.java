@@ -185,6 +185,12 @@ public final class Fakes {
         }
 
         @Override
+        public Flux<Match> findLive(String city, int limit, int offset) {
+            return Flux.fromIterable(store.values()).filter(m -> m.getStatus().isLive() && (city == null || city.equalsIgnoreCase(m.getSettings().city())))
+                .sort(Comparator.comparing(Match::getUpdatedAt, Comparator.<java.time.Instant>reverseOrder()).thenComparing(Match::getId)).skip(offset).take(limit);
+        }
+
+        @Override
         public Mono<Match> save(Match match) {
             for (var other : store.values()) {
                 if (!other.getId().equals(match.getId()) && match.getVenue() != null && other.getVenue() != null

@@ -47,8 +47,8 @@ public class MatchController {
             new ManageMatchesUseCase.CreateCommand(request.teamAId(), request.teamBId(), request.toSettings(), request.bookingId()));
     }
 
-    @GetMapping
-    @Operation(summary = "My matches", description = "Matches you created, may score, or have a team in, newest first.")
+    @GetMapping(params = "!status")
+    @Operation(summary = "My matches", description = "Matches you created, may score, or have a team in, newest first. (With a status parameter the same path is the public live list.)")
     public Flux<MatchResult> mine(Authentication authentication) {
         return matches.listMine(Principals.actor(authentication));
     }

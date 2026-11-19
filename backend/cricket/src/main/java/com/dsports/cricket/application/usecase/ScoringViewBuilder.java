@@ -65,7 +65,7 @@ final class ScoringViewBuilder {
         return id == null ? null : new ScoringView.Ref(id, names.player().apply(id));
     }
 
-    private static ScoringView.Innings inningsView(int number, InningsState s, List<String> thisOver, Names names) {
+    static ScoringView.Innings inningsView(int number, InningsState s, List<String> thisOver, Names names) {
         int bpo = s.rules().ballsPerOver();
         var card = Scorecard.of(s);
         var extras = s.extras();
@@ -197,7 +197,7 @@ final class ScoringViewBuilder {
 
     // ---- the result ---------------------------------------------------------------------------------------------
 
-    private static ScoringView.Result result(MatchScore score, Names names) {
+    static ScoringView.Result result(MatchScore score, Names names) {
         if (score.endedBy() != null) {
             return new ScoringView.Result(score.endedBy().name(), null, 0, 0, score.endedBy() == ScoreCommand.EndMatch.Reason.ABANDONED ? "Match abandoned" : "No result");
         }

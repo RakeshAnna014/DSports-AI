@@ -15,6 +15,12 @@ public interface MatchRepository {
     Flux<Match> findMine(UUID user);
 
     /**
+     * Matches being played now (in an innings or at the innings break), most recently scored first. {@code city} is matched without regard to case; null means
+     * every city. {@code limit} and {@code offset} page the list. This is for the public list, so it is not limited to anyone's own matches.
+     */
+    Flux<Match> findLive(String city, int limit, int offset);
+
+    /**
      * Inserts or updates the match and replaces its XIs and scorers, in the caller's transaction. A stale version is {@code OPTIMISTIC_LOCKING_CONFLICT};
      * a venue booking already used by another match is {@code BOOKING_ALREADY_USED}.
      */

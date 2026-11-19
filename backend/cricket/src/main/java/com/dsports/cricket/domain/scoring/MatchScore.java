@@ -52,6 +52,11 @@ public record MatchScore(List<InningsState> innings, ScoreCommand.EndMatch.Reaso
         };
     }
 
+    /** True once the first innings has been started. A match ended by hand before that (abandoned in the pavilion) never started, so it is not public. */
+    public boolean hasStarted() {
+        return !innings.isEmpty();
+    }
+
     /** True once nothing more will be scored: completed, abandoned or no result. */
     public boolean isFinished() {
         var status = status();

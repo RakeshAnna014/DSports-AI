@@ -52,7 +52,7 @@ class SecurityPolicyTest {
     @RestController
     static class Probe {
         @GetMapping({"/api/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/metrics", "/actuator/info", "/actuator/env", "/api/catalog/products",
-                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/players", "/api/v1/teams", "/api/v1/matches", "/api/v1/matches/x/scoring", "/api/v1/admin/matches/x/scoring/unlock", "/api/v1/me/bookings",
+                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/players", "/api/v1/teams", "/api/v1/matches", "/api/v1/matches/x", "/api/v1/matches/x/scorecard", "/api/v1/matches/x/scoring", "/api/v1/admin/matches/x/scoring/unlock", "/api/v1/me/bookings",
                 "/some/unknown/route"})
         String ok() {
             return "ok";
@@ -106,6 +106,11 @@ class SecurityPolicyTest {
             "/api/v1/admin/venues,anonymous,401", "/api/v1/admin/venues,customer,403", "/api/v1/admin/venues,owner,403", "/api/v1/admin/venues,admin,200",
             // cricket players and teams: signed-in users only (the use cases decide who sees what)
             "/api/v1/players,anonymous,401", "/api/v1/players,customer,200", "/api/v1/teams,anonymous,401", "/api/v1/teams,customer,200", "/api/v1/matches,anonymous,401", "/api/v1/matches,customer,200",
+            // cricket public scorecards: exactly two read-only routes need no sign-in (a started match's scorecard, and the live list, which is the matches path WITH a status parameter);
+            // the same matches path without it ("my matches"), a match's setup and every other path under it stay behind a sign-in
+            "/api/v1/matches/x/scorecard,anonymous,200", "/api/v1/matches/x/scorecard,customer,200", "/api/v1/matches?status=LIVE,anonymous,200", "/api/v1/matches?status=LIVE&city=Chennai,anonymous,200",
+            "/api/v1/matches?status=LIVE,customer,200", "/api/v1/matches?city=Chennai,anonymous,401", "/api/v1/matches?Status=LIVE,anonymous,401",
+            "/api/v1/matches/x,anonymous,401", "/api/v1/matches/x,customer,200", "/api/v1/matches/x/y/scorecard,anonymous,401", "/api/v1/matches/x/scorecards,anonymous,401",
             // cricket scoring: signed-in users only (the use case decides who may score); unlocking a locked match is for administrators only
             "/api/v1/matches/x/scoring,anonymous,401", "/api/v1/matches/x/scoring,customer,200", "/api/v1/admin/matches/x/scoring/unlock,anonymous,401",
             "/api/v1/admin/matches/x/scoring/unlock,customer,403", "/api/v1/admin/matches/x/scoring/unlock,owner,403", "/api/v1/admin/matches/x/scoring/unlock,support,403", "/api/v1/admin/matches/x/scoring/unlock,admin,200",
@@ -131,6 +136,13 @@ class SecurityPolicyTest {
             default -> throw new IllegalArgumentException(who);
         };
         org.assertj.core.api.Assertions.assertThat(status(path, bearer)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "{0} {1} without a token -> 401")
+    @CsvSource({"POST,/api/v1/matches/x/scorecard", "PUT,/api/v1/matches/x/scorecard", "DELETE,/api/v1/matches/x/scorecard", "POST,/api/v1/matches?status=LIVE", "DELETE,/api/v1/matches?status=LIVE",
+            "HEAD,/api/v1/matches/x/scorecard"})
+    void thePublicCricketRoutesAreReadOnlyOtherMethodsStillNeedASignIn(String method, String path) {
+        client.method(org.springframework.http.HttpMethod.valueOf(method)).uri(path).exchange().expectStatus().isUnauthorized();
     }
 
     @Test

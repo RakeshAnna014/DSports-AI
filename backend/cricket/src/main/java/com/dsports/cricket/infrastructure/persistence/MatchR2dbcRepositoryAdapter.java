@@ -55,6 +55,19 @@ public class MatchR2dbcRepositoryAdapter implements MatchRepository {
     }
 
     @Override
+    public Flux<Match> findLive(String city, int limit, int offset) {
+        var sql = db.sql("""
+                SELECT m.id FROM matches m
+                 WHERE m.status IN ('IN_PROGRESS', 'INNINGS_BREAK')
+                   AND (CAST(:city AS text) IS NULL OR lower(m.city) = lower(CAST(:city AS text)))
+                 ORDER BY m.updated_at DESC, m.id
+                 LIMIT :limit OFFSET :offset
+                """);
+        var bound = (city == null ? sql.bindNull("city", String.class) : sql.bind("city", city)).bind("limit", limit).bind("offset", offset);
+        return bound.map((row, meta) -> row.get("id", UUID.class)).all().concatMap(id -> repository.findById(id).flatMap(this::withChildren));
+    }
+
+    @Override
     public Mono<Match> save(Match match) {
         return repository.save(toEntity(match))
             .doOnNext(saved -> match.setVersion(saved.getVersion()))
