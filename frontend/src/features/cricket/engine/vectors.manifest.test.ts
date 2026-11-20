@@ -34,7 +34,9 @@ interface VectorFile {
   steps: Step[];
 }
 
-const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8').replace(/\r\n/g, '\n');
+/** The exact bytes of a file: nothing is converted (see .gitattributes), so the hash is over what is on disk. */
+const bytes = (path: string): Buffer => readFileSync(join(ROOT, path));
+const read = (path: string): string => bytes(path).toString('utf8');
 const manifest: Manifest = JSON.parse(read('manifest.json')) as Manifest;
 const load = (path: string): VectorFile => JSON.parse(read(path)) as VectorFile;
 
@@ -48,7 +50,8 @@ describe('the shared engine vectors, seen from TypeScript', () => {
     const onDisk = ['golden', 'random'].flatMap((dir) => readdirSync(join(ROOT, dir)).map((name) => `${dir}/${name}`));
     expect(manifest.files.map((f) => f.path).sort()).toEqual(onDisk.sort());
     for (const file of manifest.files) {
-      expect(createHash('sha256').update(read(file.path)).digest('hex'), file.path).toBe(file.sha256);
+      expect(read(file.path), `${file.path} has carriage returns: a checkout must not convert line endings (.gitattributes)`).not.toContain('\r');
+      expect(createHash('sha256').update(bytes(file.path)).digest('hex'), `hash of the bytes of ${file.path}`).toBe(file.sha256);
     }
   });
 
@@ -102,6 +105,28 @@ describe('the fingerprint, the way both sides must compute it', () => {
     expect(() => canonicalJson(1.5)).toThrow(/integers/);
     expect(() => canonicalJson('say "hi"')).toThrow(/ASCII/);
     expect(() => canonicalJson('é')).toThrow(/ASCII/);
+  });
+
+  it('holds only integers in every recorded state (a fraction would be written differently by Java and by JavaScript)', () => {
+    let numbers = 0;
+    const visit = (value: Json): void => {
+      if (typeof value === 'number') {
+        numbers++;
+        expect(Number.isSafeInteger(value), `${value}`).toBe(true);
+      } else if (Array.isArray(value)) {
+        value.forEach(visit);
+      } else if (value !== null && typeof value === 'object') {
+        Object.values(value).forEach(visit);
+      }
+    };
+    for (const entry of manifest.files) {
+      for (const step of load(entry.path).steps) {
+        if (step.expect.state !== undefined) {
+          visit(step.expect.state);
+        }
+      }
+    }
+    expect(numbers).toBeGreaterThan(10000);
   });
 
   it('reproduces the fingerprint the Java engine recorded for every state in every file', () => {
