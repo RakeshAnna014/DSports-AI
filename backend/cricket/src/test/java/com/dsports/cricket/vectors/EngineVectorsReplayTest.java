@@ -40,7 +40,9 @@ class EngineVectorsReplayTest {
         var listed = new ArrayList<String>();
         for (JsonNode f : manifest.get("files")) {
             listed.add(f.get("path").asText());
-            assertThat(VectorFormat.sha256Hex(Files.readString(root.resolve(f.get("path").asText())))).as("hash of %s", f.get("path").asText()).isEqualTo(f.get("sha256").asText());
+            var bytes = Files.readAllBytes(root.resolve(f.get("path").asText()));
+            assertThat(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)).as("%s has no carriage returns (a checkout must not convert line endings)", f.get("path").asText()).doesNotContain("\r");
+            assertThat(VectorFormat.sha256Hex(bytes)).as("hash of the bytes of %s", f.get("path").asText()).isEqualTo(f.get("sha256").asText());
         }
         assertThat(listed).hasSameSizeAs(vectorFiles()).containsExactlyInAnyOrderElementsOf(vectorFiles().stream().map(p -> root.relativize(p).toString().replace('\\', '/')).toList());
     }

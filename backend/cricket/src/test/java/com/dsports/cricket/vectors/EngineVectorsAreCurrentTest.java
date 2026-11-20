@@ -14,10 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class EngineVectorsAreCurrentTest {
 
-    private static String lf(String text) {
-        return text.replace("\r\n", "\n");
-    }
-
     @Test
     void everyCommittedFileIsWhatTheEngineProducesNow() throws Exception {
         var expected = VectorCorpus.build();
@@ -27,11 +23,12 @@ class EngineVectorsAreCurrentTest {
             var file = root.resolve(e.getKey());
             if (!Files.exists(file)) {
                 different.add(e.getKey() + " (missing)");
-            } else if (!lf(Files.readString(file)).equals(e.getValue())) {
+            } else if (!java.util.Arrays.equals(Files.readAllBytes(file), e.getValue().getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
                 different.add(e.getKey());
             }
         }
-        assertThat(different).as("vector files that differ from the engine's output (regenerate with -Dvectors.write=true, bump ENGINE_VERSION if a rule changed, review the diff)").isEmpty();
+        assertThat(different).as("vector files whose bytes differ from the engine's output (regenerate with -Dvectors.write=true, bump ENGINE_VERSION if a rule changed, review the diff; "
+            + "if every file differs, check that .gitattributes keeps testdata/cricket-engine unconverted)").isEmpty();
     }
 
     @Test

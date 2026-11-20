@@ -42,6 +42,10 @@ final class VectorFormat {
     // ---- canonical text and fingerprint ----------------------------------------------------------------------------
 
     static JsonNode canonical(JsonNode node) {
+        if (node.isNumber() && !node.isIntegralNumber()) {
+            // The fingerprint is defined over integers only (no run rates, no economy): a fraction would be written differently by Java and by JavaScript.
+            throw new IllegalStateException("A non-integer number cannot be part of a fingerprinted state: " + node);
+        }
         if (node.isObject()) {
             var sorted = new TreeMap<String, JsonNode>();
             node.fields().forEachRemaining(e -> sorted.put(e.getKey(), canonical(e.getValue())));
@@ -69,9 +73,13 @@ final class VectorFormat {
         return HexFormat.of().formatHex(sha256(compact(state).getBytes(StandardCharsets.UTF_8)), 0, 8);
     }
 
-    /** SHA-256 of a text with line endings normalised to LF, so a checkout with CRLF gives the same hash. */
+    /** SHA-256 of the exact bytes of a file. Nothing is normalised: the files are checked out byte for byte (see {@code .gitattributes}). */
+    static String sha256Hex(byte[] bytes) {
+        return HexFormat.of().formatHex(sha256(bytes));
+    }
+
     static String sha256Hex(String text) {
-        return HexFormat.of().formatHex(sha256(text.replace("\r\n", "\n").getBytes(StandardCharsets.UTF_8)));
+        return sha256Hex(text.getBytes(StandardCharsets.UTF_8));
     }
 
     private static byte[] sha256(byte[] bytes) {
