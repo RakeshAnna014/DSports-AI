@@ -66,9 +66,10 @@ jobs:
         run: pnpm run lint
       # Includes src/features/cricket/engine, which reads testdata/cricket-engine: the manifest and every file's hash, the vocabulary, and the fingerprint of
       # every recorded state computed again in TypeScript.
+      # Two workers: the suite renders heavy Material UI screens in jsdom, and a two-vCPU runner is slower with more workers than with two.
       - name: Tests
         working-directory: frontend
-        run: pnpm test
+        run: pnpm exec vitest run --maxWorkers=2
 
   e2e-guard:
     name: e2e safety guard
