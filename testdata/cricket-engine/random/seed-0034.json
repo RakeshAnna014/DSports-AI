@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "name": "random-0034",
+  "description": "A seeded random match: mostly sensible commands, many refused ones, some undos.",
+  "setup": {"battingFirst":"00000000-0000-0001-0000-000000000001","overs":3,"rules":{"ballsPerOver":8,"freeHitEnabled":true,"lastManStands":false,"maxOversPerBowler":null,"noBallPenalty":2,"playersPerSide":5,"widePenalty":2},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001","00000000-0000-000a-0000-000000000002","00000000-0000-000a-0000-000000000003","00000000-0000-000a-0000-000000000004","00000000-0000-000a-0000-000000000005"],"xiB":["00000000-0000-0014-0000-000000000001","00000000-0000-0014-0000-000000000002","00000000-0000-0014-0000-000000000003","00000000-0000-0014-0000-000000000004","00000000-0000-0014-0000-000000000005"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000004","nonStriker":"00000000-0000-000a-0000-000000000001","striker":"00000000-0000-000a-0000-000000000003","type":"START_INNINGS"},"expect":{"end":null,"fp":"26d5ff6eccb022f1","next":"DELIVER","result":"accepted","resultType":null,"seq":1,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"bowler":"00000000-0000-000a-0000-000000000001","nonStriker":"00000000-0000-0014-0000-000000000001","striker":"00000000-0000-0014-0000-000000000005","type":"START_INNINGS"},"expect":{"result":"rejected","violation":"PREVIOUS_INNINGS_NOT_COMPLETE"},"op":"command"},
+    {"expect":{"end":null,"fp":"f201bb7d47fbcbfa","next":"START_INNINGS","result":"accepted","resultType":null,"seq":2,"status":"TOSS_DONE","voids":[1]},"mode":"BALL","op":"undo"},
+    {"command":{"reason":"ABANDONED","type":"END_MATCH"},"expect":{"end":null,"fp":"ec0778de3b20b4f9","next":"NONE","result":"accepted","resultType":null,"seq":3,"status":"ABANDONED"},"op":"command"},
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000002","nonStriker":"00000000-0000-000a-0000-000000000004","striker":"00000000-0000-000a-0000-000000000004","type":"START_INNINGS"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000003","nonStriker":"00000000-0000-000a-0000-000000000005","striker":"00000000-0000-000a-0000-000000000001","type":"START_INNINGS"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000003","nonStriker":"00000000-0000-000a-0000-000000000002","striker":"00000000-0000-000a-0000-000000000001","type":"START_INNINGS"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"}
+  ]
+}

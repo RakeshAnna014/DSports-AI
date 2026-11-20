@@ -41,7 +41,7 @@ public final class ScoringRequests {
     public record CommandBody(@NotNull ScoreCommand.Type type, UUID striker, UUID nonStriker, UUID bowler, @Valid DeliveryBody delivery, UUID batterId, UUID bowlerId,
                               ScoringCommand.RetirementType retirement, Integer target, @Size(max = 40) String reason) {
 
-        ScoreCommand toCommand() {
+        public ScoreCommand toCommand() {
             return switch (type) {
                 case START_INNINGS -> new ScoreCommand.StartInnings(need(striker, "striker"), need(nonStriker, "nonStriker"), need(bowler, "bowler"));
                 case DELIVER -> new ScoreCommand.Play(new ScoringCommand.Deliver(need(delivery, "delivery").toDelivery()));

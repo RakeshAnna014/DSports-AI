@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "name": "setup-too-small",
+  "description": "A setup with a single player a side: starting an innings is refused as an invalid setup.",
+  "setup": {"battingFirst":"00000000-0000-0001-0000-000000000001","overs":2,"rules":{"ballsPerOver":6,"freeHitEnabled":true,"lastManStands":false,"maxOversPerBowler":null,"noBallPenalty":1,"playersPerSide":11,"widePenalty":1},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001"],"xiB":["00000000-0000-0014-0000-000000000001"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000001","nonStriker":"00000000-0000-000a-0000-000000000001","striker":"00000000-0000-000a-0000-000000000001","type":"START_INNINGS"},"expect":{"result":"rejected","violation":"INVALID_SETUP"},"op":"command"},
+    {"expect":{"result":"nothing_to_undo"},"mode":"BALL","op":"undo"}
+  ]
+}

@@ -1,0 +1,2 @@
+# Shared engine test vectors are compared byte for byte (and hashed), so they are always checked out with LF line endings.
+testdata/cricket-engine/** text eol=lf

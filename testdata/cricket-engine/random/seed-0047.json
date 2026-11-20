@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "name": "random-0047",
+  "description": "A seeded random match: mostly sensible commands, many refused ones, some undos.",
+  "setup": {"battingFirst":"00000000-0000-0001-0000-000000000001","overs":4,"rules":{"ballsPerOver":5,"freeHitEnabled":false,"lastManStands":false,"maxOversPerBowler":null,"noBallPenalty":1,"playersPerSide":7,"widePenalty":2},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001","00000000-0000-000a-0000-000000000002","00000000-0000-000a-0000-000000000003","00000000-0000-000a-0000-000000000004","00000000-0000-000a-0000-000000000005","00000000-0000-000a-0000-000000000006","00000000-0000-000a-0000-000000000007"],"xiB":["00000000-0000-0014-0000-000000000001","00000000-0000-0014-0000-000000000002","00000000-0000-0014-0000-000000000003","00000000-0000-0014-0000-000000000004","00000000-0000-0014-0000-000000000005","00000000-0000-0014-0000-000000000006","00000000-0000-0014-0000-000000000007"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-0014-0000-000000000002","nonStriker":"00000000-0000-000a-0000-000000000004","striker":"00000000-0000-000a-0000-000000000002","type":"START_INNINGS"},"expect":{"end":null,"fp":"13e2bcada25bc300","next":"DELIVER","result":"accepted","resultType":null,"seq":1,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"dismissal":{"batterOut":"00000000-0000-000a-0000-000000000004","end":"BOWLERS_END","type":"BOWLED"},"kind":"NORMAL","runs":1,"runsType":"BAT"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"ONLY_STRIKER_CAN_BE_OUT"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-0014-0000-000000000007","type":"CHANGE_BOWLER"},"expect":{"result":"rejected","violation":"NO_DELIVERY_IN_OVER"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-000a-0000-000000000002","retirement":"OUT","type":"RETIRE_BATTER"},"expect":{"end":null,"fp":"8326bc81d68dcb72","next":"SELECT_BATTER","result":"accepted","resultType":null,"seq":2,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-000a-0000-000000000005","type":"SELECT_BATTER"},"expect":{"end":null,"fp":"e407e5b998ecf98b","next":"DELIVER","result":"accepted","resultType":null,"seq":3,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":2,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"4adf64f33b3d1f03","next":"DELIVER","result":"accepted","resultType":null,"seq":4,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":true,"kind":"NORMAL","runs":4,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"866b4c9ad1ae641d","next":"DELIVER","result":"accepted","resultType":null,"seq":5,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"dismissal":{"batterOut":"00000000-0000-000a-0000-000000000004","end":"BOWLERS_END","type":"LBW"},"kind":"NORMAL","runs":0,"runsType":"BAT"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"ONLY_STRIKER_CAN_BE_OUT"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NO_BALL","runs":1,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"45a0a7a998a63732","next":"DELIVER","result":"accepted","resultType":null,"seq":6,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-0014-0000-000000000001","type":"CHANGE_BOWLER"},"expect":{"end":null,"fp":"d1ec2af1a9b60ebf","next":"DELIVER","result":"accepted","resultType":null,"seq":7,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-000a-0000-000000000004","retirement":"HURT","type":"RETIRE_BATTER"},"expect":{"end":null,"fp":"c04ed084304b8801","next":"SELECT_BATTER","result":"accepted","resultType":null,"seq":8,"status":"IN_PROGRESS"},"op":"command"},
+    {"expect":{"end":null,"fp":"d1ec2af1a9b60ebf","next":"DELIVER","result":"accepted","resultType":null,"seq":9,"status":"IN_PROGRESS","voids":[8]},"mode":"COMMAND","op":"undo"},
+    {"expect":{"end":null,"fp":"45a0a7a998a63732","next":"DELIVER","result":"accepted","resultType":null,"seq":10,"status":"IN_PROGRESS","voids":[7]},"mode":"COMMAND","op":"undo"},
+    {"command":{"bowlerId":"00000000-0000-0014-0000-000000000002","type":"CHANGE_BOWLER"},"expect":{"result":"rejected","violation":"SAME_BOWLER"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":3,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"7de7b8205b38eaaa","next":"DELIVER","result":"accepted","resultType":null,"seq":11,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"reason":"NO_RESULT","type":"END_MATCH"},"expect":{"end":null,"fp":"ab503e2a15fa1a6b","next":"NONE","result":"accepted","resultType":null,"seq":12,"status":"NO_RESULT"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":8,"runsType":"BAT"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-0014-0000-000000000002","type":"CHANGE_BOWLER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"reason":"DECLARED","type":"END_INNINGS"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"}
+  ]
+}

@@ -17,6 +17,12 @@ import java.util.UUID;
  */
 public final class MatchScoring {
 
+    /**
+     * The version of the scoring rules. Bump it by hand whenever any rule changes an outcome. It is recorded in the shared engine vectors
+     * ({@code testdata/cricket-engine/manifest.json}) and, from 2f, compared by the phone with the server's before it scores offline.
+     */
+    public static final int ENGINE_VERSION = 1;
+
     private MatchScoring() {
     }
 

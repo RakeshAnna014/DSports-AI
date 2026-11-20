@@ -33,7 +33,11 @@ public final class RandomScorer {
     }
 
     public static ScoringCommand nextCommand(Random r, Game g) {
-        var s = g.s;
+        return nextCommand(r, g.s);
+    }
+
+    /** The next command for an innings in this state (used by the match-level vector generator, which has no {@link Game}). */
+    public static ScoringCommand nextCommand(Random r, InningsState s) {
         if (s.needsBatter() && r.nextInt(10) < 8) {
             return new SelectBatter(pick(r, s.battingXi()));
         }
