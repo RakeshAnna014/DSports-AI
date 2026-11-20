@@ -43,9 +43,9 @@ testdata/cricket-engine/
   golden/*.json            the existing golden innings plus one hand-written file per rule family
                            (free hit, retirements, bowler limits scaling, run-outs, revised target,
                            innings end reasons, result calculation, undo modes)
-  random/seed-0001.json …  seeded random games produced by the Java RandomScorer (about 300 seeds, up to ~250 steps each,
-                           many of them deliberately illegal commands)
-  from-ts/seed-0001.json … seeded random games produced by the TypeScript generator (about 100 seeds), see 1.4
+  random/seed-0001.json …  seeded random games produced by the Java RandomScorer (built in 2f-0: 120 seeds, about 4,900 steps in all
+                           with the golden files, many of them deliberately illegal commands; more seeds can be added by changing one constant)
+  from-ts/seed-0001.json … seeded random games produced by the TypeScript generator (about 100 seeds), see 1.4; arrives with 2f-1
 ```
 
 A vector file is plain JSON, integers and strings only (no floats, no dates, no map-ordering dependence; lists in a fixed order; ids are the small fixed ids the golden match already uses):
