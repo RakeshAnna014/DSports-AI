@@ -14,6 +14,7 @@
 import { chromium, devices } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { assertLocalTestDatabase as assertLocalTestDatabaseWith, TEST_CONTAINER, TEST_DATABASE } from './lib/localTestGuard.mjs';
 
 const shots = process.argv[2] ?? '.';
 const BASE = process.env.E2E_BASE ?? 'http://localhost:3000';
@@ -26,24 +27,10 @@ const log = (...a) => console.log('[cricket-ui]', ...a);
 
 const DOCKER = process.env.DOCKER_BIN || (existsSync('C:/Program Files/Rancher Desktop/resources/resources/win32/bin/docker.exe') ? 'C:/Program Files/Rancher Desktop/resources/resources/win32/bin/docker.exe' : 'docker');
 const sql = (q) => execFileSync(DOCKER, ['exec', TEST_CONTAINER, 'psql', '-U', 'dsports', '-d', TEST_DATABASE, '-tAc', q], { encoding: 'utf8' }).trim();
+const assertLocalTestDatabase = (matchId) => assertLocalTestDatabaseWith(API, sql, matchId);
 
 const email = `cui-${run}@example.com`;
 const created = { match: null, teams: [], players: [] };
-
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
-const TEST_CONTAINER = 'dsports-postgres';
-const TEST_DATABASE = 'dsports';
-
-/** Throws unless every check says this is the local test database. Run before the run starts (no match yet) and again, with the match's id, before the clean-up bypasses the guard. */
-function assertLocalTestDatabase(matchId) {
-  const apiHost = new URL(API).hostname;
-  if (!LOCAL_HOSTS.has(apiHost)) throw new Error(`refusing to run: the API host is "${apiHost}", not this machine (loopback only)`);
-  const row = sql(`SELECT current_database() || '|' || coalesce(inet_server_addr()::text, 'socket') || '|' || (SELECT rolsuper::text FROM pg_roles WHERE rolname = current_user)`);
-  const [database, address] = row.split('|');
-  if (database !== TEST_DATABASE) throw new Error(`refusing to run: the database is "${database}", not "${TEST_DATABASE}"`);
-  if (address !== 'socket') throw new Error(`refusing to run: the database was reached over the network (${address}), not the container's own socket`);
-  if (matchId && sql(`SELECT count(*) FROM matches WHERE id = '${matchId}'`) !== '1') throw new Error('refusing to clean up: the match this run made is not in this database, so it is not the one the API wrote to');
-}
 
 async function api(method, path, token, body) {
   const r = await fetch(`${API}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
