@@ -1,0 +1,67 @@
+/**
+ * The words the scoring engine knows, copied from the Java engine. `vectors.manifest.test.ts` compares these lists with `testdata/cricket-engine/manifest.json`,
+ * which the Java build writes from its own enums, so a rule, command or dismissal added on the Java side fails the frontend build until it is added here too.
+ */
+export const VOCABULARY = {
+  commandTypes: ['START_INNINGS', 'DELIVER', 'SELECT_BATTER', 'SELECT_BOWLER', 'CHANGE_BOWLER', 'RETIRE_BATTER', 'REVISE_TARGET', 'END_INNINGS', 'END_MATCH'],
+  violations: [
+    'INNINGS_NOT_STARTED',
+    'INNINGS_ALREADY_STARTED',
+    'INNINGS_COMPLETE',
+    'INVALID_SETUP',
+    'INVALID_OPENERS',
+    'NEEDS_NEW_BATTER',
+    'NEEDS_NEW_BOWLER',
+    'NO_BATTER_NEEDED',
+    'NO_BOWLER_NEEDED',
+    'INVALID_DELIVERY',
+    'RUNS_OUT_OF_RANGE',
+    'INVALID_BOUNDARY',
+    'DISMISSAL_NOT_ALLOWED_ON_WIDE',
+    'DISMISSAL_NOT_ALLOWED_ON_NO_BALL',
+    'DISMISSAL_NOT_ALLOWED_ON_FREE_HIT',
+    'ONLY_STRIKER_CAN_BE_OUT',
+    'DISMISSED_BATTER_REQUIRED',
+    'BATTER_NOT_AT_CREASE',
+    'RUN_OUT_END_REQUIRED',
+    'FIELDER_NOT_ALLOWED',
+    'FIELDER_NOT_IN_XI',
+    'DISMISSAL_RUNS_NOT_ALLOWED',
+    'BATTER_NOT_IN_XI',
+    'BATTER_ALREADY_AT_CREASE',
+    'BATTER_ALREADY_OUT',
+    'BOWLER_NOT_IN_XI',
+    'BOWLER_BOWLED_PREVIOUS_OVER',
+    'BOWLER_LIMIT_REACHED',
+    'BOWLER_ALREADY_BOWLED_THIS_OVER',
+    'SAME_BOWLER',
+    'NO_DELIVERY_IN_OVER',
+    'INVALID_RETIREMENT',
+    'NO_TARGET_TO_REVISE',
+    'INVALID_TARGET',
+    'TARGET_ALREADY_REACHED',
+    'CANNOT_END_YET',
+    'MATCH_ENDED',
+    'MATCH_COMPLETE',
+    'PREVIOUS_INNINGS_NOT_COMPLETE',
+    'ALL_INNINGS_PLAYED',
+  ],
+  dismissalTypes: ['BOWLED', 'CAUGHT', 'LBW', 'STUMPED', 'HIT_WICKET', 'RUN_OUT', 'OBSTRUCTING_FIELD', 'HIT_BALL_TWICE'],
+  creaseEnds: ['BATTING_END', 'BOWLERS_END'],
+  deliveryKinds: ['NORMAL', 'WIDE', 'NO_BALL'],
+  runsTypes: ['BAT', 'BYE', 'LEG_BYE'],
+  endReasons: ['ALL_OUT', 'OVERS_COMPLETE', 'TARGET_REACHED', 'DECLARED', 'NO_BATTERS_LEFT'],
+  retirementTypes: ['HURT', 'OUT'],
+  endMatchReasons: ['ABANDONED', 'NO_RESULT'],
+  waiverKinds: ['OVER_LIMIT', 'CONSECUTIVE_OVER'],
+  undoModes: ['COMMAND', 'BALL'],
+  matchStatuses: ['SCHEDULED', 'TOSS_DONE', 'IN_PROGRESS', 'INNINGS_BREAK', 'COMPLETED', 'ABANDONED', 'NO_RESULT'],
+  resultTypes: ['IN_PROGRESS', 'WON_BY_RUNS', 'WON_BY_WICKETS', 'TIE'],
+  nextActions: ['START_INNINGS', 'SELECT_BATTER', 'SELECT_BOWLER', 'DELIVER', 'NONE'],
+} as const;
+
+/**
+ * The engine versions this build of the phone knows how to run. The Java engine's `MatchScoring.ENGINE_VERSION` is recorded in the vectors and (from 2f-3) in the
+ * scoring view: a phone whose list does not contain the server's version must not predict anything offline.
+ */
+export const SUPPORTED_ENGINE_VERSIONS: readonly number[] = [1];
