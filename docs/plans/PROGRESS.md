@@ -13,15 +13,19 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 2f-2 | Durable IndexedDB queue, journal, pure reducer (no UI) | **done** (see report; to be re-verified in a clean worktree with 2f-3) |
 | 2f-3 | Server additions: engine-state route, engineVersion + state fingerprint, `mine`/`clientEventId` on events, `tappedAt` (migration V57) | **done** (d3c25ef, cc7d122, 938c8b0) |
 | 2f-4 | Sender, local view, scorer screen states, conflict / set-aside sheets, emulated e2e, real-phone script 7c | **done** (a3e96df, 7fda349, 1b6e48e, 854209d + docs/7c commit) |
-| 3a | Match analytics and commentary from the log (public route `GET /api/v1/matches/{id}/analytics`), charts on the public scorecard (SSE not built: see DECISIONS-LOG) | **built, verification pending** |
-| 3b | Career stats projection (rebuildable), player stats API | todo |
-| 3c | Match analytics (wagon wheel input, Manhattan, worm, partnerships, fall of wickets) | todo |
-| 4a | Tournaments: aggregate, teams, groups, fixtures, migration | todo |
+| 3a | Match analytics and commentary from the log (public route `GET /api/v1/matches/{id}/analytics`), charts on the public scorecard (SSE not built: see DECISIONS-LOG) | **done** (f60fa55; frontend verified in a clean worktree 2026-11-23, backend verified with 3b) |
+| 3b | Career stats projection `player_match_stats` (V58, rebuildable), `GET /api/v1/players/{id}/stats` public, admin rebuild | **done** (e2ad4e4, 7be7e29) |
+| 3c | Career stats screen (player page), linked from the public scorecard (adds `playerId` to the public scorecard) | todo |
+| 3d | Guest players linked to a real account by the organiser (owner decision) | todo |
+| 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | todo |
+| 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | todo |
 | 4b | Points table with NRR, leaderboards, awards | todo |
-| 4c | Entry fees through the payment module, tournament screens | todo |
+| 4c | Tournament screens (organiser console, public page); fee extension point written in the ADR, no payments | todo |
+| 4d | Scorer invite link: single use, 48 h, revocable, sign-in required (owner decision) | todo |
 | 5a | AI tools: match summary + report with grounding check | todo |
 | 5b | AI tools: player stats, head to head, team insights, ground finder | todo |
-| 5c | `book_ground` chat write (proposal + confirmation), Looking, feed | todo |
+| 5c | `book_ground` chat write (proposal + confirmation) | todo |
+| 5d | "Looking" and feed, simplest version behind a setting that is off by default | todo |
 | final | Fresh-clone full suite x3, whole-branch review, FINAL-REPORT.md | todo |
 
 Gate acceptance criteria and edge-case lists are written under each gate's heading below before coding starts.
