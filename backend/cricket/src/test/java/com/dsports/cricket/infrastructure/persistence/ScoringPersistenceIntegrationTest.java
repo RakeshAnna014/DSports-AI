@@ -381,4 +381,108 @@ class ScoringPersistenceIntegrationTest {
         scoreOne(matchId, GoldenMatch.lionsInnings().get(0), UUID.randomUUID(), "again");
         assertThat(store.entries(matchId).collectList().block()).hasSize(1);
     }
+
+    // ---- V57: when the scorer says they tapped (display only) ------------------------------------------------------------------
+
+    private static LogEntry dotAt(int seq, Instant tapped) {
+        return LogEntry.command(seq, GoldenMatch.lionsInnings().get(seq - 1), UUID.randomUUID(), SCORER, NOW.plusSeconds(seq), List.of()).withTappedAt(tapped);
+    }
+
+    private static void appendRaw(UUID matchId, LogEntry entry) {
+        store.exclusive(matchId, s -> s.entries().collectList().flatMap(entries -> {
+            var score = MatchScoring.fold(SETUP, ScoringLog.commands(entries));
+            var accepted = (ScoreOutcome.Accepted) MatchScoring.apply(SETUP, score, entry.command());
+            return s.append(entry, "h-" + entry.seq(), new ScoringStore.Snapshot(entry.seq(), accepted.score(), EditWindow.open().after(accepted.score(), entry.at())), accepted.score().status());
+        })).block();
+    }
+
+    @Test
+    void the_time_a_ball_was_tapped_is_stored_with_the_event_read_back_and_optional() {
+        var matchId = newMatch();
+        appendRaw(matchId, dotAt(1, null));
+        appendRaw(matchId, dotAt(2, NOW.plusSeconds(2).minusSeconds(90)));
+        appendRaw(matchId, dotAt(3, NOW.plusSeconds(3)));
+
+        var entries = store.entries(matchId).collectList().block();
+        assertThat(entries).extracting(LogEntry::tappedAt).containsExactly(null, NOW.plusSeconds(2).minusSeconds(90), NOW.plusSeconds(3));
+        assertThat(entries).extracting(LogEntry::at).as("the server's own time is what every rule uses").containsExactly(NOW.plusSeconds(1), NOW.plusSeconds(2), NOW.plusSeconds(3));
+        var found = store.exclusive(matchId, s -> s.findByClientEventId(entries.get(1).clientEventId())).block();
+        assertThat(found.entry().tappedAt()).isEqualTo(entries.get(1).tappedAt());
+    }
+
+    @Test
+    void the_database_refuses_a_tapped_time_later_than_when_the_event_was_received() {
+        var matchId = newMatch();
+        assertThatThrownBy(() -> db.sql("""
+                INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, created_at, tapped_at)
+                VALUES (:id, :m, 1, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at, :tapped)
+                """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW).bind("tapped", NOW.plusSeconds(1))
+            .fetch().rowsUpdated().block()).hasMessageContaining("ck_ball_events_tapped_at");
+        assertThat(store.entries(matchId).collectList().block()).isEmpty();
+    }
+
+    @Test
+    void an_insert_with_and_without_the_new_column_works_and_the_append_only_guards_still_refuse_update_delete_and_truncate_of_it() {
+        var matchId = newMatch();
+        insert(matchId, 1, "DELIVER", UUID.randomUUID());   // without tapped_at, as every event written before V57 was
+        db.sql("""
+                INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, created_at, tapped_at)
+                VALUES (:id, :m, 2, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at, :tapped)
+                """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW).bind("tapped", NOW.minusSeconds(60))
+            .fetch().rowsUpdated().block();
+
+        assertThatThrownBy(() -> db.sql("UPDATE ball_events SET tapped_at = :t WHERE match_id = :m AND seq = 1").bind("t", NOW).bind("m", matchId).fetch().rowsUpdated().block())
+            .as("the new column cannot be edited afterwards either").hasMessageContaining("append-only");
+        assertThatThrownBy(() -> db.sql("UPDATE ball_events SET tapped_at = NULL WHERE match_id = :m AND seq = 2").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        assertThatThrownBy(() -> db.sql("DELETE FROM ball_events WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        for (var statement : List.of("TRUNCATE ball_events", "TRUNCATE matches CASCADE")) {
+            assertThatThrownBy(() -> TX.transactional(db.sql(statement).fetch().rowsUpdated().then(Mono.<Void>error(new IllegalStateException("not refused: " + statement)))).block())
+                .as(statement).hasMessageContaining("append-only");
+        }
+        var rows = db.sql("SELECT seq, tapped_at FROM ball_events WHERE match_id = :m ORDER BY seq").bind("m", matchId)
+            .map((row, meta) -> row.get("seq", Integer.class) + ":" + row.get("tapped_at", Instant.class)).all().collectList().block();
+        assertThat(rows).containsExactly("1:null", "2:" + NOW.minusSeconds(60));
+    }
+
+    @Test
+    void a_database_that_already_holds_events_at_v56_upgrades_to_v57_with_them_untouched_and_the_guards_in_place() throws Exception {
+        var name = "upgrade_" + UUID.randomUUID().toString().replace("-", "");
+        try (var connection = java.sql.DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()); var statement = connection.createStatement()) {
+            statement.execute("CREATE DATABASE " + name);
+        }
+        var jdbc = POSTGRES.getJdbcUrl().replaceFirst("/" + POSTGRES.getDatabaseName() + "(\\?|$)", "/" + name + "$1");
+        Flyway.configure().dataSource(jdbc, POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").target("56").load().migrate();
+        var factory = ConnectionFactories.get("r2dbc:postgresql://" + POSTGRES.getUsername() + ":" + POSTGRES.getPassword() + "@" + POSTGRES.getHost() + ":" + POSTGRES.getFirstMappedPort() + "/" + name);
+        var old = DatabaseClient.create(factory);
+        var repositories = new R2dbcRepositoryFactory(new R2dbcEntityTemplate(factory));
+        var oldTeams = new TeamR2dbcRepositoryAdapter(repositories.getRepository(SpringR2dbcTeamRepository.class), old);
+        var oldMatches = new MatchR2dbcRepositoryAdapter(repositories.getRepository(SpringR2dbcMatchRepository.class), old);
+        var creator = UUID.randomUUID();
+        var a = Team.create(creator, "A " + UUID.randomUUID(), "Chennai", NOW);
+        var b = Team.create(creator, "B " + UUID.randomUUID(), "Chennai", NOW);
+        oldTeams.save(a).block();
+        oldTeams.save(b).block();
+        var matchId = oldMatches.save(Match.create(creator, a.getId(), b.getId(), new Match.Settings(2, BallType.TENNIS, MatchRules.standard(), NOW, "Chennai", null), null, NOW)).block().getId();
+        for (int seq = 1; seq <= 3; seq++) {
+            old.sql("""
+                    INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, created_at)
+                    VALUES (:id, :m, :seq, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at)
+                    """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("seq", seq).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW)
+                .fetch().rowsUpdated().block();
+        }
+        assertThatThrownBy(() -> old.sql("SELECT tapped_at FROM ball_events").fetch().all().collectList().block()).as("the column does not exist before V57").hasMessageContaining("tapped_at");
+
+        Flyway.configure().dataSource(jdbc, POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").load().migrate();
+
+        var rows = old.sql("SELECT seq, tapped_at, created_at FROM ball_events WHERE match_id = :m ORDER BY seq").bind("m", matchId)
+            .map((row, meta) -> row.get("seq", Integer.class) + ":" + row.get("tapped_at", Instant.class) + ":" + row.get("created_at", Instant.class)).all().collectList().block();
+        assertThat(rows).containsExactly("1:null:" + NOW, "2:null:" + NOW, "3:null:" + NOW);
+        assertThatThrownBy(() -> old.sql("UPDATE ball_events SET payload = '{}'::jsonb WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        assertThatThrownBy(() -> old.sql("DELETE FROM ball_events WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        old.sql("""
+                INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, created_at, tapped_at)
+                VALUES (:id, :m, 4, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at, :tapped)
+                """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW).bind("tapped", NOW.minusSeconds(5))
+            .fetch().rowsUpdated().block();
+    }
 }

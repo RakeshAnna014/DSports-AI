@@ -813,4 +813,290 @@ class CricketScoringHttpIntegrationTest {
         assertThat(again.body().get("replayed")).isEqualTo(true);
         assertThat(eventCount(s.matchId())).isEqualTo(2);
     }
+
+    // ---- offline batches (step 2f-3): what the server does with the balls a phone queued while it had no signal ---------------------------------
+
+    /** One queued item as the phone will send it: where it goes and what it carries. The id is made when the ball is tapped and never changes. */
+    private record Item(String path, UUID clientEventId, int expectedSeq, Map<String, Object> body) {
+        Item at(int newExpectedSeq) {
+            var copy = new LinkedHashMap<>(body);
+            copy.put("expectedSeq", newExpectedSeq);
+            return new Item(path, clientEventId, newExpectedSeq, copy);
+        }
+    }
+
+    private static Item commandItem(Setup s, int expectedSeq, Map<String, Object> command, String tappedAt) {
+        var id = UUID.randomUUID();
+        var body = new LinkedHashMap<String, Object>(envelope(id, expectedSeq, command));
+        if (tappedAt != null) {
+            body.put("tappedAt", tappedAt);
+        }
+        return new Item(s.scoring() + "/commands", id, expectedSeq, body);
+    }
+
+    private static Item undoItem(Setup s, int expectedSeq, String mode, String tappedAt) {
+        var id = UUID.randomUUID();
+        var body = new LinkedHashMap<String, Object>(Map.of("clientEventId", id.toString(), "expectedSeq", expectedSeq, "mode", mode));
+        if (tappedAt != null) {
+            body.put("tappedAt", tappedAt);
+        }
+        return new Item(s.scoring() + "/undo", id, expectedSeq, body);
+    }
+
+    private Resp send(Account who, Item item) {
+        return post(who, item.path(), item.body());
+    }
+
+    /** 60 items: the golden match (36) and then 12 corrections, each an undo of the last command followed by the same command again. */
+    private static List<Item> sixtyItems(Setup s, String tappedAt) {
+        var commands = goldenMatch(s.lions(), s.tigers());
+        var items = new ArrayList<Item>();
+        for (var command : commands) {
+            items.add(commandItem(s, items.size(), command, tappedAt));
+        }
+        var last = commands.get(commands.size() - 1);
+        for (int i = 0; i < 12; i++) {
+            items.add(undoItem(s, items.size(), "COMMAND", tappedAt));
+            items.add(commandItem(s, items.size(), last, tappedAt));
+        }
+        assertThat(items).hasSize(60);
+        return items;
+    }
+
+    private Map<String, Object> engineState(Setup s, Account who) {
+        var r = get(who, s.scoring() + "/engine-state");
+        assertThat(r.status()).isEqualTo(200);
+        return r.body();
+    }
+
+    @Test
+    void sixtyQueuedItemsSentInOrderGiveExactlyTheExpectedLogAndTheServerAndThePhoneCanCheckTheyAgree() {
+        var s = setup(2);
+        var items = sixtyItems(s, java.time.Instant.now().minusSeconds(3600).toString());
+        for (int i = 0; i < items.size(); i++) {
+            var r = send(s.scorer(), items.get(i));
+            assertThat(r.status()).as("item %d", i + 1).isEqualTo(200);
+            assertThat(r.body().get("replayed")).isEqualTo(false);
+            assertThat(r.body().get("eventSeq")).isEqualTo(i + 1);
+        }
+        assertSeqIsContiguous(s.matchId(), 60);
+        assertSnapshotEqualsFold(s.matchId());
+
+        var id = UUID.fromString(s.matchId());
+        var entries = store.entries(id).collectList().block();
+        var expectedKinds = new ArrayList<String>(java.util.Collections.nCopies(36, "COMMAND"));
+        for (int i = 0; i < 12; i++) {
+            expectedKinds.add("UNDO");
+            expectedKinds.add("COMMAND");
+        }
+        assertThat(entries.stream().map(e -> e.kind().name()).toList()).isEqualTo(expectedKinds);
+        assertThat(entries.stream().map(e -> e.clientEventId()).toList()).isEqualTo(items.stream().map(Item::clientEventId).toList());
+        assertThat(entries).allSatisfy(e -> assertThat(e.tappedAt()).isNotNull().isBeforeOrEqualTo(e.at()));
+
+        var fold = MatchScoring.fold(MatchSetup.from(matches.findById(id).block()), ScoringLog.commands(entries));
+        var view = get(s.scorer(), s.scoring()).body();
+        assertThat(view.get("stateFingerprint")).isEqualTo(com.dsports.cricket.domain.scoring.StateFingerprint.of(fold));
+        assertThat(view.get("engineVersion")).isEqualTo(1);
+        var state = engineState(s, s.scorer());
+        assertThat(state.get("stateFingerprint")).isEqualTo(view.get("stateFingerprint"));
+        assertThat(state.get("seq")).isEqualTo(60);
+        assertThat((List<?>) state.get("entries")).hasSize(60);
+        @SuppressWarnings("unchecked")
+        var firstEntry = (Map<String, Object>) ((List<?>) state.get("entries")).get(0);
+        assertThat(firstEntry).containsEntry("mine", true).containsEntry("clientEventId", items.get(0).clientEventId().toString());
+    }
+
+    @Test
+    void theSameBatchSentTwiceAtOnceByTwoTabsLeavesOneSetOfEventsAndEveryAnswerIsConsistent() throws Exception {
+        var s = setup(2);
+        var items = sixtyItems(s, null);
+        var start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<List<Resp>>> runs = new ArrayList<>();
+            for (int t = 0; t < 2; t++) {
+                runs.add(pool.submit(() -> {
+                    start.await();
+                    var answers = new ArrayList<Resp>();
+                    for (var item : items) {
+                        answers.add(send(s.scorer(), item));
+                    }
+                    return answers;
+                }));
+            }
+            start.countDown();
+            var a = runs.get(0).get(120, TimeUnit.SECONDS);
+            var b = runs.get(1).get(120, TimeUnit.SECONDS);
+            for (int i = 0; i < items.size(); i++) {
+                assertThat(a.get(i).status()).as("tab 1, item %d", i + 1).isEqualTo(200);
+                assertThat(b.get(i).status()).as("tab 2, item %d", i + 1).isEqualTo(200);
+                assertThat(a.get(i).body().get("eventSeq")).as("both tabs are told the same seq for item %d", i + 1).isEqualTo(i + 1).isEqualTo(b.get(i).body().get("eventSeq"));
+                boolean oneApplied = !Boolean.TRUE.equals(a.get(i).body().get("replayed")) ^ !Boolean.TRUE.equals(b.get(i).body().get("replayed"));
+                assertThat(oneApplied).as("item %d was applied by exactly one tab and replayed to the other", i + 1).isTrue();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        assertSeqIsContiguous(s.matchId(), 60);
+        assertSnapshotEqualsFold(s.matchId());
+    }
+
+    @Test
+    void whenTheServerAppliedTwentyItemsAndTheAnswersWereLostResendingFromTheStartReplaysThemAndThenTakesTheNewOnes() {
+        var s = setup(2);
+        var items = sixtyItems(s, null);
+        for (int i = 0; i < 20; i++) {
+            assertThat(send(s.scorer(), items.get(i)).status()).isEqualTo(200);   // the phone never saw these answers
+        }
+        for (int i = 0; i < 40; i++) {
+            var r = send(s.scorer(), items.get(i));
+            assertThat(r.status()).as("item %d", i + 1).isEqualTo(200);
+            assertThat(r.body().get("replayed")).as("item %d is a replay only if the server already had it", i + 1).isEqualTo(i < 20);
+            assertThat(r.body().get("eventSeq")).isEqualTo(i + 1);
+        }
+        assertThat(eventCount(s.matchId())).isEqualTo(40);
+        assertSeqIsContiguous(s.matchId(), 40);
+    }
+
+    @Test
+    void aSecondScorerScoringMidwayGivesTheNextItemAConflictThatWritesNothingAndARebasedItemWithTheSameIdThenGoesIn() {
+        var s = setup(2);
+        var items = sixtyItems(s, null);
+        for (int i = 0; i < 5; i++) {
+            assertThat(send(s.scorer(), items.get(i)).status()).isEqualTo(200);
+        }
+        // The organiser scores three wides (they change neither the strike nor the over, so the phone's later balls still apply).
+        for (int i = 0; i < 3; i++) {
+            assertThat(score(s, s.organiser(), 5 + i, ball("WIDE", 0, null)).status()).isEqualTo(200);
+        }
+        var refused = send(s.scorer(), items.get(5));
+        assertThat(refused.status()).isEqualTo(409);
+        assertThat(refused.body().get("code")).isEqualTo("SCORE_CONFLICT");
+        assertThat(eventCount(s.matchId())).as("nothing was written for the refused item").isEqualTo(8);
+        @SuppressWarnings("unchecked")
+        var details = (Map<String, Object>) refused.body().get("details");
+        assertThat(details.get("currentSeq")).isEqualTo(8);
+        @SuppressWarnings("unchecked")
+        var since = (List<Map<String, Object>>) details.get("eventsSince");
+        assertThat(since).extracting(e -> e.get("seq")).containsExactly(6, 7, 8);
+        assertThat(since).allSatisfy(e -> assertThat(e).containsEntry("mine", false).containsEntry("clientEventId", null));
+        assertThat(((Map<?, ?>) details.get("view")).get("stateFingerprint")).isNotNull();
+
+        // The scorer chooses "add my balls after theirs": same ids, new expectedSeq. The server checks each one again.
+        for (int i = 5; i < 10; i++) {
+            var rebased = items.get(i).at(i + 3);
+            var r = send(s.scorer(), rebased);
+            assertThat(r.status()).as("rebased item %d", i + 1).isEqualTo(200);
+            assertThat(r.body().get("eventSeq")).isEqualTo(i + 4);
+            assertThat(r.body().get("replayed")).isEqualTo(false);
+        }
+        assertSeqIsContiguous(s.matchId(), 13);
+        assertSnapshotEqualsFold(s.matchId());
+        var entries = store.entries(UUID.fromString(s.matchId())).collectList().block();
+        assertThat(entries.subList(8, 13).stream().map(e -> e.clientEventId()).toList()).isEqualTo(items.subList(5, 10).stream().map(Item::clientEventId).toList());
+    }
+
+    @Test
+    void theDeadlinePassingInTheMiddleOfAFlushLetsTheEarlierItemsInRefusesTheRestAsLockedWritesNoGapAndAnUnlockLetsThemInWithTheirOriginalIds() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        for (int i = 0; i < commands.size(); i++) {
+            assertThat(score(s, s.scorer(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        var last = commands.get(commands.size() - 1);
+        var queued = List.of(undoItem(s, 36, "COMMAND", null), commandItem(s, 37, last, null), undoItem(s, 38, "COMMAND", null), commandItem(s, 39, last, null));
+        assertThat(send(s.scorer(), queued.get(0)).status()).isEqualTo(200);
+        assertThat(send(s.scorer(), queued.get(1)).status()).isEqualTo(200);
+
+        db.sql("UPDATE match_snapshots SET first_finished_at = now() - interval '25 hours' WHERE match_id = :m").bind("m", UUID.fromString(s.matchId())).fetch().rowsUpdated().block();
+        var late = send(s.scorer(), queued.get(2));
+        assertThat(late.status()).isEqualTo(409);
+        assertThat(late.body().get("code")).isEqualTo("MATCH_LOCKED");
+        // The sender stops at the first refusal, so the fourth item is not sent; it keeps waiting with its id.
+        assertThat(eventCount(s.matchId())).as("the two before the deadline are in, nothing else").isEqualTo(38);
+        assertSeqIsContiguous(s.matchId(), 38);
+
+        var admin = administrator();
+        var unlock = post(admin, "/api/v1/admin/matches/" + s.matchId() + "/scoring/unlock", Map.of("reason", "the scorer's phone had no signal at the ground"));
+        assertThat(unlock.status()).isEqualTo(200);
+        assertThat(unlock.body().get("eventSeq")).isEqualTo(39);
+        var again = send(s.scorer(), queued.get(2).at(39));
+        assertThat(again.status()).isEqualTo(200);
+        assertThat(again.body().get("eventSeq")).isEqualTo(40);
+        assertThat(send(s.scorer(), queued.get(3).at(40)).status()).isEqualTo(200);
+        assertSeqIsContiguous(s.matchId(), 41);
+        var entries = store.entries(UUID.fromString(s.matchId())).collectList().block();
+        assertThat(entries.get(39).clientEventId()).isEqualTo(queued.get(2).clientEventId());
+        assertThat(entries.get(40).clientEventId()).isEqualTo(queued.get(3).clientEventId());
+    }
+
+    @Test
+    void aScorerRemovedMidFlushIsRefusedFromThatItemOnNothingIsWrittenAndTheSameItemGoesInOnceTheyAreAddedBack() {
+        var s = setup(2);
+        var items = sixtyItems(s, null);
+        for (int i = 0; i < 3; i++) {
+            assertThat(send(s.scorer(), items.get(i)).status()).isEqualTo(200);
+        }
+        assertThat(call(HttpMethod.DELETE, s.organiser(), "/api/v1/matches/" + s.matchId() + "/scorers/" + s.scorer().id(), null).status()).isIn(200, 204);
+        var refused = send(s.scorer(), items.get(3));
+        assertThat(refused.status()).isIn(403, 404);
+        assertThat(eventCount(s.matchId())).isEqualTo(3);
+        assertThat(post(s.organiser(), "/api/v1/matches/" + s.matchId() + "/scorers", Map.of("email", s.scorer().email())).status()).isEqualTo(201);
+        var back = send(s.scorer(), items.get(3));
+        assertThat(back.status()).isEqualTo(200);
+        assertThat(back.body().get("eventSeq")).isEqualTo(4);
+        assertSeqIsContiguous(s.matchId(), 4);
+    }
+
+    @Test
+    void theEngineStateIsForTheSamePeopleAsTheScoringViewAndNobodyElse() {
+        var s = setup(2);
+        assertThat(get(null, s.scoring() + "/engine-state").status()).isEqualTo(401);
+        assertThat(get(s.stranger(), s.scoring() + "/engine-state").status()).isEqualTo(404);
+        assertThat(get(s.viewer(), s.scoring() + "/engine-state").status()).as("a team member who cannot score").isEqualTo(403);
+        assertThat(post(s.organiser(), s.scoring() + "/engine-state", Map.of()).status()).as("read only").isIn(404, 405);
+        assertThat(get(s.organiser(), "/api/v1/matches/" + UUID.randomUUID() + "/scoring/engine-state").status()).isEqualTo(404);
+        assertThat(get(s.organiser(), "/api/v1/matches/not-an-id/scoring/engine-state").status()).as("a malformed id is a client error, never a 500").isBetween(400, 404);
+        var first = engineState(s, s.organiser());
+        assertThat(first).containsEntry("ready", true).containsEntry("seq", 0).containsEntry("engineVersion", 1);
+        assertThat((List<?>) first.get("entries")).isEmpty();
+        @SuppressWarnings("unchecked")
+        var setup = (Map<String, Object>) first.get("setup");
+        assertThat(setup.get("xiA")).isEqualTo(s.lions().playerIds());
+        assertThat(first.toString()).as("ids only: no email, no name").doesNotContain("@example.com").doesNotContain("Lions player");
+        assertThat(score(s, s.organiser(), 0, goldenMatch(s.lions(), s.tigers()).get(0)).status()).isEqualTo(200);
+        @SuppressWarnings("unchecked")
+        var own = (Map<String, Object>) ((List<?>) engineState(s, s.organiser()).get("entries")).get(0);
+        @SuppressWarnings("unchecked")
+        var theirs = (Map<String, Object>) ((List<?>) engineState(s, s.scorer()).get("entries")).get(0);
+        assertThat(own).containsEntry("mine", true);
+        assertThat(own.get("clientEventId")).isNotNull();
+        assertThat(theirs).containsEntry("mine", false).containsEntry("clientEventId", null);
+    }
+
+    @Test
+    void theTappedTimeIsOptionalKeptForTheTimelineClampedToWhenTheServerGotItAndABadOneIsAClientErrorNeverAServerError() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        assertThat(score(s, s.organiser(), 0, commands.get(0)).status()).isEqualTo(200);
+        var past = java.time.Instant.now().minusSeconds(600);
+        assertThat(send(s.organiser(), commandItem(s, 1, commands.get(1), past.toString())).status()).isEqualTo(200);
+        assertThat(send(s.organiser(), commandItem(s, 2, commands.get(2), java.time.Instant.now().plus(java.time.Duration.ofDays(30)).toString())).status()).isEqualTo(200);
+        var events = get(s.organiser(), s.scoring()).body().get("recentEvents");
+        @SuppressWarnings("unchecked")
+        var list = (List<Map<String, Object>>) events;
+        assertThat(list.get(0).get("tappedAt")).isNull();
+        assertThat(java.time.Instant.parse((String) list.get(1).get("tappedAt"))).isCloseTo(past, org.assertj.core.api.Assertions.within(1, java.time.temporal.ChronoUnit.MILLIS));
+        assertThat(java.time.Instant.parse((String) list.get(2).get("tappedAt"))).as("a wrong phone clock cannot place a ball in the future").isBeforeOrEqualTo(java.time.Instant.parse((String) list.get(2).get("at")));
+        assertThat(java.time.Instant.parse((String) list.get(1).get("at"))).as("the server's own time is what is recorded as the time").isAfter(past);
+
+        var ancient = send(s.organiser(), commandItem(s, 3, commands.get(3), "-999999999-01-01T00:00:00Z"));
+        assertThat(ancient.status()).as("a time the database could not store is dropped, not a 500").isEqualTo(200);
+        assertThat(eventCount(s.matchId())).isEqualTo(4);
+        var bad = commandItem(s, 4, commands.get(4), "yesterday afternoon");
+        var r = send(s.organiser(), bad);
+        assertThat(r.status()).isBetween(400, 499);
+        assertThat(eventCount(s.matchId())).isEqualTo(4);
+        assertThat(send(s.organiser(), commandItem(s, 4, commands.get(4), null)).status()).isEqualTo(200);
+    }
 }
