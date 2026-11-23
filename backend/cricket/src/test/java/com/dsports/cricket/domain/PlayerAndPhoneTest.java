@@ -103,6 +103,17 @@ class PlayerAndPhoneTest {
     }
 
     @Test
+    void linkingAGuestKeepsTheSamePlayerIdSoEveryMatchAndCareerStatisticOfTheGuestFollowsTheAccount() {
+        var guest = Player.guest(CAPTAIN, details("Arjun", null), NOW);
+        var idBefore = guest.getId();
+
+        guest.linkTo(OTHER, NOW.plusSeconds(5));
+
+        assertThat(guest.getId()).as("career rows and match squads are keyed by this id").isEqualTo(idBefore);
+        assertThat(guest.getName()).isEqualTo("Arjun");
+    }
+
+    @Test
     void aPlayerIsUsableByItsCreatorAndByTheAccountItIsLinkedToButNobodyElse() {
         var guest = Player.guest(CAPTAIN, details("Arjun", "9876543210"), NOW);
         guest.linkTo(OTHER, NOW);
