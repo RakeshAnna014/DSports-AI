@@ -18,7 +18,6 @@ import { newId } from './newId';
 import { ruleMessage } from './ruleMessages';
 import { clearOutbox, loadOutbox, saveOutbox, type OutboxItem } from './scoringOutbox';
 import { formatLeft, minutesUntil, useNow, WARN_MINUTES } from './useNow';
-import { useTabLease } from './useTabLease';
 
 const ballLabel = (d: DeliveryBody): string => {
   if (d.dismissal) {
@@ -38,16 +37,19 @@ const ballLabel = (d: DeliveryBody): string => {
 };
 
 /**
- * The scorer's screen. It holds no cricket rules: what is needed next, which dismissals are allowed and who may bat or bowl all come from the server's view.
+ * The scorer's screen as it was before offline scoring: one change at a time, online. It is what a phone falls back to when it cannot score offline (no IndexedDB,
+ * the match not ready, the server's rules not the ones this page knows). The tab lease is taken once per tab by `ScorerPage` and passed in.
+ *
+ * It holds no cricket rules: what is needed next, which dismissals are allowed and who may bat or bowl all come from the server's view.
  * Every change goes through a durable one-slot outbox (saved on the phone, sent with a client event id, retried if the network drops, cleared only when the
  * server answers), so a ball is never lost and never counted twice. A conflict with another scorer is never merged silently: the scorer chooses.
  */
-const ScorerPage = () => {
+const LegacyScorerPage = ({ lease }: { lease: { owner: boolean; recheck: () => boolean } }) => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const match = useQuery({ queryKey: ['match', id], queryFn: () => cricketApi.matches.get(id) });
-  const { owner, recheck } = useTabLease(id);
+  const { owner, recheck } = lease;
   const readOnly = !owner;
   const state = useQuery({ queryKey: ['scoring', id], queryFn: () => scoringApi.state(id), refetchInterval: readOnly ? 5000 : false });
   const now = useNow();
@@ -374,4 +376,4 @@ const ScorerPage = () => {
   );
 };
 
-export default ScorerPage;
+export default LegacyScorerPage;

@@ -10,7 +10,7 @@ import { selfCheck } from './selfCheck';
  * fingerprint the server computed must be the one this phone computes, for a log with undos too, and for an asker whose events are somebody else's.
  */
 const DIR = resolve(process.cwd(), '..', 'testdata', 'cricket-engine', 'server');
-const names = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
+const names = readdirSync(DIR).filter((f) => f.startsWith('engine-state-') && f.endsWith('.json')).sort();
 const sample = (name: string): unknown => JSON.parse(readFileSync(join(DIR, name), 'utf8'));
 
 describe('the engine-state answer written by the Java route', () => {
