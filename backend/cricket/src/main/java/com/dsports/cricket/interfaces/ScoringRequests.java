@@ -71,11 +71,15 @@ public final class ScoringRequests {
         }
     }
 
-    public record CommandRequest(@NotNull UUID clientEventId, @NotNull @Min(0) Integer expectedSeq, @NotNull @Valid CommandBody command) {
+    /**
+     * {@code tappedAt} is optional: when the scorer says they tapped, for an offline ball. It is shown on the timeline and nothing else: no rule, lock, ordering or
+     * validation reads it, it is not part of the request fingerprint, and it is never kept later than the moment the server received the request.
+     */
+    public record CommandRequest(@NotNull UUID clientEventId, @NotNull @Min(0) Integer expectedSeq, @NotNull @Valid CommandBody command, java.time.Instant tappedAt) {
     }
 
     /** {@code mode}: BALL (the default) takes off the last ball and what was chosen after it; COMMAND takes off just the latest command. */
-    public record UndoRequest(@NotNull UUID clientEventId, @NotNull @Min(0) Integer expectedSeq, ScoringLog.UndoMode mode) {
+    public record UndoRequest(@NotNull UUID clientEventId, @NotNull @Min(0) Integer expectedSeq, ScoringLog.UndoMode mode, java.time.Instant tappedAt) {
         ScoringLog.UndoMode modeOrDefault() {
             return mode == null ? ScoringLog.UndoMode.BALL : mode;
         }

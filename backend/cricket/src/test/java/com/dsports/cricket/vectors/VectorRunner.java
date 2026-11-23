@@ -43,6 +43,11 @@ final class VectorRunner {
         return score;
     }
 
+    /** The log so far (commands and undos), as the use case would hold it. */
+    List<LogEntry> entries() {
+        return List.copyOf(entries);
+    }
+
     private int lastSeq() {
         return entries.isEmpty() ? 0 : entries.get(entries.size() - 1).seq();
     }

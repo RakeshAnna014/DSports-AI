@@ -14,6 +14,7 @@ import com.dsports.cricket.domain.scoring.MatchScoring;
 import com.dsports.cricket.domain.scoring.MatchSetup;
 import com.dsports.cricket.domain.scoring.ScoreCommand;
 import com.dsports.cricket.domain.scoring.ScoringLog;
+import com.dsports.cricket.domain.scoring.StateFingerprint;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ final class ScoringViewBuilder {
     private ScoringViewBuilder() {
     }
 
-    static ScoringView build(UUID matchId, MatchSetup setup, Names names, List<LogEntry> entries, EditWindow window, Instant now) {
+    static ScoringView build(UUID matchId, MatchSetup setup, Names names, List<LogEntry> entries, EditWindow window, Instant now, UUID viewer) {
         var live = ScoringLog.effective(entries);
         var score = MatchScoring.fold(setup, live.stream().map(LogEntry::command).toList());
         int seq = entries.isEmpty() ? 0 : entries.get(entries.size() - 1).seq();
@@ -56,7 +57,7 @@ final class ScoringViewBuilder {
         var rules = new ScoringView.Rules(setup.overs(), setup.rules().ballsPerOver(), setup.rules().playersPerSide(), limit);
         return new ScoringView(matchId, seq, score.status().name(), rules, innings, needs, current != null && current.freeHit(), allowedDismissals(current),
             eligibleBatters(current, names), bowlerChoices(current, limit, names), waiverRequired, result(score, names), canUndo(entries, live, score, setup, window, now, names),
-            window.editableUntil(), window.isLocked(now), recentEvents(entries, names));
+            window.editableUntil(), window.isLocked(now), recentEvents(entries, names, viewer), MatchScoring.ENGINE_VERSION, StateFingerprint.of(score));
     }
 
     // ---- innings ------------------------------------------------------------------------------------------------
@@ -236,27 +237,29 @@ final class ScoringViewBuilder {
         return new ScoringView.CanUndo(true, "Undo: " + describe(anchor.command(), names), ScoringLog.reopens(score, after), null);
     }
 
-    static List<ScoringView.Event> eventsAfter(List<LogEntry> entries, int afterSeq, Names names) {
-        return entries.stream().filter(e -> e.seq() > afterSeq).map(e -> event(e, entries, names)).toList();
+    static List<ScoringView.Event> eventsAfter(List<LogEntry> entries, int afterSeq, Names names, UUID viewer) {
+        return entries.stream().filter(e -> e.seq() > afterSeq).map(e -> event(e, entries, names, viewer)).toList();
     }
 
-    private static List<ScoringView.Event> recentEvents(List<LogEntry> entries, Names names) {
+    private static List<ScoringView.Event> recentEvents(List<LogEntry> entries, Names names, UUID viewer) {
         int from = Math.max(0, entries.size() - RECENT_EVENTS);
-        return entries.subList(from, entries.size()).stream().map(e -> event(e, entries, names)).toList();
+        return entries.subList(from, entries.size()).stream().map(e -> event(e, entries, names, viewer)).toList();
     }
 
-    private static ScoringView.Event event(LogEntry e, List<LogEntry> entries, Names names) {
+    private static ScoringView.Event event(LogEntry e, List<LogEntry> entries, Names names, UUID viewer) {
         var by = new ScoringView.Ref(e.actorId(), names.actor().apply(e.actorId()));
+        boolean mine = e.actorId().equals(viewer);
+        var client = mine ? e.clientEventId() : null;
         return switch (e.kind()) {
-            case COMMAND -> new ScoringView.Event(e.seq(), e.command().type().name(), describe(e.command(), names), by, e.at());
+            case COMMAND -> new ScoringView.Event(e.seq(), e.command().type().name(), describe(e.command(), names), by, e.at(), mine, client, e.tappedAt());
             case UNDO -> {
                 var undone = new ArrayList<String>();
                 for (int seq : e.voids()) {
                     entries.stream().filter(x -> x.seq() == seq && x.command() != null).findFirst().ifPresent(x -> undone.add(describe(x.command(), names)));
                 }
-                yield new ScoringView.Event(e.seq(), "UNDO", "Undid: " + String.join("; ", undone), by, e.at());
+                yield new ScoringView.Event(e.seq(), "UNDO", "Undid: " + String.join("; ", undone), by, e.at(), mine, client, e.tappedAt());
             }
-            case ADMIN_UNLOCK -> new ScoringView.Event(e.seq(), "ADMIN_UNLOCK", "Reopened by an administrator: " + e.reason(), by, e.at());
+            case ADMIN_UNLOCK -> new ScoringView.Event(e.seq(), "ADMIN_UNLOCK", "Reopened by an administrator: " + e.reason(), by, e.at(), mine, client, e.tappedAt());
         };
     }
 

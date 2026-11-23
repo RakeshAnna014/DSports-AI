@@ -16,7 +16,8 @@ class EngineVectorsAreCurrentTest {
 
     @Test
     void everyCommittedFileIsWhatTheEngineProducesNow() throws Exception {
-        var expected = VectorCorpus.build();
+        var expected = new java.util.LinkedHashMap<>(VectorCorpus.build());
+        expected.putAll(VectorCorpus.serverSamples());
         var root = VectorCorpus.folder();
         var different = new ArrayList<String>();
         for (var e : expected.entrySet()) {
@@ -33,10 +34,11 @@ class EngineVectorsAreCurrentTest {
 
     @Test
     void thereAreNoStrayFilesInTheFolders() throws Exception {
-        var expected = VectorCorpus.build().keySet();
+        var expected = new java.util.HashSet<>(VectorCorpus.build().keySet());
+        expected.addAll(VectorCorpus.serverSamples().keySet());
         var root = VectorCorpus.folder();
         var onDisk = new ArrayList<String>();
-        for (var dir : new String[] {"golden", "random"}) {
+        for (var dir : new String[] {"golden", "random", "server"}) {
             try (Stream<java.nio.file.Path> list = Files.list(root.resolve(dir))) {
                 list.forEach(f -> onDisk.add(dir + "/" + f.getFileName()));
             }

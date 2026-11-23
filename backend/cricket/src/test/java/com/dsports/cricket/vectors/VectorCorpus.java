@@ -1,5 +1,6 @@
 package com.dsports.cricket.vectors;
 
+import com.dsports.cricket.application.result.EngineState;
 import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.rules.Delivery;
 import com.dsports.cricket.domain.rules.Dismissal;
@@ -58,6 +59,33 @@ final class VectorCorpus {
         }
         files.put("manifest.json", manifest(files, stepCounts));
         return files;
+    }
+
+    /**
+     * Sample answers of the engine-state route ({@code GET /api/v1/matches/{id}/scoring/engine-state}) for two golden matches: one asked for by the scorer who made
+     * every event (their events carry client event ids), one by somebody else (none do). They are NOT part of the manifest and not replayed as vectors; the
+     * TypeScript build reads them with its own parser ({@code engineState.test.ts}), folds the log with its own engine and compares the fingerprint, so the route's
+     * JSON shape is proved from both sides. Written by the same exporter and checked for being current by {@code EngineVectorsAreCurrentTest}.
+     */
+    static Map<String, String> serverSamples() {
+        var samples = new LinkedHashMap<String, String>();
+        for (var scenario : VectorScenarios.all()) {
+            boolean own = scenario.name().equals("golden-match");
+            if (!own && !scenario.name().equals("golden-match-with-undos")) {
+                continue;
+            }
+            var runner = new VectorRunner(scenario.setup());
+            for (var step : scenario.steps()) {
+                switch (step) {
+                    case VectorStep.Command c -> runner.command(c.command());
+                    case VectorStep.Undo u -> runner.undo(u.mode());
+                }
+            }
+            var viewer = own ? new java.util.UUID(8, 1) : new java.util.UUID(8, 2);
+            var state = EngineState.of(new java.util.UUID(9, 9), scenario.setup(), runner.entries(), viewer);
+            samples.put("server/engine-state-" + scenario.name() + (own ? "-own" : "-foreign") + ".json", VectorFormat.compact(VectorFormat.MAPPER.valueToTree(state)) + "\n");
+        }
+        return samples;
     }
 
     private static String file(String name, String description, MatchSetup setup, List<VectorStep> steps, int stateEvery, Map<String, Integer> stepCounts, String path) {
@@ -139,7 +167,7 @@ final class VectorCorpus {
 
     static void write(Map<String, String> files) throws java.io.IOException {
         var root = folder();
-        for (var dir : List.of("golden", "random")) {
+        for (var dir : List.of("golden", "random", "server")) {
             var d = root.resolve(dir);
             if (Files.exists(d)) {
                 try (var list = Files.list(d)) {
@@ -151,6 +179,9 @@ final class VectorCorpus {
             Files.createDirectories(d);
         }
         for (var e : files.entrySet()) {
+            Files.writeString(root.resolve(e.getKey()), e.getValue());
+        }
+        for (var e : serverSamples().entrySet()) {
             Files.writeString(root.resolve(e.getKey()), e.getValue());
         }
     }

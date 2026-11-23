@@ -26,7 +26,7 @@ import java.util.function.Function;
  */
 public class ScoringR2dbcStore implements ScoringStore {
 
-    private static final String EVENT_COLUMNS = "seq, type, payload::text AS payload, request_hash, client_event_id, actor_id, waivers::text AS waivers, created_at";
+    private static final String EVENT_COLUMNS = "seq, type, payload::text AS payload, request_hash, client_event_id, actor_id, waivers::text AS waivers, created_at, tapped_at";
 
     private final DatabaseClient db;
     private final TransactionRunner transactions;
@@ -75,10 +75,11 @@ public class ScoringR2dbcStore implements ScoringStore {
         var client = row.get("client_event_id", UUID.class);
         var actor = row.get("actor_id", UUID.class);
         var at = row.get("created_at", Instant.class);
+        var tapped = row.get("tapped_at", Instant.class);
         return switch (type) {
-            case "UNDO" -> LogEntry.undo(seq, codec.voids(payload), client, actor, at);
+            case "UNDO" -> LogEntry.undo(seq, codec.voids(payload), client, actor, at).withTappedAt(tapped);
             case "ADMIN_UNLOCK" -> LogEntry.unlock(seq, codec.reason(payload), client, actor, at);
-            default -> LogEntry.command(seq, codec.command(ScoreCommand.Type.valueOf(type), payload), client, actor, at, codec.waivers(row.get("waivers", String.class)));
+            default -> LogEntry.command(seq, codec.command(ScoreCommand.Type.valueOf(type), payload), client, actor, at, codec.waivers(row.get("waivers", String.class))).withTappedAt(tapped);
         };
     }
 
@@ -109,13 +110,14 @@ public class ScoringR2dbcStore implements ScoringStore {
 
         @Override
         public Mono<Void> append(LogEntry entry, String requestHash, Snapshot snapshot, MatchStatus status) {
-            var insert = db.sql("""
-                    INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, waivers, created_at)
-                    VALUES (:id, :match, :seq, :type, CAST(:payload AS jsonb), :schema, :hash, :client, :actor, CAST(:waivers AS jsonb), :at)
+            var insertSpec = db.sql("""
+                    INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, waivers, created_at, tapped_at)
+                    VALUES (:id, :match, :seq, :type, CAST(:payload AS jsonb), :schema, :hash, :client, :actor, CAST(:waivers AS jsonb), :at, :tapped)
                     """)
                 .bind("id", UUID.randomUUID()).bind("match", matchId).bind("seq", entry.seq()).bind("type", typeOf(entry)).bind("payload", payloadOf(entry))
                 .bind("schema", (short) ScoringJsonCodec.SCHEMA_VERSION).bind("hash", requestHash).bind("client", entry.clientEventId()).bind("actor", entry.actorId())
                 .bind("waivers", codec.waiversJson(entry.waivers())).bind("at", entry.at());
+            var insert = entry.tappedAt() == null ? insertSpec.bindNull("tapped", Instant.class) : insertSpec.bind("tapped", entry.tappedAt());
             var now = clock.instant();
             var matchStatus = db.sql("UPDATE matches SET status = :status, version = version + 1, updated_at = :now WHERE id = :match")
                 .bind("status", status.name()).bind("now", now).bind("match", matchId);

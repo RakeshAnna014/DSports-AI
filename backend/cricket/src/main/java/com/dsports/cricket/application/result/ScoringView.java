@@ -9,10 +9,12 @@ import java.util.UUID;
 /**
  * Everything the scorer screen needs, so the client holds no cricket rules: the innings, what is needed next, which dismissals the next ball allows,
  * who may bat or bowl, what an undo would do, and how long the match can still be corrected. Names only; no phones or emails.
+ * {@code engineVersion} and {@code stateFingerprint} let a phone check that its own copy of the rules agrees with the server's before it scores offline.
  */
 public record ScoringView(UUID matchId, int seq, String matchStatus, Rules rules, List<Innings> innings, String needs, boolean freeHit,
                           Map<String, List<String>> allowedDismissals, List<BatterChoice> eligibleBatters, List<BowlerChoice> bowlers, boolean waiverRequired,
-                          Result result, CanUndo canUndo, Instant editableUntil, boolean locked, List<Event> recentEvents) {
+                          Result result, CanUndo canUndo, Instant editableUntil, boolean locked, List<Event> recentEvents,
+                          int engineVersion, String stateFingerprint) {
 
     public record Ref(UUID id, String name) {
     }
@@ -53,7 +55,11 @@ public record ScoringView(UUID matchId, int seq, String matchStatus, Rules rules
     public record CanUndo(boolean allowed, String describe, boolean crossesInnings, String blockedReason) {
     }
 
-    public record Event(int seq, String kind, String text, Ref by, Instant at) {
+    /**
+     * {@code mine} is whether the person asking made this event; {@code clientEventId} is shown for their own events only (it is how a phone knows the server
+     * already has a ball it sent). {@code tappedAt} is when the scorer says they tapped, kept for the timeline only: no rule, lock or ordering ever uses it.
+     */
+    public record Event(int seq, String kind, String text, Ref by, Instant at, boolean mine, UUID clientEventId, Instant tappedAt) {
     }
 
     /** What a scoring call returns: the view after it, and whether the call was a retry of one already in the log. */

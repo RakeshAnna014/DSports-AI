@@ -5,6 +5,7 @@ import com.dsports.cricket.application.port.MatchRepository;
 import com.dsports.cricket.application.port.PlayerRepository;
 import com.dsports.cricket.application.port.ScoringStore;
 import com.dsports.cricket.application.port.TeamRepository;
+import com.dsports.cricket.application.result.EngineState;
 import com.dsports.cricket.application.result.ScoringView;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
@@ -24,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +60,15 @@ public class ScoringUseCase {
 
     public Mono<ScoringView> state(Actor actor, UUID matchId) {
         return scoreable(actor, matchId).flatMap(match -> store.entries(matchId).collectList().zipWith(store.snapshot(matchId).map(Optional::of).defaultIfEmpty(Optional.empty()))
-            .flatMap(t -> view(match, t.getT1(), windowOf(match, t.getT1(), t.getT2()))));
+            .flatMap(t -> view(actor.id(), match, t.getT1(), windowOf(match, t.getT1(), t.getT2()))));
+    }
+
+    /**
+     * Everything a phone needs to score offline: the match's setup and the effective log (commands, undos and unlocks, with their seqs), with the engine version and
+     * the fingerprint of the state those entries give. The same people may read it as may read the scoring view. Another scorer's events carry no client event id.
+     */
+    public Mono<EngineState> engineState(Actor actor, UUID matchId) {
+        return scoreable(actor, matchId).flatMap(match -> store.entries(matchId).collectList().map(entries -> EngineState.of(match.getId(), MatchSetup.from(match), entries, actor.id())));
     }
 
     /**
@@ -78,13 +88,25 @@ public class ScoringUseCase {
 
     // ---- scoring ------------------------------------------------------------------------------------------------
 
-    /** Applies one command made from the view at {@code expectedSeq}. {@code clientEventId} makes a retry harmless. */
     public Mono<ScoringView.Outcome> submit(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, ScoreCommand command) {
+        return submit(actor, matchId, clientEventId, expectedSeq, command, null);
+    }
+
+    public Mono<ScoringView.Outcome> undo(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, ScoringLog.UndoMode mode) {
+        return undo(actor, matchId, clientEventId, expectedSeq, mode, null);
+    }
+
+    /**
+     * Applies one command made from the view at {@code expectedSeq}. {@code clientEventId} makes a retry harmless. {@code tappedAt} (optional) is when the scorer
+     * says they tapped an offline ball: it is kept for the timeline only and nothing here reads it (it is not in the request fingerprint, and the 24-hour window
+     * and the ordering use the server's own time and the seq).
+     */
+    public Mono<ScoringView.Outcome> submit(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, ScoreCommand command, Instant tappedAt) {
         var hash = fingerprint(command.type().name(), command.toString());
         return scoreable(actor, matchId).flatMap(ignored -> store.exclusive(matchId, session -> session.findByClientEventId(clientEventId)
             .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
             .flatMap(existing -> existing.isPresent()
-                ? replay(matchId, existing.get(), hash, session)
+                ? replay(actor, matchId, existing.get(), hash, session)
                 : append(actor, matchId, clientEventId, expectedSeq, hash, session, (match, entries, window) -> {
                     var setup = MatchSetup.from(match);
                     if (command.type() != ScoreCommand.Type.END_MATCH && ScoringLog.effective(entries).isEmpty() && !match.readyToStart()) {
@@ -93,18 +115,18 @@ public class ScoringUseCase {
                     var score = MatchScoring.fold(setup, ScoringLog.commands(entries));
                     return switch (MatchScoring.apply(setup, score, command)) {
                         case ScoreOutcome.Rejected r -> Mono.error(new CricketDomainException(CricketErrorCode.SCORING_REJECTED, r.message(), new ScoringView.Rejection(r.violation().name())));
-                        case ScoreOutcome.Accepted a -> Mono.just(new Change(LogEntry.command(nextSeq(entries), command, clientEventId, actor.id(), clock.instant(), a.waivers()), a.score()));
+                        case ScoreOutcome.Accepted a -> Mono.just(new Change(LogEntry.command(nextSeq(entries), command, clientEventId, actor.id(), clock.instant(), a.waivers()).withTappedAt(tappedAt), a.score()));
                     };
                 }))));
     }
 
     /** Undoes the latest command ({@code COMMAND}) or the latest ball and what was chosen after it ({@code BALL}). */
-    public Mono<ScoringView.Outcome> undo(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, ScoringLog.UndoMode mode) {
+    public Mono<ScoringView.Outcome> undo(Actor actor, UUID matchId, UUID clientEventId, int expectedSeq, ScoringLog.UndoMode mode, Instant tappedAt) {
         var hash = fingerprint("UNDO", String.valueOf(mode));
         return scoreable(actor, matchId).flatMap(ignored -> store.exclusive(matchId, session -> session.findByClientEventId(clientEventId)
             .map(java.util.Optional::of).defaultIfEmpty(java.util.Optional.empty())
             .flatMap(existing -> existing.isPresent()
-                ? replay(matchId, existing.get(), hash, session)
+                ? replay(actor, matchId, existing.get(), hash, session)
                 : append(actor, matchId, clientEventId, expectedSeq, hash, session, (match, entries, window) -> {
                     var voids = ScoringLog.planUndo(entries, mode);
                     if (voids.isEmpty()) {
@@ -112,7 +134,7 @@ public class ScoringUseCase {
                     }
                     var voided = new HashSet<>(voids);
                     var remaining = ScoringLog.effective(entries).stream().filter(e -> !voided.contains(e.seq())).map(LogEntry::command).toList();
-                    return Mono.just(new Change(LogEntry.undo(nextSeq(entries), voids, clientEventId, actor.id(), clock.instant()), MatchScoring.fold(MatchSetup.from(match), remaining)));
+                    return Mono.just(new Change(LogEntry.undo(nextSeq(entries), voids, clientEventId, actor.id(), clock.instant()).withTappedAt(tappedAt), MatchScoring.fold(MatchSetup.from(match), remaining)));
                 }))));
     }
 
@@ -130,7 +152,7 @@ public class ScoringUseCase {
             .map(Optional::of).defaultIfEmpty(Optional.empty())
             .flatMap(existing -> {
                 if (existing.isPresent()) {
-                    return replay(matchId, existing.get(), hash, session);
+                    return replay(actor, matchId, existing.get(), hash, session);
                 }
                 return session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty()).zipWith(session.entries().collectList()).flatMap(t -> {
                     var entries = t.getT2();
@@ -147,7 +169,7 @@ public class ScoringUseCase {
                         .then(Mono.defer(() -> matches.findById(matchId))).flatMap(updated -> {
                             var all = new java.util.ArrayList<>(entries);
                             all.add(entry);
-                            return view(updated, all, unlocked).map(v -> new ScoringView.Outcome(v, false, seq));
+                            return view(actor.id(), updated, all, unlocked).map(v -> new ScoringView.Outcome(v, false, seq));
                         });
                 });
             })));
@@ -171,7 +193,7 @@ public class ScoringUseCase {
             return matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))).flatMap(match -> {
                 var window = windowOf(match, entries, t.getT2());
                 if (expectedSeq != latest) {
-                    return conflict(match, entries, window, expectedSeq);
+                    return conflict(actor.id(), match, entries, window, expectedSeq);
                 }
                 var now = clock.instant();
                 if (window.isLocked(now)) {
@@ -185,7 +207,7 @@ public class ScoringUseCase {
                         .then(Mono.defer(() -> {
                             var all = new java.util.ArrayList<>(entries);
                             all.add(entry);
-                            return view(match, all, newWindow).map(v -> new ScoringView.Outcome(v, false, entry.seq()));
+                            return view(actor.id(), match, all, newWindow).map(v -> new ScoringView.Outcome(v, false, entry.seq()));
                         }));
                 });
             });
@@ -193,19 +215,19 @@ public class ScoringUseCase {
     }
 
     /** A command with this client event id is already in the log. The same request is answered as done; a different one is a reused id. */
-    private Mono<ScoringView.Outcome> replay(UUID matchId, ScoringStore.Stored existing, String hash, ScoringStore.Session session) {
+    private Mono<ScoringView.Outcome> replay(Actor actor, UUID matchId, ScoringStore.Stored existing, String hash, ScoringStore.Session session) {
         if (!existing.requestHash().equals(hash)) {
             return Mono.error(new CricketDomainException(CricketErrorCode.CLIENT_EVENT_REUSED, "That client event id was already used for a different request"));
         }
         return session.entries().collectList().zipWith(session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty()))
             .zipWith(matches.findById(matchId).switchIfEmpty(Mono.error(notFound(matchId))))
-            .flatMap(t -> view(t.getT2(), t.getT1().getT1(), windowOf(t.getT2(), t.getT1().getT1(), t.getT1().getT2())).map(v -> new ScoringView.Outcome(v, true, existing.entry().seq())));
+            .flatMap(t -> view(actor.id(), t.getT2(), t.getT1().getT1(), windowOf(t.getT2(), t.getT1().getT1(), t.getT1().getT2())).map(v -> new ScoringView.Outcome(v, true, existing.entry().seq())));
     }
 
-    private Mono<ScoringView.Outcome> conflict(Match match, List<LogEntry> entries, EditWindow window, int expectedSeq) {
-        return view(match, entries, window).zipWith(names(match, entries)).flatMap(t -> Mono.<ScoringView.Outcome>error(new CricketDomainException(CricketErrorCode.SCORE_CONFLICT,
+    private Mono<ScoringView.Outcome> conflict(UUID viewer, Match match, List<LogEntry> entries, EditWindow window, int expectedSeq) {
+        return view(viewer, match, entries, window).zipWith(names(match, entries)).flatMap(t -> Mono.<ScoringView.Outcome>error(new CricketDomainException(CricketErrorCode.SCORE_CONFLICT,
             "Someone else has scored since you last looked. Reload the match.",
-            new ScoringView.Conflict(t.getT1().seq(), t.getT1(), ScoringViewBuilder.eventsAfter(entries, expectedSeq, t.getT2())))));
+            new ScoringView.Conflict(t.getT1().seq(), t.getT1(), ScoringViewBuilder.eventsAfter(entries, expectedSeq, t.getT2(), viewer)))));
     }
 
     // ---- access and views ---------------------------------------------------------------------------------------
@@ -248,8 +270,8 @@ public class ScoringUseCase {
         return directory.describe(actorIds).flatMap(people -> NameLookup.forMatch(match, teams, players, id -> people.containsKey(id) ? people.get(id).name() : "A scorer"));
     }
 
-    private Mono<ScoringView> view(Match match, List<LogEntry> entries, EditWindow window) {
-        return names(match, entries).map(names -> ScoringViewBuilder.build(match.getId(), MatchSetup.from(match), names, entries, window, clock.instant()));
+    private Mono<ScoringView> view(UUID viewer, Match match, List<LogEntry> entries, EditWindow window) {
+        return names(match, entries).map(names -> ScoringViewBuilder.build(match.getId(), MatchSetup.from(match), names, entries, window, clock.instant(), viewer));
     }
 
     private static int nextSeq(List<LogEntry> entries) {
