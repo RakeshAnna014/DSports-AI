@@ -40,7 +40,8 @@ export const VIEW: ScoringView = {
   matchId: 'm-1', seq: 12, matchStatus: 'IN_PROGRESS', rules: { overs: 20, ballsPerOver: 6, playersPerSide: 11, maxOversPerBowler: 4 }, innings: [INNINGS], needs: null, freeHit: false,
   allowedDismissals: ALLOWED, eligibleBatters: [], bowlers: [bowlerChoice(TARUN, '0.4'), bowlerChoice(UDAY, '0.0', { canReplaceMidOver: true }), bowlerChoice(VIK, '0.0', { canReplaceMidOver: true })],
   waiverRequired: false, result: null, canUndo: { allowed: true, describe: 'Undo: 4 runs', crossesInnings: false, blockedReason: null }, editableUntil: null, locked: false,
-  recentEvents: [{ seq: 12, kind: 'DELIVER', text: '4 runs', by: ref('u-1', 'Olive Organiser'), at: '2026-11-20T10:00:00Z' }],
+  recentEvents: [{ seq: 12, kind: 'DELIVER', text: '4 runs', by: ref('u-1', 'Olive Organiser'), at: '2026-11-20T10:00:00Z', mine: true, clientEventId: null, tappedAt: null }],
+  engineVersion: 1, stateFingerprint: '0000000000000000',
 };
 
 export const view = (over: Partial<ScoringView> = {}): ScoringView => ({ ...VIEW, ...over });
@@ -57,7 +58,7 @@ export const READY_MATCH: Match = {
 
 export const conflictOf = (currentSeq: number, over: Partial<ScoringView> = {}): ScoringConflict => ({
   currentSeq, view: view({ seq: currentSeq, ...over }),
-  eventsSince: [{ seq: currentSeq, kind: 'DELIVER', text: '2 runs', by: ref('u-2', 'Sam Scorer'), at: '2026-11-20T10:01:00Z' }],
+  eventsSince: [{ seq: currentSeq, kind: 'DELIVER', text: '2 runs', by: ref('u-2', 'Sam Scorer'), at: '2026-11-20T10:01:00Z', mine: false, clientEventId: null, tappedAt: null }],
 });
 
 /** An error answered by the server, with the ApiError body and optional details. */

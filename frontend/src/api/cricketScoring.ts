@@ -5,9 +5,10 @@ import type { CommandBody, ScoringConflict, ScoringOutcome, ScoringView, UndoMod
 /** Scoring calls. Every change carries a client event id (a retry is harmless) and the seq the scorer last saw (a stale one is a conflict). */
 export const scoringApi = {
   state: (matchId: string) => apiClient.get<ScoringView>(`/v1/matches/${matchId}/scoring`).then((r) => r.data),
-  command: (matchId: string, body: { clientEventId: string; expectedSeq: number; command: CommandBody }) =>
+  engineState: (matchId: string) => apiClient.get<unknown>(`/v1/matches/${matchId}/scoring/engine-state`).then((r) => r.data),
+  command: (matchId: string, body: { clientEventId: string; expectedSeq: number; command: CommandBody; tappedAt?: string }) =>
     apiClient.post<ScoringOutcome>(`/v1/matches/${matchId}/scoring/commands`, body).then((r) => r.data),
-  undo: (matchId: string, body: { clientEventId: string; expectedSeq: number; mode: UndoMode }) =>
+  undo: (matchId: string, body: { clientEventId: string; expectedSeq: number; mode: UndoMode; tappedAt?: string }) =>
     apiClient.post<ScoringOutcome>(`/v1/matches/${matchId}/scoring/undo`, body).then((r) => r.data),
 };
 

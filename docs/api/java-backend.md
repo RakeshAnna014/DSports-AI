@@ -2,7 +2,7 @@
 
 Exported from the running backend's /api-docs (springdoc), which is disabled in the prod profile.
 
-Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 222 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
+Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 223 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
 
 ## Actuator
 
@@ -185,6 +185,7 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 |---|---|---|---|---|
 | GET | `/api/v1/matches/{matchId}/scoring` | The match as the scorer needs it | bearer | 200,403,404 |
 | POST | `/api/v1/matches/{matchId}/scoring/commands` | Score one command | bearer | 200,409,422 |
+| GET | `/api/v1/matches/{matchId}/scoring/engine-state` | Everything a phone needs to score offline | bearer | 200,403,404 |
 | POST | `/api/v1/matches/{matchId}/scoring/undo` | Undo | bearer | 200 |
 
 ## Cricket scoring (admin)

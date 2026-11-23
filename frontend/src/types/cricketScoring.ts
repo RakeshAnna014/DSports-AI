@@ -114,6 +114,11 @@ export interface ScoringEvent {
   text: string;
   by: Ref;
   at: string;
+  /** Whether the person asking made this event; their own events carry the client event id they sent (how a phone knows the server already has a ball). */
+  mine: boolean;
+  clientEventId: string | null;
+  /** When the scorer says they tapped an offline ball: for the timeline only, never used by any rule. */
+  tappedAt: string | null;
 }
 
 export interface ScoringView {
@@ -133,6 +138,9 @@ export interface ScoringView {
   editableUntil: string | null;
   locked: boolean;
   recentEvents: ScoringEvent[];
+  /** The version of the scoring rules and the fingerprint of this state: what a phone compares with its own engine before scoring offline. */
+  engineVersion: number;
+  stateFingerprint: string;
 }
 
 export interface ScoringOutcome {
