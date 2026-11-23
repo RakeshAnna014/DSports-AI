@@ -23,7 +23,7 @@ const answer = (data = LIVE_CARD) => ({ kind: 'changed' as const, data, etag: `"
 beforeEach(() => {
   scorecard.mockReset();
   vi.mocked(cricketPublicApi.analytics).mockReset();
-  vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 0, innings: [], commentary: [] });
+  vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 0, innings: [], commentary: [], shots: [] });
   useAuthStore.setState({ isAuthenticated: false, user: null });
   localStorage.clear();
 });

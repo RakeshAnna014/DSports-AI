@@ -143,10 +143,23 @@ export interface CommentaryLine {
 }
 
 /** The charts and commentary of a started match (names and numbers only). */
+/** Where the scorer said a scoring ball went (optional; only marked balls appear). x and y are thousandths of the field's radius from the middle, right and up positive. */
+export interface ShotMark {
+  innings: number;
+  seq: number;
+  over: string;
+  batter: string;
+  runs: number;
+  boundary: boolean;
+  x: number;
+  y: number;
+}
+
 export interface PublicAnalytics {
   seq: number;
   innings: InningsAnalytics[];
   commentary: CommentaryLine[];
+  shots: ShotMark[];
 }
 
 /** A player's career for one ball type. A ratio the server could not work out (no dismissal, no ball bowled) is null, never zero. */

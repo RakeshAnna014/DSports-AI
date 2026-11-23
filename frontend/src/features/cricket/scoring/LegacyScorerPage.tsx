@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Paper, Skeleton, Stack, Switch, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { cricketApi } from '@/api/cricket';
@@ -12,6 +12,8 @@ import { BallPad } from './BallPad';
 import { ChooserDialog } from './ChooserDialog';
 import { MoreDialog } from './MoreDialog';
 import { InningsCard, ScoreSummary } from './ScoreSummary';
+import { isBatRunBall, ShotPicker } from './ShotPicker';
+import { readShotSetting, writeShotSetting } from './shotSetting';
 import { StartInningsForm } from './StartInningsForm';
 import { WicketSheet } from './WicketSheet';
 import { newId } from './newId';
@@ -62,6 +64,8 @@ const LegacyScorerPage = ({ lease }: { lease: { owner: boolean; recheck: () => b
   const [wicketKind, setWicketKind] = useState<DeliveryKind | null>(null);
   const [more, setMore] = useState(false);
   const [confirmUndo, setConfirmUndo] = useState(false);
+  const [shotOn, setShotOn] = useState(readShotSetting);
+  const [pendingShot, setPendingShot] = useState<{ seq: number; runs: number } | null>(null);
   const inFlight = useRef(false);
   const attempts = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,6 +98,9 @@ const LegacyScorerPage = ({ lease }: { lease: { owner: boolean; recheck: () => b
       setOutbox(null);
       setPhase('idle');
       setNotice(null);
+      if (item.kind === 'command' && readShotSetting() && isBatRunBall(item.command) && item.command.type === 'DELIVER') {
+        setPendingShot({ seq: outcome.eventSeq, runs: item.command.delivery.runs });
+      }
       queryClient.setQueryData(['scoring', id], outcome.view);
       void queryClient.invalidateQueries({ queryKey: ['match', id] });
       void queryClient.invalidateQueries({ queryKey: ['my-matches'] });
@@ -308,6 +315,9 @@ const LegacyScorerPage = ({ lease }: { lease: { owner: boolean; recheck: () => b
             <ScoreSummary view={view} innings={current} />
             <BallPad disabled={busy || locked || view.needs !== null} onDeliver={sendBall} onWicket={setWicketKind} />
             <Button variant="outlined" size="small" onClick={() => setMore(true)} disabled={busy || locked} data-testid="more">More</Button>
+            <FormControlLabel control={<Switch size="small" checked={shotOn} onChange={(e) => { setShotOn(e.target.checked); writeShotSetting(e.target.checked); }} inputProps={{ 'aria-label': 'Mark where each scoring ball went' }} data-testid="shot-setting" />} label="Mark where scoring balls go (optional)" />
+            <ShotPicker open={pendingShot !== null} runs={pendingShot?.runs ?? 0} onSkip={() => setPendingShot(null)}
+              onPick={(shot) => { const mark = pendingShot; setPendingShot(null); if (mark) { void scoringApi.shot(id, { seq: mark.seq, x: shot.x, y: shot.y }).catch(() => setNotice('The shot could not be saved. The score is not affected.')); } }} />
           </>
         )}
 

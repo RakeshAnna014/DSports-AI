@@ -96,7 +96,7 @@ describe('the player page', () => {
   it('is reached from a name on the public scorecard', async () => {
     const user = userEvent.setup();
     vi.mocked(cricketPublicApi.scorecard).mockResolvedValue({ kind: 'changed', data: FINISHED_CARD, etag: '"1"' });
-    vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 1, innings: [], commentary: [] });
+    vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 1, innings: [], commentary: [], shots: [] });
     playerStats.mockResolvedValue(STATS);
     renderWithProviders(<Routes><Route path="/m/:id" element={<PublicScorecardPage />} /><Route path="/p/:id" element={<PlayerStatsPage />} /></Routes>, '/m/m-1');
     const link = (await screen.findAllByTestId('player-link'))[0];

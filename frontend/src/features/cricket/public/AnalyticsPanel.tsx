@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { WagonWheel } from './WagonWheel';
 import { Alert, Box, Paper, Stack, Tab, Tabs, Typography } from '@mui/material';
 import type { CommentaryLine, InningsAnalytics, OverRuns, WormPoint } from '@/types/cricketPublic';
 import { usePublicAnalytics } from './usePublicAnalytics';
@@ -137,6 +138,7 @@ export const AnalyticsPanel = ({ matchId, seq }: { matchId: string; seq: number 
         <Tab label="Overs" data-testid="tab-overs" />
         <Tab label="Worm" data-testid="tab-worm" />
         <Tab label="Partnerships" data-testid="tab-partnerships" />
+        {data.shots.length > 0 && <Tab label="Wagon wheel" data-testid="tab-wheel" />}
       </Tabs>
       {failing && <Alert severity="info" sx={{ my: 1 }}>Showing the last charts that arrived.</Alert>}
       {(tab === 1 || tab === 3) && data.innings.length > 1 && (
@@ -149,6 +151,7 @@ export const AnalyticsPanel = ({ matchId, seq }: { matchId: string; seq: number 
         {tab === 1 && <Manhattan innings={chosen} />}
         {tab === 2 && <Worm innings={data.innings} />}
         {tab === 3 && <Partnerships innings={chosen} />}
+        {tab === 4 && data.shots.length > 0 && <WagonWheel shots={data.shots} />}
       </Box>
     </Paper>
   );

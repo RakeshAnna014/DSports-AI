@@ -8,6 +8,8 @@ export const scoringApi = {
   engineState: (matchId: string) => apiClient.get<unknown>(`/v1/matches/${matchId}/scoring/engine-state`).then((r) => r.data),
   command: (matchId: string, body: { clientEventId: string; expectedSeq: number; command: CommandBody; tappedAt?: string }) =>
     apiClient.post<ScoringOutcome>(`/v1/matches/${matchId}/scoring/commands`, body).then((r) => r.data),
+  /** Optional, display only: where the ball with this seq went. 204 on success. */
+  shot: (matchId: string, body: { seq: number; x: number; y: number }) => apiClient.post<void>(`/v1/matches/${matchId}/scoring/shots`, body).then(() => undefined),
   undo: (matchId: string, body: { clientEventId: string; expectedSeq: number; mode: UndoMode; tappedAt?: string }) =>
     apiClient.post<ScoringOutcome>(`/v1/matches/${matchId}/scoring/undo`, body).then((r) => r.data),
 };

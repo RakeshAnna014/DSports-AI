@@ -17,7 +17,7 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 3b | Career stats projection `player_match_stats` (V58, rebuildable), `GET /api/v1/players/{id}/stats` public, admin rebuild | **done** (e2ad4e4, 7be7e29) |
 | 3c | Career stats screen (player page `/p/:id`), linked from the public scorecard (adds `playerId` to the public scorecard) | **done** (c515e61) |
 | 3d | Guest players linked to a real account by the organiser (owner decision): met by the existing claim + approval flow, id kept (test) | **done** (03e9e26) |
-| 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | todo |
+| 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | **done** (backend f0c2d6a; screen and wheel in the next commit; scorer-screen flow has no page-level test) |
 | 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | todo |
 | 4b | Points table with NRR, leaderboards, awards | todo |
 | 4c | Tournament screens (organiser console, public page); fee extension point written in the ADR, no payments | todo |

@@ -24,6 +24,7 @@ export const ANALYTICS: PublicAnalytics = {
       partnerships: [{ wicket: 1, batterA: 'Tarun', batterB: 'Uday', runs: 23, balls: 12, unbroken: true }],
     },
   ],
+  shots: [],
   commentary: [
     { innings: 1, seq: 2, over: '0.1', text: 'Tarun: wide', runs: 1, wicket: false, boundary: false },
     { innings: 1, seq: 3, over: '0.1', text: 'Tarun to Arun: 1 run', runs: 1, wicket: false, boundary: false },

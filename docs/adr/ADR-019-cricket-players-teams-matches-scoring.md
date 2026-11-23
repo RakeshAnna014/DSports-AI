@@ -89,6 +89,16 @@ Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scori
 
 `GET /api/v1/matches/{id}/analytics` (public, read-only, names and numbers only, ETag and 304 like the scorecard, 404 before the first ball) returns runs per over, the running total after each over, the partnership for each wicket and a commentary line for each ball, all computed by `MatchAnalytics` (a pure function) over the commands in force, so an undo or a correction simply changes what is replayed. The public scorecard page draws them as plain SVG and asks again only when the scorecard's seq changes. The wagon wheel is not built (the scorer does not record where a shot went) and server-sent events are not built (polling with an ETag meets "follow a match live"); both are recorded in `docs/plans/DECISIONS-LOG.md`.
 
+## Phase 3b to 3e: career statistics, the player page and shot direction
+
+**Career statistics** (`GET /api/v1/players/{id}/stats`, public, names and numbers only). `CareerStats.ofMatch` is a pure function from a COMPLETED match's replayed score to one row per player of either eleven; `player_match_stats` (V58) caches those rows, written in the same transaction as the event that changes the match (an undo that reopens a finished match removes them) and rebuilt from the logs by an administrators' route, which a test proves gives the same numbers. The career is the sum of a player's rows for one ball type, added in code. Only completed matches count; tennis and leather are never added. The public scorecard now carries each batter's and bowler's player id so a name can link to `/p/:id`; a player id opens nothing but those statistics, and an unknown player and one with no finished match are the same 404.
+
+**Shot direction** (optional, off by default, per device). After a bat-run ball the scorer may tap where it went: `POST /api/v1/matches/{id}/scoring/shots` records it in `ball_shots` (V59), its own append-only table, because the tap happens after the ball was sent and the log cannot be edited. It is display data only: no rule, snapshot, fingerprint or engine vector reads it, so the TypeScript and Java engines and the offline phone are untouched. Because of that, shots are recorded online only; the offline scorer screen does not offer them (a queued ball has no server seq to point at until it is sent). A shot for a ball later undone is not drawn. The public analytics add the marked points and the scorecard page shows a wagon wheel when at least one exists. A wagon wheel is never computed for balls nobody marked.
+
+## Tournaments: the fee extension point
+
+Tournaments are built without fees (owner decision). When a fee model is wanted it belongs in a separate `tournament_entries` table (tournament, team, amount `NUMERIC(12,2)`, payment id from the payment module) with the organiser's refund rule, written by a use case that calls the existing payment module's port; nothing in tournament, fixture or table code reads a fee, so it can be added without changing them.
+
 ## Differences from the plan
 
 | Plan | Code |

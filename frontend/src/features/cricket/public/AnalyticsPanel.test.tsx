@@ -99,7 +99,7 @@ describe('the panel', () => {
   });
 
   it('shows nothing before the first ball and never asks before the scorecard has a seq', async () => {
-    analytics.mockResolvedValue({ seq: 1, innings: [], commentary: [] });
+    analytics.mockResolvedValue({ seq: 1, innings: [], commentary: [], shots: [] });
     const { container } = render(<AnalyticsPanel matchId="m-1" seq={1} />);
     await vi.waitFor(() => expect(analytics).toHaveBeenCalled());
     expect(container).toBeEmptyDOMElement();
