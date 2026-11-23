@@ -58,6 +58,13 @@ export class FakeServer {
     return step.result.accepted;
   }
 
+  /** An administrator reopens the match: an ordinary event with the next seq (and the window is open again). */
+  unlock(): void {
+    this.locked = false;
+    this.log = { ...this.log, entries: [...this.log.entries, { seq: this.log.entries.length + 1, kind: 'ADMIN_UNLOCK', clientEventId: null }] };
+    this.applied.push(`unlock-${this.log.entries.length}`);
+  }
+
   receive(item: QueueItem): Answer {
     this.received++;
     if (this.forbidden) {

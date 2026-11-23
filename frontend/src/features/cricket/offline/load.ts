@@ -1,8 +1,9 @@
-import { SUPPORTED_ENGINE_VERSIONS, logFrom, parseCommand, stateFingerprint, type LogEntry, type ScoreCommand } from '../engine';
+import { SUPPORTED_ENGINE_VERSIONS, logFrom, parseCommand, type LogEntry, type ScoreCommand } from '../engine';
+import { saveEngineStateRecord } from './engineRecord';
 import { chainLog, chainOf, queueLevel } from './queue';
 import { selfCheck } from './selfCheck';
 import type { QueueStorage } from './storage';
-import { isInChain, type JournalEntry, type Mutation, type OfflineScoring, type QueueItem, type QueueState, type SetAsideReason } from './types';
+import { isInChain, type DisplayData, type JournalEntry, type Mutation, type OfflineScoring, type QueueItem, type QueueState, type SetAsideReason } from './types';
 
 /**
  * Rebuilds a match's queue from what is on the phone. Nothing is ever dropped here: a row that cannot be read becomes a set-aside item that keeps the raw
@@ -173,6 +174,7 @@ export async function loadQueue(storage: QueueStorage, who: { matchId: string; u
     counts: countsFrom(journal),
     offline,
     blocked: null,
+    display: record.display ?? null,
     local,
   };
   if (queueLevel(state) === 'FULL') {
@@ -182,7 +184,7 @@ export async function loadQueue(storage: QueueStorage, who: { matchId: string; u
 }
 
 /** A fresh queue for a match that has none: the screen opened online and read the engine state (2f-3), nothing waits. */
-export function newQueueState(init: { matchId: string; userId: string; setup: QueueState['setup']; entries: LogEntry[]; engineVersion: number; stateFingerprint: string }): QueueState {
+export function newQueueState(init: { matchId: string; userId: string; setup: QueueState['setup']; entries: LogEntry[]; engineVersion: number; stateFingerprint: string; display?: DisplayData }): QueueState {
   return {
     matchId: init.matchId,
     userId: init.userId,
@@ -195,6 +197,7 @@ export function newQueueState(init: { matchId: string; userId: string; setup: Qu
     counts: { enqueued: 0, confirmed: 0, discarded: 0 },
     offline: selfCheck({ setup: init.setup, entries: init.entries, engineVersion: init.engineVersion, stateFingerprint: init.stateFingerprint }),
     blocked: null,
+    display: init.display ?? null,
     local: logFrom(init.setup, init.entries),
   };
 }
@@ -204,17 +207,5 @@ export function newQueueState(init: { matchId: string; userId: string; setup: Qu
  * every time the phone re-reads the server's log), so that a reload can rebuild the queue even if the phone has been offline ever since.
  */
 export function saveEngineState(state: QueueState, now: string): Mutation {
-  return {
-    kind: 'putEngineState',
-    record: {
-      matchId: state.matchId,
-      userId: state.userId,
-      setup: state.setup,
-      entries: state.confirmedEntries,
-      seq: state.confirmedSeq,
-      engineVersion: state.engineVersion,
-      stateFingerprint: stateFingerprint(logFrom(state.setup, state.confirmedEntries)),
-      savedAt: now,
-    },
-  };
+  return { kind: 'putEngineState', record: saveEngineStateRecord(state, now) };
 }

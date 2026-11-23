@@ -1,5 +1,6 @@
 import { logFrom, stepCommand, stepUndo, type ScoreCommand, type ScoringLog, type UndoMode } from '../engine';
-import { QUEUE_CAP, isInChain, type Counts, type JournalEvent, type Mutation, type OfflineScoring, type QueueItem, type QueueState, type Refusal, type ServerView, type SetAsideReason, type Step } from './types';
+import { saveEngineStateRecord as saveEngineState } from './engineRecord';
+import { QUEUE_CAP, isInChain, type Counts, type DisplayData, type JournalEvent, type Mutation, type OfflineScoring, type QueueItem, type QueueState, type Refusal, type ServerView, type SetAsideReason, type Step } from './types';
 
 /**
  * The offline queue as pure functions (gate 2f-2). Every function takes the state and returns `{ state, mutations, refused }`: the new state, what must be
@@ -261,10 +262,11 @@ export function syncWithServer(state: QueueState, view: ServerView, now: Now, in
       mutations.push({ kind: 'deleteItem', matchId: state.matchId, n: item.n }, line(state, now, 'replayed', item, 'already on the server'));
     }
   }
-  const foreign = view.entries.filter((e) => e.seq > state.confirmedSeq && !known.has(e.seq) && !(e.clientEventId !== null && mine.has(e.clientEventId)));
+  // An administrator's unlock takes a seq of its own but changes nothing about the score, so it never needs the scorer's decision: the chain just gets its seqs again.
+  const foreign = view.entries.filter((e) => e.seq > state.confirmedSeq && !known.has(e.seq) && e.kind !== 'ADMIN_UNLOCK' && !(e.clientEventId !== null && mine.has(e.clientEventId)));
   mutations.push({
     kind: 'putEngineState',
-    record: { matchId: state.matchId, userId: state.userId, setup: state.setup, entries: view.entries, seq: view.seq, engineVersion: view.engineVersion, stateFingerprint: view.stateFingerprint, savedAt: now },
+    record: { matchId: state.matchId, userId: state.userId, setup: state.setup, entries: view.entries, seq: view.seq, engineVersion: view.engineVersion, stateFingerprint: view.stateFingerprint, savedAt: now, ...(state.display === null ? {} : { display: state.display }) },
   });
   // The in-flight item (if the sync follows a 409 for it) goes back to waiting: the server did not apply it.
   items = items.map((i) => (i.status === 'IN_FLIGHT' && i.n === inFlight ? { ...i, status: 'WAITING' as const } : i));
@@ -427,6 +429,12 @@ export function discard(state: QueueState, n: number, now: Now): Step {
     mutations: [{ kind: 'deleteItem', matchId: state.matchId, n }, line(state, now, 'discarded', item, item.reason)],
     refused: null,
   };
+}
+
+/** The names and the correction window as the server last said them, saved with the engine state (display only). */
+export function setDisplay(state: QueueState, display: DisplayData, now: Now): Step {
+  const record = saveEngineState(state, now);
+  return { state: { ...state, display }, mutations: [{ kind: 'putEngineState', record: { ...record, display } }], refused: null };
 }
 
 // ---- self-check ----------------------------------------------------------------------------------------------------------------

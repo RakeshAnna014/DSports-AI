@@ -57,6 +57,17 @@ export interface JournalEntry {
   detail: string | null;
 }
 
+/**
+ * What the screen shows that the engine does not know: who the players and teams are (the engine works on ids), and the server's correction window as it last
+ * said. Kept beside the engine state so a page reloaded with no signal can still show names. Display only: nothing in a rule reads it.
+ */
+export interface DisplayData {
+  players: Record<string, string>;
+  teams: Record<string, string>;
+  editableUntil: string | null;
+  locked: boolean;
+}
+
 /** What the phone needs to score offline (D2.4): the setup and the effective server log, as of one seq. */
 export interface EngineStateRecord {
   matchId: string;
@@ -67,6 +78,7 @@ export interface EngineStateRecord {
   engineVersion: number;
   stateFingerprint: string;
   savedAt: string;
+  display?: DisplayData;
 }
 
 /** What the server tells the phone about the match (the 2f-3 engine-state route, and what a 409 conflict carries). */
@@ -112,6 +124,7 @@ export interface QueueState {
   counts: Counts;
   offline: OfflineScoring;
   blocked: Blocked;
+  display: DisplayData | null;
   /** Derived, never stored: the confirmed log with the items that are still in the chain applied. What the scorer sees. */
   local: ScoringLog;
 }

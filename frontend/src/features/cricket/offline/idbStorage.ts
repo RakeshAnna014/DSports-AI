@@ -146,6 +146,9 @@ export class IdbStorage implements QueueStorage {
   }
 }
 
+/** Whether this browser has IndexedDB at all (some private modes and old webviews do not). */
+export const idbAvailable = (): boolean => typeof indexedDB !== 'undefined';
+
 /** Opens (and creates) the database. Throws `StorageError` when IndexedDB is missing, blocked or refused (some private modes): the screen then falls back to online, one-slot scoring. */
 export async function openIdbStorage(name: string = DATABASE_NAME): Promise<IdbStorage> {
   return new IdbStorage(await open(name));
