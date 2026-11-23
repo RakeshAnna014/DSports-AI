@@ -2,21 +2,22 @@
 
 Branch `feature/ground-booking`, 14 commits on top of `3591c8a`, **nothing pushed**. Working list and per-gate reports: [PROGRESS.md](PROGRESS.md). Every decision with its alternatives: [DECISIONS-LOG.md](DECISIONS-LOG.md).
 
-## What is finished, and what is not
+## What is finished, and what is not (updated 2026-11-23 after the second part of the run)
 
-| Gate | State | Commits |
-|---|---|---|
-| 2f-1 TypeScript scoring engine, both vector directions, property tests | done, verified in a clean worktree | d6166e9, 6181fd2 |
-| 2f-2 durable queue, journal, IndexedDB store (real-Chrome contract run) | done, verified | 7df01c2, 7e2ad4b |
-| 2f-3 server side: engine-state route, fingerprint on the view, `mine` / `clientEventId` / `tappedAt`, migration V57 | done, verified (incl. Docker integration) | d3c25ef, cc7d122, 938c8b0 |
-| 2f-4 sender, local view, offline screen, emulated e2e, real-phone script 7c | done, verified; **the real-phone run is yours** | a3e96df, 7fda349, 1b6e48e, 854209d, 7fc1b44, dc40758 |
-| 3a analytics and commentary (public route, charts) | done; verified in the working tree and by the Docker HTTP test, **not yet in a clean worktree** | f60fa55 |
-| 3b career stats, 3c stats screens | **not built** (criteria and edge cases written in PROGRESS.md) | |
-| 4a, 4b, 4c tournaments, points table / NRR / leaderboards, entry fees | **not built** (criteria written) | |
-| 5a, 5b, 5c AI match report, insight tools, `book_ground` chat write, Looking, feed | **not built** (criteria written; Looking and feed are product decisions) | |
-| Final: fresh clone, whole suite three times, whole-branch review | **not done** | |
+| Gate | State |
+|---|---|
+| 2f-1 to 2f-4 offline scoring | done, verified in clean worktrees; the real-phone run (script 7c) is yours |
+| 3a analytics and commentary | done; frontend verified in a clean worktree, backend in the working tree |
+| 3b career stats (V58 projection, public route, admin rebuild) | done; verified in the working tree with Docker (HTTP 30/30, persistence 24/24); not in a clean worktree |
+| 3c player page `/p/:id`, scorecard names link to it | done; frontend tests green in the working tree |
+| 3d guest to account link | met by the existing claim and approval flow (id kept, test) |
+| 3e shot direction (V59) and wagon wheel | done, online scorer only; no full-page test of the scorer-screen wiring |
+| 4a tournaments | **only the pure fixture generator is built** (tested); aggregate, tables, routes not built |
+| 4b points table | **only the pure points table with net run rate is built** (tested); route, leaderboards, awards not built |
+| 4c, 4d, 5a, 5b, 5c, 5d | **not built** |
+| Final: fresh clone x3, whole-branch review | **not done** |
 
-The run stopped because the offline-scoring gates (2f-1 to 2f-4) were large and were built and proved properly; the later phases are separate pieces of work that were not started. PROGRESS.md says exactly where to resume (next free migration is V58).
+The owner's product decisions of this session are in DECISIONS-LOG.md. PROGRESS.md ends with the exact resume point and the next steps in order.
 
 ## Test counts
 

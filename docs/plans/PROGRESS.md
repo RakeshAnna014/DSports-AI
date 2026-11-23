@@ -18,8 +18,8 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 3c | Career stats screen (player page `/p/:id`), linked from the public scorecard (adds `playerId` to the public scorecard) | **done** (c515e61) |
 | 3d | Guest players linked to a real account by the organiser (owner decision): met by the existing claim + approval flow, id kept (test) | **done** (03e9e26) |
 | 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | **done** (backend f0c2d6a; screen and wheel in the next commit; scorer-screen flow has no page-level test) |
-| 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | todo |
-| 4b | Points table with NRR, leaderboards, awards | todo |
+| 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | **partly done**: pure `Fixtures` (round robin by the circle method, seeded knockout first round with byes) is built and tested (`FixturesAndTableTest`). NOT built: the `Tournament` aggregate, V60 tables, use cases, routes, SecurityPolicyTest rows, HTTP test |
+| 4b | Points table with NRR, leaderboards, awards | **partly done**: pure `PointsTable` (points, net run rate with the all-out quota rule, ordered by points, wins, NRR, head to head, id) built and tested. NOT built: feeding it from stored fixtures, the route, leaderboards (from `player_match_stats`), awards |
 | 4c | Tournament screens (organiser console, public page); fee extension point written in the ADR, no payments | todo |
 | 4d | Scorer invite link: single use, 48 h, revocable, sign-in required (owner decision) | todo |
 | 5a | AI tools: match summary + report with grounding check | todo |
@@ -163,7 +163,20 @@ Each follows the gate loop: design note, tests first, small commits, clean-workt
 
 ---
 
-## WHERE TO RESUME (updated 2026-11-23, after 3d)
+## WHERE TO RESUME (updated 2026-11-23, after 3e and the pure core of 4a/4b)
 
-Done and committed, not pushed: everything through 3d. Verified so far: frontend clean worktree through 3a (tsc, lint, build, 827 tests); backend 3b: `CricketScoringHttpIntegrationTest` 29/29, `ScoringPersistenceIntegrationTest` 23/23 (V58 round trip, constraints, upgrade from V57 with the guards), `SecurityPolicyTest` 127, cricket unit module green except as reported. **Not yet run in a clean worktree: 3b, 3c, 3d** (do that at the end of the next gate, with Docker integration and the emulated e2e scripts).
-Next gate: **3e** (optional shot direction, V59, wagon wheel), then 4a, 4b, 4c, 4d, 5a, 5b, 5c, 5d, then the final step. Commands and pitfalls: `mvn -B -o -Pintegration-test test -pl bootstrap -am -Dtest=<IT class>` (not `verify`, which repackages the jar and fails while a backend runs); run frontend tools with `pnpm exec`; restore `frontend/tsconfig.tsbuildinfo` before committing.
+Committed, not pushed: everything through 3e, plus `domain/tournament/Fixtures.java` and `PointsTable.java` with their tests.
+
+Verified so far:
+* Frontend in a clean worktree with a real `pnpm install` at the 3a commit: `tsc -b`, lint, `vite build`, 827 tests, all green. Since then, in the working tree only: `tsc` and lint clean, 143 tests of the cricket public and scoring folders green (includes 3c and 3e).
+* Backend, working tree, Docker: `CricketScoringHttpIntegrationTest` 30/30 (includes 3b stats, 3e shots), `ScoringPersistenceIntegrationTest` 24/24 (V58 and V59: round trip, constraints, upgrade from V57 with the guards, append-only), `SecurityPolicyTest` 129, cricket unit tests for the new code green.
+* **Never run in a clean worktree: 3b to 3e and the tournament core.** The full backend suite (`mvn test` for the whole backend, then the Docker integration tests), the full frontend suite, and the browser scripts (`e2e/cricket-offline.mjs`, `e2e/cricket-ui.mjs`) must still be run after the next gate. `docs/api/java-backend.md` has not been regenerated since 3a (it needs the running backend's `/api-docs`; routes added since: `GET /api/v1/players/{id}/stats`, `POST /api/v1/admin/cricket/stats/rebuild`, `POST /api/v1/matches/{id}/scoring/shots`, and the analytics `shots`).
+
+Next, in order:
+1. **4a persistence and routes.** Migration **V60** (next free number): `tournaments` (id, name, organiser_id, city, starts_on, ends_on, format LEAGUE | KNOCKOUT | GROUPS_THEN_KNOCKOUT, points_win/tie/no_result, status, version, created_at), `tournament_teams` (tournament_id, team_id, group_no, seed, withdrawn; unique per team in a tournament), `tournament_fixtures` (id, tournament_id, round, position, team_a, team_b nullable for a bye, match_id nullable unique). Use cases: create, add and remove a team before the first fixture has a log, generate fixtures with `Fixtures`, create the fixture's `Match` through `ManageMatchesUseCase.create` and store `match_id`. Organiser-only edits, version check (OPTIMISTIC_LOCKING_CONFLICT). Every route goes into `SecurityPolicyTest` (public: read a tournament; organiser: the rest, decided in the use case). No fees (owner decision): see the ADR paragraph "Tournaments: the fee extension point".
+2. **4b**: map each completed fixture's score to `PointsTable.Played` (runs, balls, all out, quota from the innings' own overs), public `GET /api/v1/tournaments/{id}/table`; leaderboards (most runs, wickets, sixes; strike rate and economy with a minimum-balls qualifier) from `player_match_stats` restricted to the tournament's matches; player of the match by a points formula written in the ADR.
+3. **4c** screens: organiser console and public tournament page. **4d** scorer invite link (single use, 48 h, revocable, sign-in required, SecurityPolicyTest rows; owner decision).
+4. **5a, 5b, 5c** AI service tools (`get_match_summary`, player stats, head to head, team insights, ground finder, `book_ground` as a confirmed write) in `ai-service/`; **5d** "Looking" and feed behind a setting that is off by default.
+5. **Final step**: fresh clone, whole suite three times, whole-branch review (`git diff origin/main...HEAD`), update `FINAL-REPORT.md`.
+
+Commands and pitfalls: `mvn -B -o -Pintegration-test test -pl bootstrap -am -Dtest=<IT class>` (not `verify`, which repackages the jar and fails while a backend runs; `-Dtest` replaces the `integration` group filter only for the class named); run frontend tools with `pnpm exec` from `C:/...`; restore `frontend/tsconfig.tsbuildinfo` before committing; large shell commands with quotes and heredocs often fail to parse: write the script with the Write tool and run it.
