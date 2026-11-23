@@ -412,7 +412,7 @@ class FakeLLM:
 
     async def generate(self, prompt: str, *, tier: str = "reasoning", system: str | None = None, json_mode: bool = False, max_tokens: int | None = None,
                        temperature: float | None = None, intent: str | None = None, customer_hash: str | None = None) -> LLMResult:
-        self.prompts.append({"prompt": prompt, "tier": tier, "system": system, "json": json_mode, "intent": intent})
+        self.prompts.append({"prompt": prompt, "tier": tier, "system": system, "json": json_mode, "intent": intent, "max_tokens": max_tokens, "temperature": temperature})
         if self.delay:
             await asyncio.sleep(self.delay)
         item = self.script.pop(0) if self.script else self.default

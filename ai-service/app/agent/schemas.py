@@ -67,6 +67,7 @@ class Suggestion(Camel):
     label: str
     message: str | None = None
     choice_id: str | None = None
+    href: str | None = None          # a link chip: an app route to open instead of sending a message
 
 
 class RecommendationsResponse(Camel):
