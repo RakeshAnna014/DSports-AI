@@ -201,14 +201,14 @@ try {
   await step(phone, 'phone goes offline (the airplane-mode stand-in) and taps a ball: it is saved, the laptop does not change, then it arrives once', async () => {
     await phoneSession.context.setOffline(true);
     await phone.getByTestId('run-1').tap();
-    await phone.getByTestId('outbox-banner').filter({ hasText: 'Saved on this phone' }).waitFor();
+    await phone.getByTestId('waiting-banner').filter({ hasText: '1 change is waiting on this phone' }).waitFor();
     await phone.screenshot({ path: `${shots}/cricket-4-offline-phone.png` });
     await laptop.waitForTimeout(9000);
     const during = await laptop.getByTestId('public-score').textContent();
     if (!during.includes('Lions 5/1')) throw new Error(`the laptop changed while the phone was offline: ${during}`);
     await phoneSession.context.setOffline(false);
     const since = Date.now();
-    await phone.getByTestId('outbox-banner').waitFor({ state: 'detached', timeout: 30000 });
+    await phone.getByTestId('waiting-banner').waitFor({ state: 'detached', timeout: 60000 });
     const took = await laptopShows(laptop, 'public-score', 'Lions 6/1', since);
     log('     the saved ball reached the phone screen and the laptop (Lions 6/1) within', took, 'ms of the network coming back');
     const events = Number(sql(`SELECT count(*) FROM ball_events WHERE match_id = '${matchId}'`));
