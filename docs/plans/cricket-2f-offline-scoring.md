@@ -1,6 +1,6 @@
 # Cricket step 2f: offline scoring in TypeScript (plan only, no code yet)
 
-Status: **approved with decisions (see the end).** Gate 2f-0 (CI and vectors) is the first to be built; everything else is still plan. It extends [ADR-019](../adr/ADR-019-cricket-players-teams-matches-scoring.md) and the 2d contract in [cricket-2d-scoring-api.md](cricket-2d-scoring-api.md). Section 9 lists the decisions that need an answer before any code is written.
+Status: **approved with decisions (see the end).** Gates 2f-0 (CI and vectors) and 2f-1 (the TypeScript engine, both vector directions) are built; the rest is still plan. Progress is tracked in [PROGRESS.md](PROGRESS.md). It extends [ADR-019](../adr/ADR-019-cricket-players-teams-matches-scoring.md) and the 2d contract in [cricket-2d-scoring-api.md](cricket-2d-scoring-api.md). Section 9 lists the decisions that need an answer before any code is written.
 
 ## 0. What exists today, and what 2f changes
 

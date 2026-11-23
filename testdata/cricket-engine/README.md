@@ -4,13 +4,17 @@ Test vectors shared by the Java scoring engine (`backend/cricket`, the authority
 (`frontend/src/features/cricket/engine`, step 2f). Each vector is a match setup and a list of steps with the answer the **Java engine gave**. Both
 engines must reproduce every answer; the Java engine is the oracle, never the other way round.
 
-Nothing in this folder is edited by hand. The Java build writes it and a test fails if the committed files differ from what the engine produces now.
+Nothing in this folder is edited by hand. The Java build writes `golden/` and `random/`, the TypeScript build writes `from-ts/`, and a test on each side fails if
+the committed files differ from what its engine produces now.
 
 ```text
 manifest.json            vector format, engine version, the SHA-256 of every file, the vocabulary, and what cannot be covered (with the reason)
 golden/*.json            hand-written scenarios, a full state recorded after every accepted step
 random/seed-NNNN.json    seeded random matches (mostly sensible commands, many refused ones, some undos); a fingerprint after every accepted step
                          and a full state on every 25th one and the last
+from-ts/seed-NNNN.json   the other direction: seeded random matches played through the TypeScript engine (its own generator, which leans towards commands the
+                         engine accepts), with the TypeScript answer recorded; the Java engine replays them. Same step format as above.
+from-ts/manifest.json    vector format, engine version, "generator": "typescript", and the SHA-256 of every file in from-ts/
 ```
 
 ## Regenerating, and what a reviewer looks at
@@ -22,6 +26,13 @@ cd backend
 mvn -pl cricket -am test -Dtest=EngineVectorExporter -Dvectors.write=true -Dsurefire.failIfNoSpecifiedTests=false
 # 3. read the diff of testdata/cricket-engine: it is the list of rules that changed. Commit it with the engine change.
 # 4. update frontend/src/features/cricket/engine/vocabulary.ts if the manifest's vocabulary changed
+```
+
+```bash
+cd frontend
+# the TypeScript side (after a change to the TypeScript engine or to its generator); review the diff, then run the Java replay
+pnpm run vectors:ts
+cd ../backend && mvn -pl cricket test -Dtest=TsVectorsReplayTest
 ```
 
 Files are LF only (`.gitattributes`); hashes are taken over the LF text.
@@ -71,5 +82,9 @@ The same fingerprint is what the phone will compare with the server's at run tim
 | `EngineVectorsAreCurrentTest` | Java | the committed files differ from what the engine produces now (a rule changed without regenerating), or there is a stray file |
 | `EngineVectorCoverageTest` | Java | a command type, rule, dismissal, delivery, end reason, waiver, undo mode, status or result type has no step (unless listed as not coverable with a reason) |
 | `vectors.manifest.test.ts` | frontend | a file's hash differs, a file is missing or extra, the engine version is not one the phone supports, the vocabulary differs from the Java enums, or a state's fingerprint computed in TypeScript differs |
-| the TypeScript engine's replay | frontend, step 2f-1 | any step's answer differs |
-| the TypeScript-made vectors replayed by Java | Java, step 2f-1 | the TypeScript engine accepted something the Java engine refuses, or the reverse |
+| `engine.vectors.test.ts` | frontend | the TypeScript engine's answer to any step of `golden/`, `random/` or `from-ts/` differs from the file (accepted or the rule that refused it, seq, voids, waivers, fingerprint, status, what is needed next, end reason, result type, the whole state where recorded) |
+| `tsVectors.test.ts` | frontend | the committed `from-ts/` files differ from what the generator and the TypeScript engine produce now (byte for byte), or the set stops being varied (every command, dismissal and end reason accepted at least once) |
+| `TsVectorsReplayTest` | Java | the TypeScript engine accepted something the Java engine refuses, or the reverse, or the two disagree on state, fingerprint or what comes next; a file's hash or the engine version is wrong |
+| `engine.properties.test.ts`, `engine.rules.test.ts`, `engine.purity.test.ts` | frontend | undo does not restore the earlier fingerprint, a replay from scratch differs from the step-by-step state, a refusal changes something, a scorecard stops adding up, a rule scenario breaks, or the engine imports a clock, randomness, the network, storage or a UI library |
+
+Both directions run on every push (see `.github/workflows/ci.yml`: `backend-unit` runs the Java tests including `TsVectorsReplayTest`; `frontend` runs the Vitest suite including the TypeScript replay).

@@ -1,7 +1,6 @@
 package com.dsports.cricket.vectors;
 
 import com.dsports.cricket.domain.scoring.MatchScoring;
-import com.dsports.cricket.domain.scoring.ScoringLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
@@ -51,25 +50,7 @@ class EngineVectorsReplayTest {
     void everyStepOfEveryFileGivesTheRecordedAnswer() throws Exception {
         int steps = 0;
         for (var path : vectorFiles()) {
-            var file = VectorFormat.tree(Files.readString(path));
-            var runner = new VectorRunner(VectorFormat.setup(file.get("setup")));
-            int number = 0;
-            for (JsonNode step : file.get("steps")) {
-                number++;
-                var where = path.getFileName() + " step " + number;
-                VectorRunner.Result result;
-                if (step.get("op").asText().equals("command")) {
-                    var command = VectorFormat.command(step.get("command"));
-                    assertThat(VectorFormat.canonical(VectorFormat.body(command))).as("%s: the body is the canonical one", where).isEqualTo(VectorFormat.canonical(step.get("command")));
-                    result = runner.command(command);
-                } else {
-                    result = runner.undo(ScoringLog.UndoMode.valueOf(step.get("mode").asText()));
-                }
-                var recorded = step.get("expect");
-                var actual = runner.expect(result, recorded.has("state"));
-                assertThat(VectorFormat.compact(actual)).as(where).isEqualTo(VectorFormat.compact(recorded));
-                steps++;
-            }
+            steps += VectorReplay.replay(path);
         }
         assertThat(steps).as("steps replayed").isGreaterThan(3000);
     }

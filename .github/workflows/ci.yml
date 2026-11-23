@@ -4,8 +4,9 @@
 #                            TypeScript) + the Node tests of the e2e safety guard
 #   slow tier, main only:    the Docker (Testcontainers) integration tests, about 15 minutes; also on manual dispatch
 #
-# The engine parity guarantee (docs/plans/cricket-2f-offline-scoring.md, section 1.5) rests on the fast tier: the Java vector tests and the frontend vector
-# tests both read testdata/cricket-engine, so a change that makes the two engines disagree fails here on the push that makes it.
+# The engine parity guarantee (docs/plans/cricket-2f-offline-scoring.md, section 1.5) rests on the fast tier, in both directions: the frontend replays the Java-made
+# vectors (golden/, random/) through the TypeScript engine, and the Java build replays the TypeScript-made ones (from-ts/) through the Java engine, so a change that
+# makes the two engines disagree fails here on the push that makes it.
 # Not covered here: the Python AI service tests and the browser end-to-end scripts (they need credentials, a database and Chrome).
 name: ci
 
