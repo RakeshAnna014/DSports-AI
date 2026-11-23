@@ -37,3 +37,11 @@ Alternative: a different TS-friendly shape plus a projection function. Rejected:
 * **A third public route.** The analytics could have been folded into the scorecard response, but that would send every ball of commentary with every four-second poll. A separate route, asked for only when the seq changes, keeps the poll small. The public surface is now exactly three read-only routes, each pinned in `SecurityPolicyTest`.
 * **No wagon wheel.** It needs the direction of each shot (`shot x/y` in the plan), which the scorer screen does not capture and the engine does not model. Inventing positions would be a fabricated number. It needs a scoring-screen change (a tap on a field diagram) and a column, so it is listed in FINAL-REPORT as a product decision, not built.
 * **Charts as plain SVG,** not a library: four small charts, no new dependency, easy to describe in words for screen readers.
+
+## 2026-11-23 · Product decisions given by the owner (they override the open questions in FINAL-REPORT)
+* **Guest players:** allowed by name only (no verification). An organiser can link a guest to a real account later (stats follow the player id). Decided by the owner.
+* **Inviting scorers:** single-use invite link, expires after 48 h, revocable by the organiser; the invited user must sign in; the routes go into SecurityPolicyTest. Decided by the owner.
+* **PWA:** deferred; the mobile apps will cover offline start-up (D10 stands). Decided by the owner.
+* **Shot direction / wagon wheel:** an optional tap after a scoring ball, off by default, never required; the wagon wheel is built from it when present. Decided by the owner.
+* **Looking and feed:** the simplest version the plan describes, behind a setting that is off by default; what a fuller version needs is listed in the report. Decided by the owner.
+* **Tournament fees:** tournaments are built without fees; a clear extension point for a fee model is described in the ADR. No payments are built. Decided by the owner. (This replaces the 4c criteria about entry fees.)
