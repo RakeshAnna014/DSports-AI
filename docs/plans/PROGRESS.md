@@ -180,3 +180,14 @@ Next, in order:
 5. **Final step**: fresh clone, whole suite three times, whole-branch review (`git diff origin/main...HEAD`), update `FINAL-REPORT.md`.
 
 Commands and pitfalls: `mvn -B -o -Pintegration-test test -pl bootstrap -am -Dtest=<IT class>` (not `verify`, which repackages the jar and fails while a backend runs; `-Dtest` replaces the `integration` group filter only for the class named); run frontend tools with `pnpm exec` from `C:/...`; restore `frontend/tsconfig.tsbuildinfo` before committing; large shell commands with quotes and heredocs often fail to parse: write the script with the Write tool and run it.
+
+---
+
+## Stabilisation run (2026-11-23), no new features
+
+Clean worktree at HEAD, real `pnpm install`:
+* Backend `mvn test` (all modules): first run **failed once**: `FlywayMigrationVersionTest.migrationsContainNoDestructiveStatements` flagged V59's `BEFORE TRUNCATE ON ball_shots` guard. Fixed in c396ef6 by exempting exactly that trigger definition in exactly that file (as V56 already is), with a test that any other TRUNCATE or table is still refused. Re-run: **1,270 tests, 0 failures, 1 skipped** (the opt-in vector writer).
+* Backend Docker integration (`-Pintegration-test test`, all modules): **205 tests, 0 failures** (run at the commit before the test-only fix).
+* Frontend: `tsc -b` clean, lint clean (0 warnings), `vite build` ok, **842 tests in 60 files**, 0 failures.
+Fresh local stack (jar rebuilt, backend restarted so Flyway migrated the populated local `dsports` database V57 -> V59, Vite restarted): `node e2e/venues-ui.mjs`, `cricket-ui.mjs`, `cricket-offline.mjs` all **ALL STEPS PASSED**; `idb-contract.mjs` **contract met (8 fresh databases)**. These are emulated phones, not a real phone.
+Not done in this run: regenerating `docs/api/java-backend.md`; the GitHub workflow itself (never pushed); the real-phone script 7c.
