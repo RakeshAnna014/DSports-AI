@@ -73,10 +73,10 @@ public class PublicMatchesUseCase {
 
     /** The charts and commentary of a started match, worked out from its log. A match that has not started is "not found", exactly as for the scorecard. */
     public Mono<PublicAnalytics> analytics(UUID matchId) {
-        return started(matchId).flatMap(s -> Mono.zip(NameLookup.forMatch(s.match(), teams, players, id -> "A scorer"), store.entries(matchId).collectList())
+        return started(matchId).flatMap(s -> Mono.zip(NameLookup.forMatch(s.match(), teams, players, id -> "A scorer"), store.entries(matchId).collectList(), store.shots(matchId))
             .map(t -> {
-                var analytics = MatchAnalytics.of(MatchSetup.from(s.match()), t.getT2(), t.getT1().player(), t.getT1().team());
-                return new PublicAnalytics(s.seq(), analytics.innings(), analytics.commentary());
+                var analytics = MatchAnalytics.of(MatchSetup.from(s.match()), t.getT2(), t.getT3(), t.getT1().player(), t.getT1().team());
+                return new PublicAnalytics(s.seq(), analytics.innings(), analytics.commentary(), analytics.shots());
             }));
     }
 

@@ -79,6 +79,10 @@ public final class ScoringRequests {
     }
 
     /** {@code mode}: BALL (the default) takes off the last ball and what was chosen after it; COMMAND takes off just the latest command. */
+    /** Where the ball with this seq went: thousandths of the field's radius from the middle of the pitch, right and up positive; the point must be inside the field. */
+    public record ShotRequest(@NotNull @Min(1) Integer seq, @NotNull @Min(-1000) @jakarta.validation.constraints.Max(1000) Integer x, @NotNull @Min(-1000) @jakarta.validation.constraints.Max(1000) Integer y) {
+    }
+
     public record UndoRequest(@NotNull UUID clientEventId, @NotNull @Min(0) Integer expectedSeq, ScoringLog.UndoMode mode, java.time.Instant tappedAt) {
         ScoringLog.UndoMode modeOrDefault() {
             return mode == null ? ScoringLog.UndoMode.BALL : mode;

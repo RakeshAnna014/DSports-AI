@@ -562,4 +562,25 @@ class ScoringPersistenceIntegrationTest {
         assertThatThrownBy(() -> old.sql("UPDATE ball_events SET payload = '{}'::jsonb WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
         assertThatThrownBy(() -> old.sql("DELETE FROM ball_events WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
     }
+
+    // ---- V59: shot direction (its own append-only table) ----------------------------------------------------------------------------
+
+    @Test
+    void a_shot_is_stored_once_for_a_ball_inside_the_field_and_the_table_refuses_edits_deletes_truncate_and_a_ball_that_does_not_exist() {
+        var matchId = newMatch();
+        score(matchId, GoldenMatch.lionsInnings().subList(0, 3));
+        store.exclusive(matchId, session -> session.addShot(3, new com.dsports.cricket.domain.scoring.Shot(300, -200), SCORER, NOW)).block();
+        assertThat(store.shots(matchId).block()).containsOnlyKeys(3).containsEntry(3, new com.dsports.cricket.domain.scoring.Shot(300, -200));
+
+        assertThatThrownBy(() -> store.exclusive(matchId, session -> session.addShot(3, new com.dsports.cricket.domain.scoring.Shot(0, 0), SCORER, NOW)).block())
+            .as("one shot for a ball").isInstanceOfSatisfying(CricketDomainException.class, e -> assertThat(e.getErrorCode()).isEqualTo(CricketErrorCode.SHOT_ALREADY_RECORDED));
+        assertThatThrownBy(() -> store.exclusive(matchId, session -> session.addShot(50, new com.dsports.cricket.domain.scoring.Shot(0, 0), SCORER, NOW)).block()).as("no such ball in the log").isNotNull();
+        assertThatThrownBy(() -> db.sql("INSERT INTO ball_shots (match_id, seq, x, y, actor_id, created_at) VALUES (:m, 2, 900, 900, :a, :t)").bind("m", matchId).bind("a", SCORER).bind("t", NOW).fetch().rowsUpdated().block())
+            .as("the database itself refuses a point outside the field").isNotNull();
+        assertThatThrownBy(() -> db.sql("UPDATE ball_shots SET x = 1 WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        assertThatThrownBy(() -> db.sql("DELETE FROM ball_shots WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        assertThatThrownBy(() -> TX.transactional(db.sql("TRUNCATE ball_shots").fetch().rowsUpdated().then(Mono.<Void>error(new IllegalStateException("not refused")))).block()).hasMessageContaining("append-only");
+        assertThat(store.shots(matchId).block()).hasSize(1);
+        assertThat(store.entries(matchId).collectList().block()).as("the log is untouched").hasSize(3);
+    }
 }

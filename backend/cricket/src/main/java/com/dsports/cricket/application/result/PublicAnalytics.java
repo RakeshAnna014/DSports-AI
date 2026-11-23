@@ -9,9 +9,10 @@ import java.util.List;
  * for each wicket, and a line of commentary for each ball, newest last. Names and numbers only; no id but the match's own. {@code seq} is the seq of the last event,
  * so a viewer can tell whether anything new was scored.
  */
-public record PublicAnalytics(int seq, List<MatchAnalytics.InningsAnalytics> innings, List<MatchAnalytics.CommentaryLine> commentary) {
+public record PublicAnalytics(int seq, List<MatchAnalytics.InningsAnalytics> innings, List<MatchAnalytics.CommentaryLine> commentary, List<MatchAnalytics.ShotPoint> shots) {
     public PublicAnalytics {
         innings = List.copyOf(innings);
         commentary = List.copyOf(commentary);
+        shots = List.copyOf(shots);
     }
 }

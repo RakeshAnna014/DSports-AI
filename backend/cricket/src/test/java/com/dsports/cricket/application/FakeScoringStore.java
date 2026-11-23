@@ -6,6 +6,7 @@ import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.LogEntry;
+import com.dsports.cricket.domain.scoring.Shot;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -24,6 +25,7 @@ final class FakeScoringStore implements ScoringStore {
     final Map<UUID, List<Stored>> logs = new ConcurrentHashMap<>();
     final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
     final Map<UUID, MatchStatus> statuses = new ConcurrentHashMap<>();
+    final Map<UUID, Map<Integer, Shot>> shots = new ConcurrentHashMap<>();
     final Map<UUID, List<CareerStats.Match>> stats = new ConcurrentHashMap<>();
     private final Map<UUID, Semaphore> locks = new ConcurrentHashMap<>();
 
@@ -52,6 +54,11 @@ final class FakeScoringStore implements ScoringStore {
     @Override
     public Flux<CareerStats.Match> statsOf(UUID playerId) {
         return Flux.fromIterable(stats.values()).flatMapIterable(rows -> rows).filter(r -> r.playerId().equals(playerId));
+    }
+
+    @Override
+    public Mono<Map<Integer, Shot>> shots(UUID matchId) {
+        return Mono.just(Map.copyOf(shots.getOrDefault(matchId, Map.of())));
     }
 
     @Override
@@ -100,6 +107,12 @@ final class FakeScoringStore implements ScoringStore {
         @Override
         public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
             return Mono.fromRunnable(() -> snapshots.put(matchId, snapshot));
+        }
+
+        @Override
+        public Mono<Void> addShot(int seq, Shot shot, UUID actorId, java.time.Instant at) {
+            return Mono.defer(() -> shots.computeIfAbsent(matchId, id -> new ConcurrentHashMap<>()).putIfAbsent(seq, shot) == null ? Mono.<Void>empty()
+                : Mono.<Void>error(new CricketDomainException(CricketErrorCode.SHOT_ALREADY_RECORDED, "already")));
         }
 
         @Override

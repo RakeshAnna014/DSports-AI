@@ -300,6 +300,55 @@ class CricketScoringHttpIntegrationTest {
         assertThat(get(s.organiser(), "/api/v1/matches/" + s.matchId()).body().get("status")).isEqualTo("COMPLETED");
     }
 
+    private Resp shot(Setup s, Account who, int seq, int x, int y) {
+        return post(who, s.scoring() + "/shots", Map.of("seq", seq, "x", x, "y", y));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> shotsOf(Setup s) {
+        return (List<Map<String, Object>>) get(null, "/api/v1/matches/" + s.matchId() + "/analytics").body().get("shots");
+    }
+
+    @Test
+    void aShotIsRecordedAfterABatRunBallDrawnOnlyWhileTheBallIsInForceAndNeverChangesTheScoreOrTheLog() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        for (int i = 0; i < 4; i++) {
+            assertThat(score(s, s.organiser(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        assertThat(shotsOf(s)).isEmpty();
+        int eventsBefore = eventCount(s.matchId());
+        var scoreBefore = get(s.organiser(), s.scoring()).body();
+
+        assertThat(shot(s, s.organiser(), 3, 300, -200).status()).as("seq 3 is a one off the bat").isEqualTo(204);
+        assertThat(shot(s, s.organiser(), 3, 0, 0).status()).as("one shot for a ball, never changed").isEqualTo(409);
+        assertThat(shot(s, s.organiser(), 2, 0, 0).body().get("code")).as("seq 2 is a wide").isEqualTo("SHOT_NOT_ALLOWED");
+        assertThat(shot(s, s.organiser(), 99, 0, 0).body().get("code")).as("no such ball").isEqualTo("SHOT_NOT_ALLOWED");
+        assertThat(shot(s, s.organiser(), 3, 800, 800).status()).as("outside the field").isEqualTo(400);
+        assertThat(shot(s, s.organiser(), 3, 5000, 0).status()).isEqualTo(400);
+        assertThat(shot(s, s.viewer(), 3, 0, 0).status()).as("a member who cannot score").isIn(403, 404);
+        assertThat(shot(s, null, 3, 0, 0).status()).isEqualTo(401);
+
+        assertThat(eventCount(s.matchId())).as("the log is untouched").isEqualTo(eventsBefore);
+        assertThat(get(s.organiser(), s.scoring()).body().get("stateFingerprint")).isEqualTo(scoreBefore.get("stateFingerprint"));
+        var points = shotsOf(s);
+        assertThat(points).hasSize(1);
+        assertThat(points.get(0)).containsEntry("seq", 3).containsEntry("x", 300).containsEntry("y", -200).containsEntry("runs", 1);
+        assertThat(points.get(0).toString()).as("names and numbers only").doesNotContain(s.organiser().id().toString());
+
+        assertThat(undo(s, s.organiser(), 4).status()).isEqualTo(200);
+        assertThat(undo(s, s.organiser(), 5).status()).isEqualTo(200);
+        assertThat(shotsOf(s)).as("the ball was undone, so its shot is not drawn").isEmpty();
+        assertThat(shot(s, s.organiser(), 3, 10, 10).status()).as("and cannot be given another").isIn(409, 422);
+        assertThatTheShotTableRefusesEdits(s);
+    }
+
+    private void assertThatTheShotTableRefusesEdits(Setup s) {
+        var m = UUID.fromString(s.matchId());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> db.sql("UPDATE ball_shots SET x = 0 WHERE match_id = :m").bind("m", m).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> db.sql("DELETE FROM ball_shots WHERE match_id = :m").bind("m", m).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+    }
+
     private String statsRows(String matchId) {
         return db.sql("SELECT coalesce(string_agg(t::text, ';' ORDER BY t.player_id), '') AS rows FROM player_match_stats t WHERE t.match_id = :m").bind("m", UUID.fromString(matchId))
             .map((r, m) -> r.get("rows", String.class)).one().block();

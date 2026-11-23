@@ -64,6 +64,16 @@ public class ScoringController {
         return scoring.submit(Principals.actor(authentication), matchId, request.clientEventId(), request.expectedSeq(), request.command().toCommand(), request.tappedAt());
     }
 
+    @PostMapping(path = "/shots", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Record where a scoring ball went (optional)", description = "After a ball that scored runs off the bat, the scorer may tap where it went on a drawing of the field. "
+        + "Display data only: it never changes the score, the log or the match status. One shot for each ball, never changed. The ball must still be in force (not undone).")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "Recorded"), @ApiResponse(responseCode = "409", description = "SHOT_ALREADY_RECORDED or MATCH_LOCKED"),
+        @ApiResponse(responseCode = "422", description = "SHOT_NOT_ALLOWED: that ball is not a bat-run ball in force")})
+    public Mono<org.springframework.http.ResponseEntity<Void>> shot(Authentication authentication, @PathVariable UUID matchId, @Valid @RequestBody ScoringRequests.ShotRequest request) {
+        return scoring.recordShot(Principals.actor(authentication), matchId, request.seq(), new com.dsports.cricket.domain.scoring.Shot(request.x(), request.y()))
+            .thenReturn(org.springframework.http.ResponseEntity.noContent().<Void>build());
+    }
+
     @PostMapping(path = "/undo", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Undo", description = "Voids the last ball and what was chosen after it (BALL, the default) or just the latest command (COMMAND). Nothing is deleted. "
         + "Allowed for 24 hours after the match first finished.")

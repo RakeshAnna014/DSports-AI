@@ -21,6 +21,7 @@ import com.dsports.cricket.domain.scoring.MatchSetup;
 import com.dsports.cricket.domain.scoring.ScoreCommand;
 import com.dsports.cricket.domain.scoring.ScoreOutcome;
 import com.dsports.cricket.domain.scoring.ScoringLog;
+import com.dsports.cricket.domain.scoring.Shot;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -175,6 +176,29 @@ public class ScoringUseCase {
                         });
                 });
             })));
+    }
+
+    /**
+     * Records where a scoring ball went (optional, display only). The ball must be a bat-run delivery that is still in force (not undone, not a wide), the match must not be
+     * locked, and a ball has at most one shot, never changed. It does not touch the log, the snapshot or the status, so it can never disagree with the score.
+     */
+    public Mono<Void> recordShot(Actor actor, UUID matchId, int seq, Shot shot) {
+        return scoreable(actor, matchId).flatMap(match -> store.exclusive(matchId, session -> session.entries().collectList().zipWith(session.snapshot().map(Optional::of).defaultIfEmpty(Optional.empty())).flatMap(t -> {
+            var entries = t.getT1();
+            if (windowOf(match, entries, t.getT2()).isLocked(clock.instant())) {
+                return Mono.<Void>error(new CricketDomainException(CricketErrorCode.MATCH_LOCKED, lockedMessage(MatchScoring.fold(MatchSetup.from(match), ScoringLog.commands(entries)).status())));
+            }
+            var ball = ScoringLog.effective(entries).stream().filter(e -> e.seq() == seq).findFirst();
+            boolean batRuns = ball.isPresent() && ball.get().command() instanceof ScoreCommand.Play play && play.command() instanceof com.dsports.cricket.domain.rules.ScoringCommand.Deliver deliver
+                && deliver.delivery().kind() != com.dsports.cricket.domain.rules.Delivery.Kind.WIDE && deliver.delivery().runsType() == com.dsports.cricket.domain.rules.Delivery.RunsType.BAT
+                && deliver.delivery().runs() > 0;
+            if (!batRuns) {
+                return Mono.<Void>error(new CricketDomainException(CricketErrorCode.SHOT_NOT_ALLOWED, "A shot can be recorded only for a ball in force that scored runs off the bat"));
+            }
+            return store.shots(matchId).flatMap(existing -> existing.containsKey(seq)
+                ? Mono.<Void>error(new CricketDomainException(CricketErrorCode.SHOT_ALREADY_RECORDED, "The shot for this ball is already recorded"))
+                : session.addShot(seq, shot, actor.id(), clock.instant()));
+        })));
     }
 
     // ---- the shared steps ---------------------------------------------------------------------------------------

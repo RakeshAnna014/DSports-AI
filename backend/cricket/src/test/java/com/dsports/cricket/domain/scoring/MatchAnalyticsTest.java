@@ -29,6 +29,24 @@ class MatchAnalyticsTest {
     }
 
     @Test
+    void aWagonWheelPointIsOnlyDrawnForABallInForceThatScoredOffTheBatAndNothingIsGuessedForTheRest() {
+        var shots = java.util.Map.of(2, new Shot(0, 500), 3, new Shot(300, -200), 4, new Shot(-900, 100), 6, new Shot(10, 10), 99, new Shot(0, 0));
+        var analytics = MatchAnalytics.of(SETUP, GoldenMatch.log(GoldenMatch.wholeMatch()), shots, PLAYER, TEAM);
+        assertThat(analytics.shots()).as("a wide (2), a bye (6) and a seq that does not exist (99) are not drawn")
+            .extracting(MatchAnalytics.ShotPoint::seq, MatchAnalytics.ShotPoint::runs, MatchAnalytics.ShotPoint::boundary, MatchAnalytics.ShotPoint::x, MatchAnalytics.ShotPoint::y, MatchAnalytics.ShotPoint::batter)
+            .containsExactly(tuple(3, 1, false, 300, -200, "Lion 1"), tuple(4, 4, true, -900, 100, "Lion 2"));
+        assertThat(MatchAnalytics.of(SETUP, GoldenMatch.log(GoldenMatch.wholeMatch()), PLAYER, TEAM).shots()).isEmpty();
+    }
+
+    @Test
+    void aShotForABallThatWasUndoneIsNotDrawn() {
+        var commands = new ArrayList<>(GoldenMatch.lionsInnings().subList(0, 3));
+        var log = new ArrayList<>(GoldenMatch.log(commands));
+        log.add(LogEntry.undo(4, List.of(3), new UUID(8, 4), GoldenMatch.lion(1), GoldenMatch.T0.plusSeconds(10)));
+        assertThat(MatchAnalytics.of(SETUP, log, java.util.Map.of(3, new Shot(100, 100)), PLAYER, TEAM).shots()).isEmpty();
+    }
+
+    @Test
     void runsInEachOverAddUpToTheInningsTotalAndMarkTheWickets() {
         var first = golden().innings().get(0);
         assertThat(first).extracting("battingTeam", "bowlingTeam", "runs", "wickets", "overs").containsExactly("Lions", "Tigers", 22, 2, "2.0");

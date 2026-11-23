@@ -43,14 +43,28 @@ public final class MatchAnalytics {
                                    List<WormPoint> worm, List<Partnership> partnerships) {
     }
 
-    public record Analytics(List<InningsAnalytics> innings, List<CommentaryLine> commentary) {
+    /**
+     * Where one scoring ball went, for the wagon wheel: who hit it, how many runs came off the bat, whether it was a boundary, and the point the scorer tapped (see {@link Shot}).
+     * Only balls the scorer chose to mark appear; nothing is guessed for the others.
+     */
+    public record ShotPoint(int innings, int seq, String over, String batter, int runs, boolean boundary, int x, int y) {
+    }
+
+    public record Analytics(List<InningsAnalytics> innings, List<CommentaryLine> commentary, List<ShotPoint> shots) {
         public Analytics {
             innings = List.copyOf(innings);
             commentary = List.copyOf(commentary);
+            shots = List.copyOf(shots);
         }
     }
 
     public static Analytics of(MatchSetup setup, List<LogEntry> entries, Function<UUID, String> player, Function<UUID, String> team) {
+        return of(setup, entries, java.util.Map.of(), player, team);
+    }
+
+    /** {@code shots} is where the scorer said each ball went, by the ball's seq; a shot whose ball was undone is not in the commands in force, so it is never drawn. */
+    public static Analytics of(MatchSetup setup, List<LogEntry> entries, java.util.Map<Integer, Shot> shots, Function<UUID, String> player, Function<UUID, String> team) {
+        var shotPoints = new ArrayList<ShotPoint>();
         var innings = new ArrayList<InningsAnalytics>();
         var commentary = new ArrayList<CommentaryLine>();
         var live = ScoringLog.effective(entries);
@@ -77,6 +91,12 @@ public final class MatchAnalytics {
             }
             if (play.command() instanceof ScoringCommand.Deliver deliver) {
                 open.delivery(before, after, deliver.delivery(), entry.seq(), player, commentary);
+                var shot = shots.get(entry.seq());
+                var d = deliver.delivery();
+                if (shot != null && d.kind() != Delivery.Kind.WIDE && d.runsType() == Delivery.RunsType.BAT && d.runs() > 0) {
+                    var commentaryLine = commentary.get(commentary.size() - 1);
+                    shotPoints.add(new ShotPoint(score.innings().size(), entry.seq(), commentaryLine.over(), player.apply(before.atBattingEnd()), d.runs(), d.boundary(), shot.x(), shot.y()));
+                }
             } else if (play.command() instanceof ScoringCommand.RetireBatter retire && retire.type() == ScoringCommand.RetirementType.OUT) {
                 open.wicketFell(before, after, player);
             }
@@ -84,7 +104,7 @@ public final class MatchAnalytics {
         if (open != null) {
             innings.add(open.finish(score.current(), team, player));
         }
-        return new Analytics(innings, commentary);
+        return new Analytics(innings, commentary, shotPoints);
     }
 
     /** The running work of one innings. */

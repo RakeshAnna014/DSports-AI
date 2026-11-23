@@ -453,6 +453,8 @@ public class GlobalExceptionHandler {
         Map.entry(CricketErrorCode.MATCH_LOCKED, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.NOT_LOCKED, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.NOTHING_TO_UNDO, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SHOT_NOT_ALLOWED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(CricketErrorCode.SHOT_ALREADY_RECORDED, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.MATCH_NOT_READY, HttpStatus.CONFLICT),
         Map.entry(CricketErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
         Map.entry(CricketErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)

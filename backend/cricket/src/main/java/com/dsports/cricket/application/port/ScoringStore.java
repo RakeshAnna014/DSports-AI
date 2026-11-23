@@ -4,6 +4,7 @@ import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
+import com.dsports.cricket.domain.scoring.Shot;
 import com.dsports.cricket.domain.scoring.MatchScore;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,9 @@ public interface ScoringStore {
 
     /** The stored per-match rows of one player (every ball type), for the career. These are a cache of {@link CareerStats#ofMatch} over the log, never a source. */
     Flux<CareerStats.Match> statsOf(UUID playerId);
+
+    /** Where the scorer said each ball went, by the ball's seq (display data only; balls with no shot are simply absent). */
+    Mono<java.util.Map<Integer, Shot>> shots(UUID matchId);
 
     /** The matches a rebuild of the stats has to visit: every completed one, and any that still has stored rows (so a row left by a match that is no longer completed is cleared). */
     Flux<UUID> matchIdsToRebuild();
@@ -58,6 +62,9 @@ public interface ScoringStore {
         Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status);
 
         /** Replaces every stats row of this match with these (none when the match is not completed). Runs in the same transaction as the event that changed the match. */
+        /** Records where the ball with this seq went. A second shot for the same ball fails with {@code SHOT_ALREADY_RECORDED}; a seq that is not in the log, with {@code SHOT_NOT_ALLOWED}. */
+        Mono<Void> addShot(int seq, Shot shot, UUID actorId, java.time.Instant at);
+
         Mono<Void> replaceStats(List<CareerStats.Match> rows);
     }
 }

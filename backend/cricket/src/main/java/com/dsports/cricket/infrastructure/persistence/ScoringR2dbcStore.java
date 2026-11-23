@@ -10,6 +10,7 @@ import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
 import com.dsports.cricket.domain.scoring.MatchScore;
 import com.dsports.cricket.domain.scoring.ScoreCommand;
+import com.dsports.cricket.domain.scoring.Shot;
 import com.dsports.shared.application.TransactionRunner;
 import io.r2dbc.spi.Row;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -63,6 +64,13 @@ public class ScoringR2dbcStore implements ScoringStore {
     @Override
     public Flux<CareerStats.Match> statsOf(UUID playerId) {
         return db.sql("SELECT * FROM player_match_stats WHERE player_id = :player ORDER BY match_id").bind("player", playerId).map((row, meta) -> toStats(row)).all();
+    }
+
+    @Override
+    public Mono<java.util.Map<Integer, Shot>> shots(UUID matchId) {
+        return db.sql("SELECT seq, x, y FROM ball_shots WHERE match_id = :match ORDER BY seq").bind("match", matchId)
+            .map((row, meta) -> java.util.Map.entry(row.get("seq", Integer.class), new Shot(n(row, "x"), n(row, "y")))).all()
+            .collectMap(java.util.Map.Entry::getKey, java.util.Map.Entry::getValue);
     }
 
     @Override
@@ -153,6 +161,13 @@ public class ScoringR2dbcStore implements ScoringStore {
         @Override
         public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
             return upsertSnapshot(snapshot, status, clock.instant());
+        }
+
+        @Override
+        public Mono<Void> addShot(int seq, Shot shot, UUID actorId, Instant at) {
+            return db.sql("INSERT INTO ball_shots (match_id, seq, x, y, actor_id, created_at) VALUES (:match, :seq, :x, :y, :actor, :at)")
+                .bind("match", matchId).bind("seq", seq).bind("x", (short) shot.x()).bind("y", (short) shot.y()).bind("actor", actorId).bind("at", at).fetch().rowsUpdated().then()
+                .onErrorMap(DataIntegrityViolationException.class, e -> new CricketDomainException(CricketErrorCode.SHOT_ALREADY_RECORDED, "The shot for this ball is already recorded"));
         }
 
         @Override
