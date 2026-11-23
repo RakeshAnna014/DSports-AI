@@ -131,3 +131,8 @@ bash e2e/validate-all.sh --with-holdout2  # also re-run the consumed holdout v2 
 Each step is PASS only if it exited 0 **and** printed its success marker; BLOCKED means a precondition (Docker, Gemini) is missing (an environment fact, not an application result); SKIP means not run.
 Docker tests are never skipped silently: Testcontainers needs `DOCKER_HOST=npipe:////./pipe/dockerDesktopLinuxEngine` (the script sets it) and the build uses `-Dapi.version=1.44`.
 Results: `e2e/validation-results/<timestamp>/` (one log per step, `summary.tsv`, `SUMMARY.md`). The real `dsports` database is never dropped or recreated (API E2E uses `dsports_e2e_val`).
+
+
+## idb-contract.mjs
+
+Runs the offline queue's storage contract (`frontend/src/features/cricket/offline/storageContract.ts`) against **real IndexedDB** in Chrome, with the page served over plain http from this machine's LAN address (so it is not a secure context, like a scorer's phone). No backend, database or sign-in is needed and nothing is written outside the browser's own throwaway databases. `node idb-contract.mjs` exits 0 when the contract is met.
