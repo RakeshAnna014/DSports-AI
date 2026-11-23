@@ -16,6 +16,7 @@ questions ("the cost of living in Delhi"). They fall through to UNSURE.
 """
 from __future__ import annotations
 
+import functools
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -126,15 +127,48 @@ _COMMERCE = _re(r"\b(orders?|order status|cart|basket|checkout|refunds?|returns?
 _COMMERCE_WEAK = _re(r"\b(compare|comparison|recommend|suggest|price|prices|cost|buy|purchase|sale|offers?|size|sizes|weight|reviews?|ratings?|stock|kit|gear|equipment|products?|brand|store|available|cheap|cheaper|expensive)\b")
 # Booking words that mean a booking wherever they appear, and words that also name a kind of shoe or boot ("court shoes", "firm ground boots"):
 # the latter only mean a booking when no product noun is in the message.
-_BOOKING = _re(r"\b(venues?|bookings?|reservations?|reserve|reserved)\b", r"\bbook (a|an|the|my|me|this|that|it|one|karna|karo)\b", r"\bnets? (session|slot|practice)\b",
-               r"\bslots?\b", r"\bindoor nets\b", r"\b(court|ground|slot|venue|turf) (book|khali|available|milega|chahiye)\b", r"\bbook karn[ao]\b")
-_BOOKING_PLACE = _re(r"\b(courts?|grounds?|turfs?)\b")
+_BOOKING = _re(r"\b(venues?|bookings?|reservations?|reserve|reserved)\b", r"\bbook (a|an|the|my|me|this|that|it|one|karna|karo)\b",
+               r"\bslots?\b", r"\b(court|ground|slot|venue|turf) (book|khali|available|milega|chahiye)\b", r"\bbook karn[ao]\b")
+_BOOKING_PLACE = _re(r"\b(courts?|grounds?|turfs?)\b", r"\bnets? (session|slot|practice)\b", r"\bindoor nets\b")
 _PRODUCT_NOUN = _words(set(CATEGORIES))
 _CRICKET_OWN = _re(r"\b(my|mera|meri|mere|our)\b[^.?!]{0,12}\b(matches|match|scorecard|stats|statistics|team|teams|innings|runs|wickets|batting average|batting|bowling|strike rate|career|tournaments?|league|games?|score)\b",
                    r"\bscorecard\b", r"\b(show|list|see) (my )?(matches|games)\b", r"\bscore (a|the|my) match\b", r"\bscoring (a|the|my) match\b")
 _CRICKET_RULES = _re(r"\b(lbw|leg before|no[- ]balls?|wickets?|wicket ?keeper|batsman|batsmen|batters?|bowlers?|umpires?|scorer|innings|powerplays?|dls|duckworth|net run rate|nrr|strike rate|economy rate|yorkers?|bouncers?|googly|doosra|cover drive|super over|free hit|follow[- ]on|run[- ]?outs?|leg byes?|maiden overs?|hat-?trick|all-?rounder)\b",
                      r"\b\d+ overs?\b", r"\bovers? (in|per)\b", r"\bhow many (runs|overs|players|wickets)\b", r"\bhow (is|are) [^.?!]{0,25}\b(scored|counted|calculated)\b",
                      r"\b(rules|laws) of (the )?(game|cricket)\b", r"\bhow to (bat|bowl|keep wicket|field|play (a|the) (cover|pull|sweep|drive|shot|spin|pace))\b")
+
+
+_CRICKET_BALL_PHRASES = re.compile(r"\b(no[- ]?balls?|wide balls?|dead balls?|new ball|old ball|ball tampering|ball[- ]by[- ]ball|net run rate|nrr)\b", re.I)
+_RULES_QUESTION = re.compile(r"\b(what is|what's|what are|explain|meaning of|define|rules? (of|for)|how (is|does|do|are)|when is|when are|difference|tips? (for|on)|how to|kya)\b", re.I)
+_CRICKET_WORD = re.compile(r"\bcricket\b", re.I)
+
+
+def _glossary_hit(text: str, *, named_cricket: bool) -> bool:
+    """A rules or definition question that hits the reviewed glossary is a cricket question. Generic words ("over", "wide", "average", "economy") only count when
+    the message also names cricket ("what is a duck in cricket"); distinctive terms ("lbw", "free hit", "super over") count on their own."""
+    from app.agent import cricket
+    return bool(cricket.find(text, _glossary() if named_cricket else _distinctive_glossary()))
+
+
+_GENERIC_TERMS = {"over", "overs", "wide", "wides", "average", "economy", "wicket", "wickets", "caught", "declare", "declared", "declaration", "duck", "extras", "stance",
+                  "bye", "byes", "maiden", "maidens", "dismissal", "dismissals", "sundries", "run rate"}
+
+
+@functools.lru_cache(maxsize=1)
+def _glossary():
+    from app.agent import cricket
+    return cricket.load_glossary()
+
+
+@functools.lru_cache(maxsize=1)
+def _distinctive_glossary():
+    from app.agent import cricket
+    out = []
+    for entry in _glossary():
+        terms = tuple(t for t in entry.terms if t not in _GENERIC_TERMS)
+        if terms:
+            out.append(cricket.Entry(entry.id, entry.title, terms, entry.answer))
+    return out
 
 
 def _norm(text: str) -> str:
@@ -160,13 +194,15 @@ def _business_rule(text: str) -> str | None:
 def _allow_topic(text: str) -> tuple[Topic, str] | None:
     if _SMALLTALK.match(text):
         return Topic.SHOP, "smalltalk"
-    product = _PRODUCT_NOUN.search(text) is not None        # a bat, shoes, a jersey...: the message is about gear, not about a booking or a match
+    product = _PRODUCT_NOUN.search(_CRICKET_BALL_PHRASES.sub(" ", text)) is not None   # a bat, shoes, a jersey...: about gear, not a booking or a match
     if _BOOKING.search(text) or (not product and _BOOKING_PLACE.search(text)):
         return Topic.BOOKING, "booking"
     if not product and _CRICKET_OWN.search(text):
         return Topic.CRICKET, "cricket_own"
     if not product and _CRICKET_RULES.search(text):
         return Topic.CRICKET, "cricket_rules"
+    if not product and _RULES_QUESTION.search(text) and _glossary_hit(text, named_cricket=_CRICKET_WORD.search(text) is not None):
+        return Topic.CRICKET, "cricket_glossary"
     if _VOCAB.search(text):
         return Topic.SHOP, "shop_vocab"
     if _COMMERCE.search(text):

@@ -123,3 +123,18 @@ def test_a_mixed_message_forwards_the_in_scope_clause_and_never_echoes_the_decli
     verdict = decide("show cricket bats and tell me the capital of France")
     assert verdict.mixed and verdict.forward == "show cricket bats"
     assert "capital" not in (verdict.forward or "").lower()
+
+
+# ---------------------------------------------------------------- cricket phrases that contain gear words, and shopping messages that contain cricket words
+
+@pytest.mark.parametrize("text", ["explain the no-ball rule", "what is a wide ball", "what is a duck in cricket", "what is a hat-trick in cricket", "how is net run rate calculated"])
+def test_cricket_rules_questions_are_cricket_even_when_they_contain_a_gear_word_or_the_word_cricket(text):
+    assert decide(text).topic is Topic.CRICKET, decide(text)
+
+
+@pytest.mark.parametrize("text", [
+    "something for my nephew who just started playing cricket, nothing over 5000", "a cricket bat with a wide handle", "average rated cricket bats under 5000",
+    "do you have wide fit cricket shoes", "cricket ball for a net session",
+])
+def test_shopping_messages_that_contain_cricket_and_glossary_words_stay_shopping(text):
+    assert decide(text).topic is Topic.SHOP, decide(text)
