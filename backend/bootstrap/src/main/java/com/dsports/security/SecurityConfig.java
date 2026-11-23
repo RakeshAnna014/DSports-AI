@@ -50,8 +50,8 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/reviews/product/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/venues", "/api/v1/venues/**").permitAll()
-                        // Cricket: the only three public routes (a started match's scorecard and its analytics, and the live list). Anything else under /api/v1/matches (setup, scoring, "my matches") needs a sign-in.
-                        .pathMatchers(HttpMethod.GET, "/api/v1/matches/*/scorecard", "/api/v1/matches/*/analytics").permitAll()
+                        // Cricket: the only public routes (a started match's scorecard and its analytics, a player's career statistics, and the live list). Anything else under /api/v1/matches (setup, scoring, "my matches") needs a sign-in.
+                        .pathMatchers(HttpMethod.GET, "/api/v1/matches/*/scorecard", "/api/v1/matches/*/analytics", "/api/v1/players/*/stats").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/public/matches/live").permitAll()
                         .pathMatchers("/api/v1/owner/**").hasRole("GROUND_OWNER")
                         .pathMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")

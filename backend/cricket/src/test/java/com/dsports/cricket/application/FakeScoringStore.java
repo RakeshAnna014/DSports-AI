@@ -4,6 +4,7 @@ import com.dsports.cricket.application.port.ScoringStore;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.MatchStatus;
+import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.LogEntry;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,7 @@ final class FakeScoringStore implements ScoringStore {
     final Map<UUID, List<Stored>> logs = new ConcurrentHashMap<>();
     final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
     final Map<UUID, MatchStatus> statuses = new ConcurrentHashMap<>();
+    final Map<UUID, List<CareerStats.Match>> stats = new ConcurrentHashMap<>();
     private final Map<UUID, Semaphore> locks = new ConcurrentHashMap<>();
 
     List<LogEntry> entriesOf(UUID matchId) {
@@ -45,6 +47,16 @@ final class FakeScoringStore implements ScoringStore {
     @Override
     public Mono<Snapshot> snapshot(UUID matchId) {
         return Mono.justOrEmpty(snapshots.get(matchId));
+    }
+
+    @Override
+    public Flux<CareerStats.Match> statsOf(UUID playerId) {
+        return Flux.fromIterable(stats.values()).flatMapIterable(rows -> rows).filter(r -> r.playerId().equals(playerId));
+    }
+
+    @Override
+    public Flux<UUID> matchIdsToRebuild() {
+        return Flux.fromIterable(stats.keySet());
     }
 
     private final class FakeSession implements Session {
@@ -88,6 +100,17 @@ final class FakeScoringStore implements ScoringStore {
         @Override
         public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
             return Mono.fromRunnable(() -> snapshots.put(matchId, snapshot));
+        }
+
+        @Override
+        public Mono<Void> replaceStats(List<CareerStats.Match> rows) {
+            return Mono.fromRunnable(() -> {
+                if (rows.isEmpty()) {
+                    stats.remove(matchId);
+                } else {
+                    stats.put(matchId, List.copyOf(rows));
+                }
+            });
         }
     }
 }

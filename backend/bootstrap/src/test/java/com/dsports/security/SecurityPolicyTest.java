@@ -53,7 +53,7 @@ class SecurityPolicyTest {
     @RestController
     static class Probe {
         @GetMapping({"/api/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/metrics", "/actuator/info", "/actuator/env", "/api/catalog/products",
-                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/players", "/api/v1/teams", "/api/v1/matches", "/api/v1/matches/x", "/api/v1/matches/x/scorecard", "/api/v1/matches/x/analytics", "/api/v1/public/matches/live", "/api/v1/matches/x/scoring", "/api/v1/matches/x/scoring/engine-state", "/api/v1/admin/matches/x/scoring/unlock", "/api/v1/me/bookings",
+                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/players", "/api/v1/teams", "/api/v1/matches", "/api/v1/matches/x", "/api/v1/matches/x/scorecard", "/api/v1/matches/x/analytics", "/api/v1/players/x/stats", "/api/v1/players/x/y/stats", "/api/v1/players/stats", "/api/v1/admin/cricket/stats/rebuild", "/api/v1/public/matches/live", "/api/v1/matches/x/scoring", "/api/v1/matches/x/scoring/engine-state", "/api/v1/admin/matches/x/scoring/unlock", "/api/v1/me/bookings",
                 "/some/unknown/route"})
         String ok() {
             return "ok";
@@ -114,6 +114,10 @@ class SecurityPolicyTest {
             "/api/v1/public/matches/live,customer,200", "/api/v1/public/matches/live/x,anonymous,401", "/api/v1/public/matches,anonymous,401", "/api/v1/public/matches/livex,anonymous,401",
             "/api/v1/matches?city=Chennai,anonymous,401", "/api/v1/matches?Status=LIVE,anonymous,401", "/api/v1/matches?status=LIVE,customer,200",
             "/api/v1/matches/x,anonymous,401", "/api/v1/matches/x,customer,200", "/api/v1/matches/x/y/scorecard,anonymous,401", "/api/v1/matches/x/scorecards,anonymous,401",
+            // a player's career statistics are public (read-only, path only); the rebuild is for administrators; every other path under /api/v1/players needs a sign-in
+            "/api/v1/players/x/stats,anonymous,200", "/api/v1/players/x/stats,customer,200", "/api/v1/players/x/y/stats,anonymous,401", "/api/v1/players/stats,anonymous,401", "/api/v1/players/x/statsx,anonymous,401",
+            "/api/v1/admin/cricket/stats/rebuild,anonymous,401", "/api/v1/admin/cricket/stats/rebuild,customer,403", "/api/v1/admin/cricket/stats/rebuild,owner,403", "/api/v1/admin/cricket/stats/rebuild,support,403",
+            "/api/v1/admin/cricket/stats/rebuild,admin,200",
             // cricket scoring: signed-in users only (the use case decides who may score); unlocking a locked match is for administrators only
             "/api/v1/matches/x/scoring,anonymous,401", "/api/v1/matches/x/scoring,customer,200",
             "/api/v1/matches/x/scoring/engine-state,anonymous,401", "/api/v1/matches/x/scoring/engine-state,customer,200", "/api/v1/matches/x/scoring/engine-state,owner,200",
@@ -145,7 +149,7 @@ class SecurityPolicyTest {
 
     @ParameterizedTest(name = "{0} {1} without a token -> 401")
     @CsvSource({"POST,/api/v1/matches/x/scorecard", "PUT,/api/v1/matches/x/scorecard", "DELETE,/api/v1/matches/x/scorecard", "POST,/api/v1/matches/x/analytics", "PUT,/api/v1/matches/x/analytics", "DELETE,/api/v1/matches/x/analytics", "POST,/api/v1/public/matches/live", "PUT,/api/v1/public/matches/live",
-            "DELETE,/api/v1/public/matches/live", "POST,/api/v1/matches", "HEAD,/api/v1/matches/x/scorecard"})
+            "DELETE,/api/v1/public/matches/live", "POST,/api/v1/matches", "HEAD,/api/v1/matches/x/scorecard", "POST,/api/v1/players/x/stats", "PUT,/api/v1/players/x/stats", "DELETE,/api/v1/players/x/stats"})
     void thePublicCricketRoutesAreReadOnlyOtherMethodsStillNeedASignIn(String method, String path) {
         client.method(org.springframework.http.HttpMethod.valueOf(method)).uri(path).exchange().expectStatus().isUnauthorized();
     }

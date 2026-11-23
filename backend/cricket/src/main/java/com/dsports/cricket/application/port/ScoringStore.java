@@ -1,12 +1,14 @@
 package com.dsports.cricket.application.port;
 
 import com.dsports.cricket.domain.model.MatchStatus;
+import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
 import com.dsports.cricket.domain.scoring.MatchScore;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -23,6 +25,12 @@ public interface ScoringStore {
 
     /** The snapshot, or empty when nothing has been scored. */
     Mono<Snapshot> snapshot(UUID matchId);
+
+    /** The stored per-match rows of one player (every ball type), for the career. These are a cache of {@link CareerStats#ofMatch} over the log, never a source. */
+    Flux<CareerStats.Match> statsOf(UUID playerId);
+
+    /** The matches a rebuild of the stats has to visit: every completed one, and any that still has stored rows (so a row left by a match that is no longer completed is cleared). */
+    Flux<UUID> matchIdsToRebuild();
 
     /** The match's score as stored by the last event, the seq of that event, and the correction window. */
     record Snapshot(int seq, MatchScore score, EditWindow window) {
@@ -48,5 +56,8 @@ public interface ScoringStore {
 
         /** Writes (or replaces) only the snapshot: used to rebuild one that was lost from the log. The log and the match's status are not touched. */
         Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status);
+
+        /** Replaces every stats row of this match with these (none when the match is not completed). Runs in the same transaction as the event that changed the match. */
+        Mono<Void> replaceStats(List<CareerStats.Match> rows);
     }
 }

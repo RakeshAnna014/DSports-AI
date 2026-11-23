@@ -8,6 +8,7 @@ import com.dsports.cricket.domain.model.Match;
 import com.dsports.cricket.domain.model.MatchRules;
 import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.model.Team;
+import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.GoldenMatch;
 import com.dsports.cricket.domain.scoring.LogEntry;
@@ -484,5 +485,81 @@ class ScoringPersistenceIntegrationTest {
                 VALUES (:id, :m, 4, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at, :tapped)
                 """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW).bind("tapped", NOW.minusSeconds(5))
             .fetch().rowsUpdated().block();
+    }
+
+    // ---- V58: career statistics (a projection, rebuildable) --------------------------------------------------------------------------
+
+    private static UUID newPlayer(DatabaseClient client) {
+        var id = UUID.randomUUID();
+        client.sql("INSERT INTO players (id, name, created_by) VALUES (:id, :name, :by)").bind("id", id).bind("name", "P " + id).bind("by", SCORER).fetch().rowsUpdated().block();
+        return id;
+    }
+
+    private static CareerStats.Match statsRow(UUID player, BallType type, int runs) {
+        return new CareerStats.Match(player, type, 1, runs, 20, 0, 2, 1, runs, false, 0, 0, 0, 1, 12, 18, 2, 1, 2, 18, 1, 0, 1);
+    }
+
+    @Test
+    void stats_rows_are_written_replaced_and_read_back_exactly_and_a_match_with_no_rows_clears_them() {
+        var matchId = newMatch();
+        var p1 = newPlayer(db);
+        var p2 = newPlayer(db);
+        store.exclusive(matchId, session -> session.replaceStats(List.of(statsRow(p1, BallType.TENNIS, 30), statsRow(p2, BallType.TENNIS, 12)))).block();
+        assertThat(store.statsOf(p1).collectList().block()).containsExactly(statsRow(p1, BallType.TENNIS, 30));
+        store.exclusive(matchId, session -> session.replaceStats(List.of(statsRow(p1, BallType.TENNIS, 31)))).block();
+        assertThat(store.statsOf(p1).collectList().block()).as("replaced, not added to").containsExactly(statsRow(p1, BallType.TENNIS, 31));
+        assertThat(store.statsOf(p2).collectList().block()).as("the other row of that match went with the replace").isEmpty();
+        assertThat(store.matchIdsToRebuild().collectList().block()).contains(matchId);
+        store.exclusive(matchId, session -> session.replaceStats(List.of())).block();
+        assertThat(store.statsOf(p1).collectList().block()).isEmpty();
+        assertThat(store.matchIdsToRebuild().collectList().block()).doesNotContain(matchId);
+    }
+
+    @Test
+    void the_stats_table_refuses_a_player_or_match_that_does_not_exist_an_unknown_ball_type_and_a_negative_figure() {
+        var matchId = newMatch();
+        var player = newPlayer(db);
+        assertThatThrownBy(() -> store.exclusive(matchId, session -> session.replaceStats(List.of(statsRow(UUID.randomUUID(), BallType.TENNIS, 1)))).block()).as("no such player").isNotNull();
+        assertThatThrownBy(() -> store.exclusive(UUID.randomUUID(), session -> session.replaceStats(List.of(statsRow(player, BallType.TENNIS, 1)))).block()).as("no such match").isNotNull();
+        assertThatThrownBy(() -> store.exclusive(matchId, session -> session.replaceStats(List.of(statsRow(player, BallType.TENNIS, -1)))).block()).as("negative runs").isNotNull();
+        store.exclusive(matchId, session -> session.replaceStats(List.of(statsRow(player, BallType.TENNIS, 5)))).block();
+        assertThatThrownBy(() -> db.sql("UPDATE player_match_stats SET ball_type = 'GOLF' WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).as("unknown ball type").isNotNull();
+        assertThat(store.statsOf(player).collectList().block()).containsExactly(statsRow(player, BallType.TENNIS, 5));
+    }
+
+    @Test
+    void a_database_with_events_and_snapshots_at_v57_upgrades_to_v58_with_the_log_untouched_the_guards_in_place_and_an_empty_projection() throws Exception {
+        var name = "upgrade58_" + UUID.randomUUID().toString().replace("-", "");
+        try (var connection = java.sql.DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()); var statement = connection.createStatement()) {
+            statement.execute("CREATE DATABASE " + name);
+        }
+        var jdbc = POSTGRES.getJdbcUrl().replaceFirst("/" + POSTGRES.getDatabaseName() + "(\\?|$)", "/" + name + "$1");
+        Flyway.configure().dataSource(jdbc, POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").target("57").load().migrate();
+        var factory = ConnectionFactories.get("r2dbc:postgresql://" + POSTGRES.getUsername() + ":" + POSTGRES.getPassword() + "@" + POSTGRES.getHost() + ":" + POSTGRES.getFirstMappedPort() + "/" + name);
+        var old = DatabaseClient.create(factory);
+        var repositories = new R2dbcRepositoryFactory(new R2dbcEntityTemplate(factory));
+        var oldTeams = new TeamR2dbcRepositoryAdapter(repositories.getRepository(SpringR2dbcTeamRepository.class), old);
+        var oldMatches = new MatchR2dbcRepositoryAdapter(repositories.getRepository(SpringR2dbcMatchRepository.class), old);
+        var creator = UUID.randomUUID();
+        var a = Team.create(creator, "A " + UUID.randomUUID(), "Chennai", NOW);
+        var b = Team.create(creator, "B " + UUID.randomUUID(), "Chennai", NOW);
+        oldTeams.save(a).block();
+        oldTeams.save(b).block();
+        var matchId = oldMatches.save(Match.create(creator, a.getId(), b.getId(), new Match.Settings(2, BallType.TENNIS, MatchRules.standard(), NOW, "Chennai", null), null, NOW)).block().getId();
+        for (int seq = 1; seq <= 3; seq++) {
+            old.sql("""
+                    INSERT INTO ball_events (id, match_id, seq, type, payload, schema_version, request_hash, client_event_id, actor_id, created_at)
+                    VALUES (:id, :m, :seq, 'DELIVER', '{}'::jsonb, 1, 'h', :client, :actor, :at)
+                    """).bind("id", UUID.randomUUID()).bind("m", matchId).bind("seq", seq).bind("client", UUID.randomUUID()).bind("actor", SCORER).bind("at", NOW)
+                .fetch().rowsUpdated().block();
+        }
+        assertThatThrownBy(() -> old.sql("SELECT count(*) FROM player_match_stats").fetch().all().collectList().block()).as("the table does not exist before V58").hasMessageContaining("player_match_stats");
+
+        Flyway.configure().dataSource(jdbc, POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").load().migrate();
+
+        assertThat(old.sql("SELECT count(*) AS n FROM ball_events WHERE match_id = :m").bind("m", matchId).map((r, m) -> r.get("n", Long.class)).one().block()).isEqualTo(3L);
+        assertThat(old.sql("SELECT count(*) AS n FROM player_match_stats").map((r, m) -> r.get("n", Long.class)).one().block()).isZero();
+        assertThatThrownBy(() -> old.sql("UPDATE ball_events SET payload = '{}'::jsonb WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
+        assertThatThrownBy(() -> old.sql("DELETE FROM ball_events WHERE match_id = :m").bind("m", matchId).fetch().rowsUpdated().block()).hasMessageContaining("append-only");
     }
 }

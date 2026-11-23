@@ -300,6 +300,59 @@ class CricketScoringHttpIntegrationTest {
         assertThat(get(s.organiser(), "/api/v1/matches/" + s.matchId()).body().get("status")).isEqualTo("COMPLETED");
     }
 
+    private String statsRows(String matchId) {
+        return db.sql("SELECT coalesce(string_agg(t::text, ';' ORDER BY t.player_id), '') AS rows FROM player_match_stats t WHERE t.match_id = :m").bind("m", UUID.fromString(matchId))
+            .map((r, m) -> r.get("rows", String.class)).one().block();
+    }
+
+    private long statsRowCount(String matchId) {
+        return db.sql("SELECT count(*) AS n FROM player_match_stats WHERE match_id = :m").bind("m", UUID.fromString(matchId)).map((r, m) -> r.get("n", Long.class)).one().block();
+    }
+
+    @Test
+    void careerStatsAppearWhenTheMatchCompletesFollowAnUndoAndAreTheSameWhenRebuiltFromTheLogs() {
+        var s = setup(2);
+        var commands = goldenMatch(s.lions(), s.tigers());
+        var bowler = s.tigers().playerIds().get(0);
+        for (int i = 0; i < 35; i++) {
+            assertThat(score(s, s.organiser(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        assertThat(get(null, "/api/v1/players/" + bowler + "/stats").status()).as("nothing for a player with no finished match").isEqualTo(404);
+        assertThat(statsRowCount(s.matchId())).isZero();
+
+        assertThat(score(s, s.organiser(), 35, commands.get(35)).status()).isEqualTo(200);
+        assertThat(statsRowCount(s.matchId())).as("every player of both elevens").isEqualTo(22);
+        var career = get(null, "/api/v1/players/" + bowler + "/stats");
+        assertThat(career.status()).as("a player's career needs no sign-in").isEqualTo(200);
+        assertThat(career.body().get("name")).isEqualTo("Tigers player 1");
+        assertThat(career.body().toString()).as("names and numbers only").doesNotContain(bowler, "phone", "customer");
+        @SuppressWarnings("unchecked")
+        var line = ((List<Map<String, Object>>) career.body().get("lines")).get(0);
+        assertThat(line.get("matches")).isEqualTo(1);
+        assertThat(((Map<?, ?>) line.get("bowling")).get("wickets")).isEqualTo(1);
+        assertThat(((Map<?, ?>) line.get("bowling")).get("overs")).isEqualTo("1.0");
+
+        var reopened = undo(s, s.organiser(), 36);
+        assertThat(reopened.status()).isEqualTo(200);
+        assertThat(statsRowCount(s.matchId())).as("an undo that reopens the match takes its rows away").isZero();
+        assertThat(get(null, "/api/v1/players/" + bowler + "/stats").status()).isEqualTo(404);
+        assertThat(score(s, s.organiser(), 37, commands.get(35)).status()).isEqualTo(200);
+        var incremental = statsRows(s.matchId());
+        assertThat(incremental).isNotEmpty();
+
+        var admin = administrator();
+        assertThat(post(null, "/api/v1/admin/cricket/stats/rebuild", null).status()).isEqualTo(401);
+        assertThat(post(s.organiser(), "/api/v1/admin/cricket/stats/rebuild", null).status()).isEqualTo(403);
+        db.sql("DELETE FROM player_match_stats WHERE match_id = :m AND player_id = :p").bind("m", UUID.fromString(s.matchId())).bind("p", UUID.fromString(bowler)).fetch().rowsUpdated().block();
+        db.sql("UPDATE player_match_stats SET runs = runs + 7 WHERE match_id = :m").bind("m", UUID.fromString(s.matchId())).fetch().rowsUpdated().block();
+        var rebuilt = post(admin, "/api/v1/admin/cricket/stats/rebuild", null);
+        assertThat(rebuilt.status()).isEqualTo(200);
+        assertThat((Integer) rebuilt.body().get("matchesRebuilt")).isGreaterThanOrEqualTo(1);
+        assertThat(statsRows(s.matchId())).as("the rebuild gives exactly the incremental numbers").isEqualTo(incremental);
+        assertThat(get(null, "/api/v1/players/" + UUID.randomUUID() + "/stats").status()).as("an unknown player is the same 404").isEqualTo(404);
+        assertThat(get(null, "/api/v1/players/not-a-uuid/stats").status()).as("malformed input is a 4xx").isBetween(400, 404);
+    }
+
     // ---- who may do what ------------------------------------------------------------------------------------------------
 
     @Test

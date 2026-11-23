@@ -4,6 +4,8 @@ import com.dsports.cricket.application.port.ScoringStore;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.MatchStatus;
+import com.dsports.cricket.domain.model.BallType;
+import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
 import com.dsports.cricket.domain.scoring.MatchScore;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -55,6 +58,27 @@ public class ScoringR2dbcStore implements ScoringStore {
     @Override
     public Mono<Snapshot> snapshot(UUID matchId) {
         return snapshotOf(matchId);
+    }
+
+    @Override
+    public Flux<CareerStats.Match> statsOf(UUID playerId) {
+        return db.sql("SELECT * FROM player_match_stats WHERE player_id = :player ORDER BY match_id").bind("player", playerId).map((row, meta) -> toStats(row)).all();
+    }
+
+    @Override
+    public Flux<UUID> matchIdsToRebuild() {
+        return db.sql("SELECT match_id FROM (SELECT match_id FROM match_snapshots WHERE match_status = 'COMPLETED' UNION SELECT match_id FROM player_match_stats) m ORDER BY match_id").map((row, meta) -> row.get("match_id", UUID.class)).all();
+    }
+
+    private static int n(Row row, String column) {
+        return row.get(column, Number.class).intValue();
+    }
+
+    private static CareerStats.Match toStats(Row row) {
+        return new CareerStats.Match(row.get("player_id", UUID.class), BallType.valueOf(row.get("ball_type", String.class)), n(row, "innings_batted"), n(row, "runs"), n(row, "balls"),
+            n(row, "not_outs"), n(row, "fours"), n(row, "sixes"), n(row, "highest"), Boolean.TRUE.equals(row.get("highest_not_out", Boolean.class)), n(row, "fifties"), n(row, "hundreds"),
+            n(row, "ducks"), n(row, "innings_bowled"), n(row, "balls_bowled"), n(row, "runs_conceded"), n(row, "wickets"), n(row, "maidens"), n(row, "best_wickets"), n(row, "best_runs"),
+            n(row, "catches"), n(row, "stumpings"), n(row, "run_outs"));
     }
 
     private Flux<LogEntry> entriesOf(UUID matchId) {
@@ -129,6 +153,20 @@ public class ScoringR2dbcStore implements ScoringStore {
         @Override
         public Mono<Void> saveSnapshot(Snapshot snapshot, MatchStatus status) {
             return upsertSnapshot(snapshot, status, clock.instant());
+        }
+
+        @Override
+        public Mono<Void> replaceStats(List<CareerStats.Match> rows) {
+            var delete = db.sql("DELETE FROM player_match_stats WHERE match_id = :match").bind("match", matchId).fetch().rowsUpdated().then();
+            return delete.then(Flux.fromIterable(rows).concatMap(r -> db.sql("""
+                    INSERT INTO player_match_stats (match_id, player_id, ball_type, innings_batted, runs, balls, not_outs, fours, sixes, highest, highest_not_out, fifties, hundreds, ducks,
+                        innings_bowled, balls_bowled, runs_conceded, wickets, maidens, best_wickets, best_runs, catches, stumpings, run_outs)
+                    VALUES (:match, :player, :ball, :ib, :runs, :balls, :no, :fours, :sixes, :hi, :hino, :f50, :f100, :ducks, :bowled, :bb, :rc, :wk, :md, :bw, :br, :ct, :st, :ro)
+                    """).bind("match", matchId).bind("player", r.playerId()).bind("ball", r.ballType().name()).bind("ib", r.inningsBatted()).bind("runs", r.runs())
+                .bind("balls", r.balls()).bind("no", r.notOuts()).bind("fours", r.fours()).bind("sixes", r.sixes()).bind("hi", r.highest()).bind("hino", r.highestNotOut())
+                .bind("f50", r.fifties()).bind("f100", r.hundreds()).bind("ducks", r.ducks()).bind("bowled", r.inningsBowled()).bind("bb", r.ballsBowled())
+                .bind("rc", r.runsConceded()).bind("wk", r.wickets()).bind("md", r.maidens()).bind("bw", r.bestWickets()).bind("br", r.bestRuns()).bind("ct", r.catches())
+                .bind("st", r.stumpings()).bind("ro", r.runOuts()).fetch().rowsUpdated()).then());
         }
 
         private Mono<Void> upsertSnapshot(Snapshot snapshot, MatchStatus status, Instant now) {

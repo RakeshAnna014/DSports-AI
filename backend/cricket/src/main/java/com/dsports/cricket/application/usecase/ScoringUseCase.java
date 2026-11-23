@@ -12,8 +12,10 @@ import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.Match;
 import com.dsports.cricket.domain.model.MatchStatus;
 import com.dsports.cricket.domain.model.Team;
+import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.EditWindow;
 import com.dsports.cricket.domain.scoring.LogEntry;
+import com.dsports.cricket.domain.scoring.MatchScore;
 import com.dsports.cricket.domain.scoring.MatchScoring;
 import com.dsports.cricket.domain.scoring.MatchSetup;
 import com.dsports.cricket.domain.scoring.ScoreCommand;
@@ -204,6 +206,7 @@ public class ScoringUseCase {
                     var newWindow = window.after(change.score(), entry.at());
                     var status = change.score().status();
                     return session.append(entry, hash, new ScoringStore.Snapshot(entry.seq(), change.score(), newWindow), status)
+                        .then(Mono.defer(() -> refreshStats(match, session, t.getT2(), entries, change.score())))
                         .then(Mono.defer(() -> {
                             var all = new java.util.ArrayList<>(entries);
                             all.add(entry);
@@ -212,6 +215,18 @@ public class ScoringUseCase {
                 });
             });
         });
+    }
+
+    /**
+     * Keeps the career rows of this match equal to what its log now says, in the same transaction as the event: written when the event completes the match, replaced
+     * when a correction changes a completed match, and removed when an undo takes it back to unfinished. Nothing is written for a match that was not and is not completed.
+     */
+    private Mono<Void> refreshStats(Match match, ScoringStore.Session session, Optional<ScoringStore.Snapshot> stored, List<LogEntry> entriesBefore, MatchScore after) {
+        var before = stored.map(ScoringStore.Snapshot::score).orElseGet(() -> MatchScoring.fold(MatchSetup.from(match), ScoringLog.commands(entriesBefore)));
+        if (before.status() != MatchStatus.COMPLETED && after.status() != MatchStatus.COMPLETED) {
+            return Mono.empty();
+        }
+        return session.replaceStats(CareerStats.ofMatch(MatchSetup.from(match), after, match.getSettings().ballType()));
     }
 
     /** A command with this client event id is already in the log. The same request is answered as done; a different one is a reused id. */
