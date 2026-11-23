@@ -40,7 +40,7 @@ class EngineVectorsAreCurrentTest {
         var onDisk = new ArrayList<String>();
         for (var dir : new String[] {"golden", "random", "server"}) {
             try (Stream<java.nio.file.Path> list = Files.list(root.resolve(dir))) {
-                list.forEach(f -> onDisk.add(dir + "/" + f.getFileName()));
+                list.filter(f -> !f.getFileName().toString().startsWith("scoring-views-")).forEach(f -> onDisk.add(dir + "/" + f.getFileName()));   // the views are owned by ScoringViewSamplesTest
             }
         }
         assertThat(onDisk).as("files in golden/ and random/ that the generator does not produce").allMatch(expected::contains);

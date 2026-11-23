@@ -4,6 +4,7 @@
  */
 export { ENGINE_VERSION, applyMatch, currentInnings, emptyScore, foldMatch, isFinished, matchResult, matchStatus, nextAction, scoreState } from './match';
 export { eligibleBowlers, waiverNeeded, yetToBat } from './innings';
+export { bowlerLimit, dismissalViolation } from './rules';
 export { NOTHING_TO_UNDO, commandsOf, effective, isFollower, lastSeq, logFrom, newLog, planUndo, stepCommand, stepUndo } from './log';
 export type { LogEntry, ScoringLog, StepResult } from './log';
 export { CommandFormatError, parseCommand, toBody } from './wire';
