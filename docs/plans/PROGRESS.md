@@ -15,8 +15,8 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 2f-4 | Sender, local view, scorer screen states, conflict / set-aside sheets, emulated e2e, real-phone script 7c | **done** (a3e96df, 7fda349, 1b6e48e, 854209d + docs/7c commit) |
 | 3a | Match analytics and commentary from the log (public route `GET /api/v1/matches/{id}/analytics`), charts on the public scorecard (SSE not built: see DECISIONS-LOG) | **done** (f60fa55; frontend verified in a clean worktree 2026-11-23, backend verified with 3b) |
 | 3b | Career stats projection `player_match_stats` (V58, rebuildable), `GET /api/v1/players/{id}/stats` public, admin rebuild | **done** (e2ad4e4, 7be7e29) |
-| 3c | Career stats screen (player page), linked from the public scorecard (adds `playerId` to the public scorecard) | todo |
-| 3d | Guest players linked to a real account by the organiser (owner decision) | todo |
+| 3c | Career stats screen (player page `/p/:id`), linked from the public scorecard (adds `playerId` to the public scorecard) | **done** (c515e61) |
+| 3d | Guest players linked to a real account by the organiser (owner decision): met by the existing claim + approval flow, id kept (test) | **done** (03e9e26) |
 | 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | todo |
 | 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | todo |
 | 4b | Points table with NRR, leaderboards, awards | todo |
@@ -160,3 +160,10 @@ Each follows the gate loop: design note, tests first, small commits, clean-workt
 
 ### 5c AI: `book_ground`, Looking, feed
 **Acceptance:** `book_ground` is a confirmed WRITE (proposal then a confirmation token, exactly like the return and reorder writes); "Looking" (find players, umpires, opponents) and the feed are **product decisions** the plan leaves open (the open questions are unanswered): they are listed in FINAL-REPORT for the owner and not built.
+
+---
+
+## WHERE TO RESUME (updated 2026-11-23, after 3d)
+
+Done and committed, not pushed: everything through 3d. Verified so far: frontend clean worktree through 3a (tsc, lint, build, 827 tests); backend 3b: `CricketScoringHttpIntegrationTest` 29/29, `ScoringPersistenceIntegrationTest` 23/23 (V58 round trip, constraints, upgrade from V57 with the guards), `SecurityPolicyTest` 127, cricket unit module green except as reported. **Not yet run in a clean worktree: 3b, 3c, 3d** (do that at the end of the next gate, with Docker integration and the emulated e2e scripts).
+Next gate: **3e** (optional shot direction, V59, wagon wheel), then 4a, 4b, 4c, 4d, 5a, 5b, 5c, 5d, then the final step. Commands and pitfalls: `mvn -B -o -Pintegration-test test -pl bootstrap -am -Dtest=<IT class>` (not `verify`, which repackages the jar and fails while a backend runs); run frontend tools with `pnpm exec`; restore `frontend/tsconfig.tsbuildinfo` before committing.
