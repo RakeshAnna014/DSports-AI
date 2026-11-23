@@ -304,7 +304,7 @@ class ChatService:
             conversation_id=conv.conversation_id, status=t.status, intent=intent, tier=tier, message=t.text or t.fallback_text,
             message_source=t.message_source, products=t.products, comparison=t.comparison, orders=t.orders, tracking=t.tracking,
             cart=t.cart, reviews=t.reviews, type=response_type(t, intent), selection=t.selection, recommendations=t.recommendations,
-            suggestions=[Suggestion(label=s["label"], message=s.get("message"), choice_id=s.get("choice_id")) for s in t.suggestions],
+            suggestions=[Suggestion(label=s["label"], message=s.get("message"), choice_id=s.get("choice_id"), href=s.get("href")) for s in t.suggestions],
             context=self._context(conv), payments=t.payments, refunds=t.refunds, eligibility=t.eligibility, action_result=t.action_result,
             actions=t.actions, sources=t.sources, requires_confirmation=bool(t.actions), confirmation_token=t.confirmation_token,
             disclaimers=list(dict.fromkeys(t.disclaimers)), support=t.support, error_code=t.error_code, meta=meta)

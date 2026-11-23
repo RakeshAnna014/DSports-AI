@@ -53,6 +53,8 @@ export interface AiSuggestion {
   label: string;
   message?: string | null;
   choiceId?: string | null;
+  /** A link chip: an app route to open instead of sending a message (the topic guardrail replies use these). */
+  href?: string | null;
 }
 
 export interface AiRecommendationItem extends AiProduct {

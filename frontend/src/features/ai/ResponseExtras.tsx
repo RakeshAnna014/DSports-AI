@@ -1,14 +1,17 @@
 import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import { CheckCircleOutline } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { ErrorState } from '@/components/common/States';
 import type { AiResponse, AiSuggestion } from '@/types/ai';
 
 /** Contextual follow-up actions: tap instead of typing. Plain chips send a message; action chips run the step the service resolved. */
-export const SuggestionChips = ({ suggestions, onPick, disabled }: { suggestions: AiSuggestion[]; onPick: (s: AiSuggestion) => void; disabled?: boolean }) => (
+export const SuggestionChips = ({ suggestions, onPick, onNavigate, disabled }: { suggestions: AiSuggestion[]; onPick: (s: AiSuggestion) => void; onNavigate?: () => void; disabled?: boolean }) => (
   suggestions.length === 0 ? null : (
     <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }} data-testid="ai-suggestions" role="group" aria-label="Suggested follow-ups">
-      {suggestions.map((s) => (
+      {suggestions.map((s) => s.href ? (
+        // A link chip opens an app page; it never sends a message.
+        <Chip key={`${s.label}-${s.href}`} label={s.label} clickable component={RouterLink} to={s.href} onClick={onNavigate} variant="outlined" data-testid="ai-suggestion-link" />
+      ) : (
         <Chip key={`${s.label}-${s.choiceId ?? ''}`} label={s.label} clickable disabled={disabled} color={s.choiceId ? 'primary' : 'default'} variant={s.choiceId ? 'filled' : 'outlined'}
           onClick={() => onPick(s)} data-testid="ai-suggestion" />
       ))}

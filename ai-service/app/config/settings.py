@@ -40,6 +40,8 @@ class Settings(BaseSettings):
 
     # --- model tiers (T1 cheap structured output, T2 reasoning) and embeddings
     intent_model: str = Field("gemini-2.5-flash-lite", validation_alias="AI_INTENT_MODEL")
+    # The topic gate (docs/ai/topic-guardrails.md): off-topic and business questions are refused by rules and a tiny label call before any other model call.
+    topic_gate_enabled: bool = Field(True, validation_alias="AI_TOPIC_GATE")
     reasoning_model: str = Field("gemini-2.5-flash", validation_alias="AI_REASONING_MODEL")
     embedding_model: str = Field("text-embedding-005", validation_alias="AI_EMBEDDING_MODEL")
     # Stored with the model name; a change of either means existing vectors must be re-indexed.

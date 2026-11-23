@@ -404,6 +404,10 @@ class FakeLLM:
     """Scripted model. `script` items: str (text), Exception (raised) or callable(prompt, kwargs) -> str. Default: echo a safe sentence."""
     script: list[Any] = field(default_factory=list)
     default: Callable[[str, dict], str] | str = "Here is a short explanation."
+    # The topic gate's label call is a separate call from the scripted intent / explanation calls: it has its own script and a default of SHOP, so a test
+    # that scripts the Tier 1 classifier is not thrown off by it. It is still recorded in `prompts` (intent == "topic_label").
+    label_script: list[Any] = field(default_factory=list)
+    label_default: str = "SHOP"
     prompts: list[dict[str, Any]] = field(default_factory=list)
     embed_calls: int = 0
     project: str | None = "fake-project"
@@ -415,7 +419,10 @@ class FakeLLM:
         self.prompts.append({"prompt": prompt, "tier": tier, "system": system, "json": json_mode, "intent": intent, "max_tokens": max_tokens, "temperature": temperature})
         if self.delay:
             await asyncio.sleep(self.delay)
-        item = self.script.pop(0) if self.script else self.default
+        if intent == "topic_label":
+            item = self.label_script.pop(0) if self.label_script else self.label_default
+        else:
+            item = self.script.pop(0) if self.script else self.default
         if isinstance(item, Exception):
             raise item
         text = item(prompt, self.prompts[-1]) if callable(item) else item

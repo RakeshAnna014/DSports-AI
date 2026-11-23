@@ -28,7 +28,7 @@
 - {id: S16, text: "any discount on tennis rackets", topic: SHOP, lang: en}
 - {id: S17, text: "add the same shoes to my cart", topic: SHOP, lang: en}
 - {id: S18, text: "show my recent orders", topic: SHOP, lang: en}
-- {id: S19, text: "did my payment go through", topic: SHOP, lang: en, stage_a: unsure}
+- {id: S19, text: "did my payment go through", topic: SHOP, lang: en}
 - {id: S20, text: "my order arrived damaged, I want to raise a complaint", topic: SHOP, lang: en}
 - {id: S21, text: "what is the difference between a tennis ball and a leather ball", topic: SHOP, lang: en}
 - {id: S22, text: "wilson badminton racquet", topic: SHOP, lang: en}
@@ -45,7 +45,7 @@
 - {id: S33, text: "yeh bat sasta wala dikhao", topic: SHOP, lang: hinglish}
 - {id: S34, text: "order ka paisa wapas chahiye", topic: SHOP, lang: hinglish}
 - {id: S35, text: "kitne ka hai SG bat", topic: SHOP, lang: hinglish}
-- {id: S36, text: "show me a complete home gym setup under 20000", topic: SHOP, lang: en, stage_a: unsure}
+- {id: S36, text: "show me a complete home gym setup under 20000", topic: SHOP, lang: en}
 - {id: S37, text: "how do I clean my football boots", topic: SHOP, lang: en}
 - {id: S38, text: "what size helmet for a 10 year old", topic: SHOP, lang: en}
 - {id: S39, text: "track my parcel", topic: SHOP, lang: en}

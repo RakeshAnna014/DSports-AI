@@ -20,6 +20,10 @@ class BudgetExceeded(Exception):
     pass
 
 
+class TopicBlocked(Exception):
+    """The topic gate refused this turn; no further model call may be made for it (defence in depth: the graph already stops at the refusal)."""
+
+
 @dataclass
 class Turn:
     """Everything this request will return, accumulated by the nodes."""
@@ -70,6 +74,8 @@ class Runtime:
     forced_route: Any = None        # a Route resolved from an offer the customer tapped (ids come from the service's own offer)
     user_message: str = ""          # what the customer typed this turn (for the case-linked transcript)
     case: dict[str, Any] | None = None   # the linked support case, re-read from DSports this turn (never trusted from stored state)
+    topic: Any = None               # the Topic the gate settled on (None: allowed by context, bypassed or not checked)
+    topic_state: str | None = None  # allowed | refused | context | bypassed
 
     @property
     def settings(self):
@@ -95,6 +101,8 @@ class Runtime:
     async def ask(self, prompt: str, *, tier: Tier = "reasoning", system: str | None = None, intent: str | None = None,
                   json_mode: bool = False, max_tokens: int | None = None, temperature: float | None = None) -> LLMResult:
         """The only way nodes reach the model: enforces the per-request token budget and records usage."""
+        if self.topic_state == "refused":
+            raise TopicBlocked()
         if self.tokens_in + self.tokens_out >= self.settings.request_token_budget:
             raise BudgetExceeded()
         result = await self.services.llm.generate(prompt, tier=tier, system=system, json_mode=json_mode, max_tokens=max_tokens,

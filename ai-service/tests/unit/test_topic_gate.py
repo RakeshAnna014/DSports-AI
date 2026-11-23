@@ -10,7 +10,7 @@ from tests.fakes import FakeLLM
 
 
 def make(*script):
-    llm = FakeLLM(script=list(script), default="SHOP")
+    llm = FakeLLM(label_script=list(script))
     return TopicGate(TopicLabeler(llm)), llm
 
 

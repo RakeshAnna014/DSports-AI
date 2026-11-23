@@ -116,14 +116,20 @@ def _words(keys) -> re.Pattern[str]:
 _VOCAB = _words({*SPORTS, *CATEGORIES, *BRANDS} - _WEAK_VOCAB)
 _VOCAB_WEAK = _words(_WEAK_VOCAB)
 
-_SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|namaste|good (morning|afternoon|evening)|thanks|thank you|thx|bye|goodbye|ok|okay|yes|yep|yeah|no|nope|sure|cancel)\W*$", re.I)
+_SMALLTALK = re.compile(r"^\W*(hi+|hello|hey|namaste|good (morning|afternoon|evening)|thanks|thank you|thx|bye|goodbye|ok|okay|yes|yep|yeah|no|nope|sure|cancel)\W*$|"
+                        r"^\W*(hi+|hello|hey|namaste)\b[^.?!]{0,25}\b(what can you do|can you help|how can you help|help me)\b[^.?!]{0,15}\W*$|"
+                        r"^\W*(what can you do|how can you help( me)?|can you help( me)?|help( me)?)\W*$", re.I)
 _COMMERCE = _re(r"\b(orders?|order status|cart|basket|checkout|refunds?|returns? policy|refund policy|shipping|shipment|delivery|delivered|deliver|tracking|parcel|package|courier|in stock|out of stock|warranty|guarantee|"
                 r"coupons?|promo ?codes?|discounts?|wishlist|dsports|my account|invoice|exchange|replacement|complaint|ORD-\d+|CASE-\d+)\b",
                 r"\b(paisa wapas|paise wapas|joote|jute|gend|ballebaaz|dukaan|kimat|daam|sasta|saste|mehenga|kharid\w*|khareed\w*|bhugtan)\b",
                 r"\bkaun sa (bat|joota|ball)\b", r"\b(buy|purchase|bought) (a|an|the|some|new)\b")
 _COMMERCE_WEAK = _re(r"\b(compare|comparison|recommend|suggest|price|prices|cost|buy|purchase|sale|offers?|size|sizes|weight|reviews?|ratings?|stock|kit|gear|equipment|products?|brand|store|available|cheap|cheaper|expensive)\b")
-_BOOKING = _re(r"\b(venues?|courts?|grounds?|turfs?|bookings?|reservations?|reserve|reserved)\b", r"\bbook (a|an|the|my|me|this|that|it|one|karna|karo)\b", r"\bnets? (session|slot|practice)\b",
+# Booking words that mean a booking wherever they appear, and words that also name a kind of shoe or boot ("court shoes", "firm ground boots"):
+# the latter only mean a booking when no product noun is in the message.
+_BOOKING = _re(r"\b(venues?|bookings?|reservations?|reserve|reserved)\b", r"\bbook (a|an|the|my|me|this|that|it|one|karna|karo)\b", r"\bnets? (session|slot|practice)\b",
                r"\bslots?\b", r"\bindoor nets\b", r"\b(court|ground|slot|venue|turf) (book|khali|available|milega|chahiye)\b", r"\bbook karn[ao]\b")
+_BOOKING_PLACE = _re(r"\b(courts?|grounds?|turfs?)\b")
+_PRODUCT_NOUN = _words(set(CATEGORIES))
 _CRICKET_OWN = _re(r"\b(my|mera|meri|mere|our)\b[^.?!]{0,12}\b(matches|match|scorecard|stats|statistics|team|teams|innings|runs|wickets|batting average|batting|bowling|strike rate|career|tournaments?|league|games?|score)\b",
                    r"\bscorecard\b", r"\b(show|list|see) (my )?(matches|games)\b", r"\bscore (a|the|my) match\b", r"\bscoring (a|the|my) match\b")
 _CRICKET_RULES = _re(r"\b(lbw|leg before|no[- ]balls?|wickets?|wicket ?keeper|batsman|batsmen|batters?|bowlers?|umpires?|scorer|innings|powerplays?|dls|duckworth|net run rate|nrr|strike rate|economy rate|yorkers?|bouncers?|googly|doosra|cover drive|super over|free hit|follow[- ]on|run[- ]?outs?|leg byes?|maiden overs?|hat-?trick|all-?rounder)\b",
@@ -154,19 +160,34 @@ def _business_rule(text: str) -> str | None:
 def _allow_topic(text: str) -> tuple[Topic, str] | None:
     if _SMALLTALK.match(text):
         return Topic.SHOP, "smalltalk"
-    if _BOOKING.search(text):
+    product = _PRODUCT_NOUN.search(text) is not None        # a bat, shoes, a jersey...: the message is about gear, not about a booking or a match
+    if _BOOKING.search(text) or (not product and _BOOKING_PLACE.search(text)):
         return Topic.BOOKING, "booking"
-    if _CRICKET_OWN.search(text):
+    if not product and _CRICKET_OWN.search(text):
         return Topic.CRICKET, "cricket_own"
+    if not product and _CRICKET_RULES.search(text):
+        return Topic.CRICKET, "cricket_rules"
     if _VOCAB.search(text):
         return Topic.SHOP, "shop_vocab"
     if _COMMERCE.search(text):
         return Topic.SHOP, "commerce"
-    if _CRICKET_RULES.search(text):
-        return Topic.CRICKET, "cricket_rules"
+    if _CRICKET_RULES.search(text) or _CRICKET_OWN.search(text):
+        return Topic.SHOP, "cricket_words_with_product"
     if _VOCAB_WEAK.search(text) and (_COMMERCE.search(text) or _COMMERCE_WEAK.search(text)):
         return Topic.SHOP, "weak_vocab_with_commerce"
+    if _tier0_account_signal(text):
+        return Topic.SHOP, "tier0_account"
     return None
+
+
+def _tier0_account_signal(text: str) -> bool:
+    """The Tier 0 rules already recognise orders, payments, refunds, returns, complaints and support cases precisely ("I was charged twice", "my return
+    request was rejected"). That recognition is reused as allow evidence, but only for those families: the knowledge/definition rules ("how to use ...") are
+    deliberately NOT evidence, because they match plenty of off-topic questions. Deny and business rules have already been applied before this is reached."""
+    from app.router import tier0
+    from app.router.intents import ORDERS, SUPPORT, Intent
+    route = tier0.classify(text, None, authenticated=True, known_products=frozenset())
+    return route is not None and route.intent in (ORDERS | SUPPORT | {Intent.RECOMMEND, Intent.KIT_BUILD})
 
 
 _SPLIT = re.compile(r"(?<=[.?!;])\s+|\n+|,\s+|\s+(?:and also|and then|also|and|aur|plus|then|but|as well as)\s+", re.I)

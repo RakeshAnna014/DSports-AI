@@ -1,6 +1,6 @@
 """The Customer Agent as one LangGraph workflow:
 
-    START -> guard_in -> route -+-> shopping  (subgraph: search | compare/advice | knowledge)
+    START -> guard_in -> topic_gate -> route -+-> shopping  (subgraph: search | compare/advice | knowledge)
                                 +-> orders_returns (subgraph: orders, tracking, payments, refunds, cart, returns, reorder, confirm)
                                 +-> support  (subgraph: policy/FAQ/warranty, refund questions)
                                 +-> smalltalk
@@ -18,11 +18,13 @@ from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from app.agent import orders, product_context, recommend, shopping, support, templates
+from app.agent import cricket, orders, product_context, recommend, shopping, support, templates
 from app.agent.prompts import RULES_ID
 from app.agent.runtime import Runtime
 from app.guard.grounding import check_grounding, collect_facts
+from app.guard import topic_templates as topic_tpl
 from app.guard.input import check_input
+from app.guard.topic import Topic, audience_of
 from app.llm.base import LLMError
 from app.obs import metrics
 from app.router import tier0
@@ -59,7 +61,58 @@ async def guard_in(state: AgentState, config) -> AgentState:
     rt.turn.status = "refused" if verdict.category not in ("empty", "too_long") else "ok"
     rt.turn.text = rt.turn.fallback_text = verdict.refusal or ""
     rt.turn.error_code = f"GUARD_{verdict.category.upper()}" if verdict.category else None
+    rt.turn.suggestions = [chip.as_suggestion() for chip in topic_tpl.SHOPPER_CHIPS]      # every refusal offers a way forward
     return {"route": Route(Intent.BLOCKED, 0), "done": True}
+
+
+def _has_context(conv) -> bool:
+    """A pending confirmation, an open support flow or products on screen: only ever turns an "unsure" message into allowed."""
+    return bool(conv.pending_nonce or conv.last_products or conv.selected_product or conv.last_order or conv.comparison_ids or conv.slots.get("return_candidate")
+                or (conv.slots.get("support") or {}).get("stage"))
+
+
+def _fixed(rt: Runtime, template: topic_tpl.Template, *, status: str = "ok", error_code: str | None = None) -> None:
+    t = rt.turn
+    t.text = t.fallback_text = template.text
+    t.status, t.error_code = status, error_code
+    t.suggestions = [chip.as_suggestion() for chip in template.chips]
+
+
+async def topic_gate(state: AgentState, config) -> AgentState:
+    """Step 0 of every turn after the security guard: is this about DSports, and may this role have it? Refusals and pointers are fixed text, no model."""
+    rt = _rt(config)
+    gate = rt.services.topic
+    if gate is None or rt.forced_route is not None:     # disabled by configuration, or a step the service itself offered and resolved
+        rt.topic_state = "bypassed"
+        return {"done": False}
+    decision = await gate.check(state["message"], audience=audience_of(rt.principal), has_context=_has_context(rt.conv), customer_hash=rt.customer_hash)
+    if decision.label is not None and decision.label.called_model:
+        rt.note_route_usage(decision.label.tokens_in, decision.label.tokens_out, decision.label.model or rt.settings.intent_model, 1)
+        rt.highest_tier = max(rt.highest_tier, 1)
+    rt.topic = decision.topic
+    source = decision.stage
+    if not decision.allowed:
+        rt.topic_state = "refused"
+        refused = decision.template is not topic_tpl.UNSURE
+        _fixed(rt, decision.template, status="refused" if refused else "ok", error_code=f"TOPIC_{decision.topic.value}" if refused and decision.topic else None)
+        rt.conv.intent = Intent.OUT_OF_SCOPE.value
+        return {"route": Route(Intent.OUT_OF_SCOPE, 1 if decision.model_calls else 0, source=source), "done": True}
+    rt.topic_state = "context" if decision.stage == "context" else "allowed"
+    message = decision.forward or state["message"]
+    if decision.mixed:
+        rt.turn.disclaimers.append(topic_tpl.MIXED_DECLINE)
+    answer: tuple[Intent, topic_tpl.Template] | None = None
+    if decision.topic is Topic.BUSINESS:
+        answer = (Intent.BUSINESS_INFO, topic_tpl.BUSINESS_POINTER)
+    elif decision.topic is Topic.BOOKING:
+        answer = (Intent.BOOKING_INFO, topic_tpl.BOOKING_POINTER)
+    elif decision.topic is Topic.CRICKET:
+        answer = (Intent.CRICKET_INFO, cricket.reply(message))
+    if answer is not None:
+        _fixed(rt, answer[1])
+        rt.conv.intent = answer[0].value
+        return {"route": Route(answer[0], 0, source=source), "done": True}
+    return {"done": False, "message": message}
 
 
 async def route_node(state: AgentState, config) -> AgentState:
@@ -319,6 +372,7 @@ def support_graph():
 def build_customer_agent():
     g = StateGraph(AgentState)
     g.add_node("guard_in", guard_in)
+    g.add_node("topic_gate", topic_gate)
     g.add_node("route", route_node)
     g.add_node("shopping", shopping_graph())
     g.add_node("orders_returns", orders_graph())
@@ -326,7 +380,8 @@ def build_customer_agent():
     g.add_node("smalltalk", smalltalk)
     g.add_node("guard_out", guard_out)
     g.add_edge(START, "guard_in")
-    g.add_conditional_edges("guard_in", after_guard, {"route": "route", "guard_out": "guard_out"})
+    g.add_conditional_edges("guard_in", after_guard, {"route": "topic_gate", "guard_out": "guard_out"})
+    g.add_conditional_edges("topic_gate", after_guard, {"route": "route", "guard_out": "guard_out"})
     g.add_conditional_edges("route", dispatch, {"shopping": "shopping", "orders_returns": "orders_returns", "support": "support",
                                                 "smalltalk": "smalltalk", "guard_out": "guard_out"})
     for n in ("shopping", "orders_returns", "support", "smalltalk"):
