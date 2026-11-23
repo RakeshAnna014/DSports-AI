@@ -1,6 +1,7 @@
 package com.dsports.cricket.interfaces;
 
 import com.dsports.cricket.application.result.PublicMatchSummary;
+import com.dsports.cricket.application.result.PublicAnalytics;
 import com.dsports.cricket.application.result.PublicScorecard;
 import com.dsports.cricket.application.usecase.PublicMatchesUseCase;
 import com.dsports.cricket.application.usecase.PublicScorecardEtag;
@@ -23,7 +24,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 /**
- * The only cricket routes that need no sign-in: a started match's scorecard and the list of matches being played. Both are read-only and return names and numbers
+ * The only cricket routes that need no sign-in: a started match's scorecard and analytics (charts and commentary) and the list of matches being played. All are read-only and return names and numbers
  * only (see {@link PublicScorecard}). Everything else under {@code /api/v1/matches} stays behind a sign-in. The security configuration opens exactly these two
  * by path alone (the query string never decides anything), and {@code SecurityPolicyTest} pins both. The list has a path of its own,
  * {@code /api/v1/public/matches/live}, so {@code GET /api/v1/matches} is only ever "my matches".
@@ -54,6 +55,21 @@ public class PublicMatchController {
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).cacheControl(REVALIDATE).<PublicScorecard>build();
             }
             return ResponseEntity.ok().eTag(etag).cacheControl(REVALIDATE).body(card);
+        });
+    }
+
+    @GetMapping("/matches/{matchId}/analytics")
+    @Operation(summary = "A started match's charts and commentary (no sign-in)", description = "Runs in each over (the Manhattan chart), the running total after each over (the worm and run rate), the partnership for each wicket "
+        + "and a line of commentary for each ball, worked out from the log. Names and numbers only. Same ETag rule and same 404 as the scorecard.")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "The analytics"), @ApiResponse(responseCode = "304", description = "Nothing new since the ETag you sent"),
+        @ApiResponse(responseCode = "404", description = "No such match, or it has not started")})
+    public Mono<ResponseEntity<PublicAnalytics>> analytics(ServerWebExchange exchange, @PathVariable UUID matchId) {
+        return publicMatches.analytics(matchId).map(result -> {
+            var etag = PublicScorecardEtag.of(result.seq(), result);
+            if (exchange.checkNotModified(etag)) {
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).cacheControl(REVALIDATE).<PublicAnalytics>build();
+            }
+            return ResponseEntity.ok().eTag(etag).cacheControl(REVALIDATE).body(result);
         });
     }
 

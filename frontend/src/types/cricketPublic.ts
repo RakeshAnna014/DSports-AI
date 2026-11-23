@@ -88,3 +88,61 @@ export interface PublicPage<T> {
   size: number;
   hasNext: boolean;
 }
+
+/** One over of the Manhattan chart: runs and wickets in it, who bowled it, and whether it was a maiden. `complete` is false for the over in progress. */
+export interface OverRuns {
+  over: number;
+  runs: number;
+  wickets: number;
+  bowler: string | null;
+  maiden: boolean;
+  complete: boolean;
+}
+
+/** The total after `over` overs (0 is the start); `legalBalls` makes a part-over at the end exact. */
+export interface WormPoint {
+  over: number;
+  legalBalls: number;
+  runs: number;
+  wickets: number;
+}
+
+/** The partnership that ended with the `wicket`-th wicket (the batter out, then the partner), or the unbroken last one (the two still in). */
+export interface Partnership {
+  wicket: number;
+  batterA: string | null;
+  batterB: string | null;
+  runs: number;
+  balls: number;
+  unbroken: boolean;
+}
+
+export interface InningsAnalytics {
+  number: number;
+  battingTeam: string;
+  bowlingTeam: string;
+  runs: number;
+  wickets: number;
+  overs: string;
+  target: number | null;
+  overRuns: OverRuns[];
+  worm: WormPoint[];
+  partnerships: Partnership[];
+}
+
+export interface CommentaryLine {
+  innings: number;
+  seq: number;
+  over: string;
+  text: string;
+  runs: number;
+  wicket: boolean;
+  boundary: boolean;
+}
+
+/** The charts and commentary of a started match (names and numbers only). */
+export interface PublicAnalytics {
+  seq: number;
+  innings: InningsAnalytics[];
+  commentary: CommentaryLine[];
+}

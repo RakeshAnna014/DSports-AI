@@ -2,7 +2,7 @@
 
 Exported from the running backend's /api-docs (springdoc), which is disabled in the prod profile.
 
-Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 223 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
+Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 224 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
 
 ## Actuator
 
@@ -176,6 +176,7 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 
 | Method | Path | Summary | Auth | Responses |
 |---|---|---|---|---|
+| GET | `/api/v1/matches/{matchId}/analytics` | A started match's charts and commentary (no sign-in) | bearer | 200,304,404 |
 | GET | `/api/v1/matches/{matchId}/scorecard` | A started match's scorecard (no sign-in) | bearer | 200,304,404 |
 | GET | `/api/v1/public/matches/live` | Matches being played (no sign-in) | bearer | 200,400 |
 

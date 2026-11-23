@@ -1099,4 +1099,36 @@ class CricketScoringHttpIntegrationTest {
         assertThat(eventCount(s.matchId())).isEqualTo(4);
         assertThat(send(s.organiser(), commandItem(s, 4, commands.get(4), null)).status()).isEqualTo(200);
     }
+
+    // ---- the public analytics (Phase 3a) -------------------------------------------------------------------------------------
+
+    @Test
+    void theAnalyticsArePublicOnceTheMatchHasStartedWithNamesAndNumbersOnlyAndAnETagThatMovesWithTheBalls() {
+        var s = setup(2);
+        var url = "/api/v1/matches/" + s.matchId() + "/analytics";
+        assertThat(get(null, url).status()).as("not started: the same as a match that does not exist").isEqualTo(404);
+        assertThat(get(null, "/api/v1/matches/" + UUID.randomUUID() + "/analytics").status()).isEqualTo(404);
+
+        var commands = goldenMatch(s.lions(), s.tigers());
+        for (int i = 0; i < 5; i++) {
+            assertThat(score(s, s.scorer(), i, commands.get(i)).status()).isEqualTo(200);
+        }
+        var first = web.get().uri(url).exchange().expectStatus().isOk().expectHeader().exists("ETag").expectBody(Map.class).returnResult();
+        var tag = first.getResponseHeaders().getETag();
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) first.getResponseBody();
+        assertThat(body.get("seq")).isEqualTo(5);
+        assertThat((List<?>) body.get("commentary")).hasSize(4);
+        var text = body.toString();
+        assertThat(text).as("names and numbers only").doesNotContain("@example.com").doesNotContain(s.lions().playerIds().get(0)).doesNotContain(s.matchId().substring(0, 8));
+        assertThat(text).contains("Lions player 1").contains("Tigers player 1");
+
+        web.get().uri(url).header("If-None-Match", tag).exchange().expectStatus().isNotModified();
+        assertThat(score(s, s.scorer(), 5, commands.get(5)).status()).isEqualTo(200);
+        web.get().uri(url).header("If-None-Match", tag).exchange().expectStatus().isOk();
+
+        assertThat(get(null, url + "/x").status()).as("no other path is opened by this one").isIn(401, 404);
+        assertThat(post(null, url, Map.of()).status()).isIn(401, 403, 405);
+        assertThat(get(null, "/api/v1/matches/" + s.matchId() + "/analytic").status()).isEqualTo(401);
+    }
 }

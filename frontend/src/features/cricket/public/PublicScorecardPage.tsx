@@ -2,6 +2,7 @@ import { Alert, Box, Button, Chip, Paper, Skeleton, Stack, Typography } from '@m
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { usePublicScorecard } from './usePublicScorecard';
 import { ShareScorecardButton } from './ShareScorecardButton';
+import { AnalyticsPanel } from './AnalyticsPanel';
 import { Headline, InningsBlock, STATUS_LABEL } from './ScorecardView';
 
 /**
@@ -71,6 +72,8 @@ const PublicScorecardPage = () => {
           {card.innings.map((i, index) => <InningsBlock key={i.number} innings={i} open={index === card.innings.length - 1} />)}
         </Stack>
       ) : null}
+
+      <AnalyticsPanel matchId={card.matchId} seq={card.seq} />
 
       <Stack spacing={1.5} sx={{ mt: 2 }}>
         <ShareScorecardButton matchId={card.matchId} title={title} />

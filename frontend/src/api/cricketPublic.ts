@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { PublicMatchSummary, PublicPage, PublicScorecard } from '@/types/cricketPublic';
+import type { PublicAnalytics, PublicMatchSummary, PublicPage, PublicScorecard } from '@/types/cricketPublic';
 
 /**
  * The two cricket routes that need no sign-in. They use their own client with no stored token, so a signed-out visitor never triggers the shared client's
@@ -22,6 +22,9 @@ export const cricketPublicApi = {
     const header = response.headers['etag'];
     return { kind: 'changed', data: response.data, etag: typeof header === 'string' ? header : null };
   },
+
+  /** The charts and commentary. Asked for again only when the scorecard's seq changes, so a quiet match costs nothing extra. */
+  analytics: (matchId: string) => publicClient.get<PublicAnalytics>(`/v1/matches/${encodeURIComponent(matchId)}/analytics`).then((r) => r.data),
 
   live: (params: { city?: string; page: number; size: number }) =>
     publicClient

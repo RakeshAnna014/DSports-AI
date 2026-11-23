@@ -23,9 +23,14 @@ public final class PublicScorecardEtag {
     }
 
     public static String of(PublicScorecard card) {
+        return of(card.seq(), card);
+    }
+
+    /** The same kind of tag for any public response: the seq of the last event and a digest of the response's own text. */
+    public static String of(int seq, Object response) {
         try {
-            var digest = MessageDigest.getInstance("SHA-256").digest(card.toString().getBytes(StandardCharsets.UTF_8));
-            return "\"" + card.seq() + "-" + HexFormat.of().formatHex(digest, 0, DIGEST_BYTES) + "\"";
+            var digest = MessageDigest.getInstance("SHA-256").digest(response.toString().getBytes(StandardCharsets.UTF_8));
+            return "\"" + seq + "-" + HexFormat.of().formatHex(digest, 0, DIGEST_BYTES) + "\"";
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is always available", e);
         }

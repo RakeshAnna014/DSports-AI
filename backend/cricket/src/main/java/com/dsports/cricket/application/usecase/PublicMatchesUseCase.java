@@ -5,10 +5,12 @@ import com.dsports.cricket.application.port.PlayerRepository;
 import com.dsports.cricket.application.port.ScoringStore;
 import com.dsports.cricket.application.port.TeamRepository;
 import com.dsports.cricket.application.result.PublicMatchSummary;
+import com.dsports.cricket.application.result.PublicAnalytics;
 import com.dsports.cricket.application.result.PublicScorecard;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.Match;
+import com.dsports.cricket.domain.scoring.MatchAnalytics;
 import com.dsports.cricket.domain.scoring.MatchScore;
 import com.dsports.cricket.domain.scoring.MatchScoring;
 import com.dsports.cricket.domain.scoring.MatchSetup;
@@ -67,6 +69,15 @@ public class PublicMatchesUseCase {
 
     public Mono<PublicScorecard> scorecard(UUID matchId) {
         return started(matchId).flatMap(s -> NameLookup.forMatch(s.match(), teams, players, id -> "A scorer").map(names -> PublicScorecardBuilder.build(s.match(), s.seq(), s.score(), names)));
+    }
+
+    /** The charts and commentary of a started match, worked out from its log. A match that has not started is "not found", exactly as for the scorecard. */
+    public Mono<PublicAnalytics> analytics(UUID matchId) {
+        return started(matchId).flatMap(s -> Mono.zip(NameLookup.forMatch(s.match(), teams, players, id -> "A scorer"), store.entries(matchId).collectList())
+            .map(t -> {
+                var analytics = MatchAnalytics.of(MatchSetup.from(s.match()), t.getT2(), t.getT1().player(), t.getT1().team());
+                return new PublicAnalytics(s.seq(), analytics.innings(), analytics.commentary());
+            }));
     }
 
     /** Started matches that are being played now, most recently scored first, optionally in one city (any letter case). */

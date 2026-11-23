@@ -13,7 +13,7 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 2f-2 | Durable IndexedDB queue, journal, pure reducer (no UI) | **done** (see report; to be re-verified in a clean worktree with 2f-3) |
 | 2f-3 | Server additions: engine-state route, engineVersion + state fingerprint, `mine`/`clientEventId` on events, `tappedAt` (migration V57) | **done** (d3c25ef, cc7d122, 938c8b0) |
 | 2f-4 | Sender, local view, scorer screen states, conflict / set-aside sheets, emulated e2e, real-phone script 7c | **done** (a3e96df, 7fda349, 1b6e48e, 854209d + docs/7c commit) |
-| 3a | Live score stream (SSE) over the existing log, commentary templates | **next** (design to be written when reached; 2e shipped polling + ETag) |
+| 3a | Match analytics and commentary from the log (public route `GET /api/v1/matches/{id}/analytics`), charts on the public scorecard (SSE not built: see DECISIONS-LOG) | **built, verification pending** |
 | 3b | Career stats projection (rebuildable), player stats API | todo |
 | 3c | Match analytics (wagon wheel input, Manhattan, worm, partnerships, fall of wickets) | todo |
 | 4a | Tournaments: aggregate, teams, groups, fixtures, migration | todo |
@@ -110,3 +110,49 @@ Gate acceptance criteria and edge-case lists are written under each gate's headi
 * **Proofs:** local view equals the Java view after each of the 36 golden commands (innings tables, choices, needs, undo wording, result, fingerprint); 21 sender tests incl. 25 chaos seeds; 16 screen tests (every state of plan 7.3, the pad off exactly where D14 says, names in any script and very long names); the 7c numbers are checked against the doc by a test; **emulated browser run `e2e/cricket-offline.mjs` passes against the real backend and database** (13 offline balls, killed tab, flush once each in order with no gap and no duplicate id, laptop and phone agree; conflict with another scorer then rebase; window closing then admin unlock); `cricket-ui.mjs` (updated for the new banner) also passes.
 * **Found while building and fixed:** the names were missing after a reload offline (the server's pre-innings view had overwritten the setup's names: now merged); the conflict sheet listed none of the other scorer's balls when the other scorer was the same account on another device (now theirs = not in this phone's own queue); an administrator's unlock caused a "someone else scored" decision about an event that cannot change the score (now ignored for conflicts; tested); after picking a batter the chooser is replaced at once by the bowler chooser (a script assumption, not a screen bug).
 * **Known limits:** real-phone script 7c is for the user (see the final report); CI does not run the browser scripts (no browser step in the workflow); the screen's `REJECTED` / `CONFLICT` choice is not persisted across a reload (the first send meets it again); a phone that has never opened the match online cannot score it offline (the first open needs the server's log); no service worker, so a closed browser cannot reopen the page with no network (D10).
+
+---
+
+## Gate 3a: match analytics and commentary (public)
+
+**Acceptance criteria**
+1. `MatchAnalytics.of(setup, log, playerName, teamName)` is a pure domain function over the commands in force: runs and wickets in each over (Manhattan), the running total after each over (worm, run rate), the partnership for each wicket (and the unbroken last one) and one commentary line per ball; undo changes the answer because the log is replayed; no id leaves it (names and numbers only).
+2. `GET /api/v1/matches/{id}/analytics` is public (path only, like the scorecard), read-only, 404 for a match that has not started (the same answer as for one that does not exist), ETag `"<seq>-<digest>"` with 304; every other path under it stays behind a sign-in; `SecurityPolicyTest` pins it.
+3. The public scorecard page shows commentary, runs per over, the worm and the partnerships (plain SVG, each chart also described in words for screen readers), asking again only when the scorecard's seq changes.
+4. Checked on the hand-scored golden match: 11 + 11 runs in the two overs, 2 wickets in over 1, partnerships 11 (4 balls), 0 (1), unbroken 11 (7), 14 commentary lines for the first innings, the two wicket lines with the score.
+
+**Edge cases:** nothing scored; innings just started (no over yet); an over in progress (partial bar, partial point); wides and no-balls (they belong to the over being bowled, not counted as balls); maiden only when six legal balls and no runs; retired-out batter closes a partnership; an undo that reopens an innings; the other-innings partnership split; names in any script; 30+ commentary lines (newest first, show all).
+
+**Design:** one function in the domain (no Spring, no clock), one use-case method that only reads the log, one controller method. The charts are SVG, not a library (no new dependency). The wagon wheel is **not** built: it needs where each shot went and the scorer does not record that (recorded in DECISIONS-LOG, not estimated).
+
+**Report.** Domain `MatchAnalyticsTest` (7), `PublicMatchesUseCaseTest` (+3, 19 in all), `SecurityPolicyTest` (114 rows, +6 for the route and its neighbours), frontend `AnalyticsPanel.test.tsx` (10) and the existing public page tests (26 pass); HTTP integration test added to `CricketScoringHttpIntegrationTest` (public 404 before the start, 200 after, names only, ETag and 304, the tag moves with a ball, no other path opened).
+
+---
+
+## Remaining gates: acceptance criteria and edge cases (written before coding; none of these is built yet)
+
+Each follows the gate loop: design note, tests first, small commits, clean-worktree verification (frontend, backend unit, Docker integration, the browser script that applies), adversarial self-review, report. Existing rules apply to every one of them: append-only log, server is the authority, public data is names and numbers only, new migrations only (next free number V58), every new route in `SecurityPolicyTest`.
+
+### 3b Career stats projection
+**Acceptance:** `player_stats` (V58) is a **rebuildable projection** of the ball log, never a source: per player and ball type (tennis / leather kept apart, recommended in the plan): matches, innings, runs, balls faced, not-outs, highest score, 50s and 100s, fours, sixes, balls bowled, runs conceded, wickets, best bowling, maidens, catches, stumpings, run-outs. Computed by a pure domain function over the same replay as `MatchAnalytics`, for matches that have finished (completed, or abandoned after a ball: decision to record). Updated when a match finishes and by a rebuild job that recomputes every player from the logs and gives the same numbers (a test proves incremental equals rebuild). `GET /api/v1/players/{id}/stats` (public: names and numbers, nothing for a player with no finished match). An undo after finishing (inside the 24 hours) or an admin unlock recomputes that match's contribution. **Edge cases:** guest vs claimed player (stats follow the player id, a claim keeps them); the same player in both teams of one match (refused earlier); retired hurt (not out); run out of the non-striker (balls faced not charged to him); a wicket on a no-ball (none); wides and no-balls not counted as balls faced or bowled; byes and leg byes not charged to the bowler; a 2-player side; two matches finishing at once (the rebuild is idempotent); a deleted team.
+
+### 3c Stats screens
+**Acceptance:** a player page (career table, per ball type), linked from the public scorecard; mobile layout at 320 px; the figures equal the API's; empty state for a player with no finished match. **Edge cases:** very long and non-ASCII names; a player with only bowling; a player who never batted.
+
+### 4a Tournaments: aggregate, teams, groups, fixtures
+**Acceptance:** `Tournament` (name, organiser, city, dates, format league / knockout / groups then knockout, points rules: win 2, tie or no result 1 by default as configuration, entry fee in rupees as `NUMERIC(12,2)` like the booking module) with teams, groups and fixtures; each fixture is an ordinary `Match` with a `tournament_id`; only the organiser edits; a team can be in a tournament once; fixtures generated for a league (round robin, each pair once, deterministic) and for a knockout (seeded, byes for odd counts); migrations V58 onwards, forward only, with the same append-only care as the log (a fixture that has a log is never deleted). **Edge cases:** 2 teams, 3 teams (byes), 16 teams; a team withdrawing after fixtures exist; a match abandoned (counts as no result); a fixture changed after it started (refused); two organisers editing at once (version check).
+
+### 4b Points table, net run rate, leaderboards, awards
+**Acceptance:** points table (played, won, lost, tied, no result, points, NRR) as a **pure function** over finished fixtures; NRR = runs scored / overs faced - runs conceded / overs bowled, with a side bowled out counted as having faced its full quota (as in the plan); ties broken by points, then wins, then NRR, then head-to-head (written down); leaderboards (most runs, most wickets, best strike rate and economy with a minimum-balls qualifier, most sixes) from the stats projection; awards (player of the match by a points formula recorded in the ADR). **Edge cases:** NRR with an abandoned match, a rain-shortened chase (revised target), 0 balls faced, a team that has not played, equal NRR; the table recomputed after an undo.
+
+### 4c Entry fees and tournament screens
+**Acceptance:** an entry fee is paid through the existing payment module with the mock gateway (the doc says so on the page), idempotent, refundable by the organiser before the first fixture; the organiser console (create, add teams, generate fixtures), a public tournament page (table, fixtures, leaderboards). **Edge cases:** paying twice, paying after the tournament starts, a refund of a partial payment, the organiser removing a team that has paid.
+
+### 5a AI: match report and match summary tool
+**Acceptance:** Java gives the facts (top scorers, turning-point over, partnerships) from `MatchAnalytics` and the stats; the AI service tool `get_match_summary` reads them over the public REST route; the model may only re-word them and every number in its text must be in the facts (the existing grounding check); a report is labelled as written by an AI. **Edge cases:** a match with no facts, a tie, an abandoned match, the model inventing a number (rejected), prompt injection in a player name (treated as data).
+
+### 5b AI: stats and insight tools, ground finder
+**Acceptance:** read-only tools `get_player_stats`, `get_head_to_head`, `get_team_insights`, `search_grounds`, `get_ground_slots` over the Java REST API with the caller's token; role-gated; the tool matrix and route sweep classify each. **Edge cases:** a player the caller may not see, an unknown id, a very large result (capped), the model asking for a route it has no tool for.
+
+### 5c AI: `book_ground`, Looking, feed
+**Acceptance:** `book_ground` is a confirmed WRITE (proposal then a confirmation token, exactly like the return and reorder writes); "Looking" (find players, umpires, opponents) and the feed are **product decisions** the plan leaves open (the open questions are unanswered): they are listed in FINAL-REPORT for the owner and not built.

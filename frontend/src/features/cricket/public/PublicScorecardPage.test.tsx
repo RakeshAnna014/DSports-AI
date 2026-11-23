@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import PublicScorecardPage from './PublicScorecardPage';
 import { CHASE, FINISHED_CARD, FIRST_INNINGS, LIVE_CARD } from './publicFixtures';
 
-vi.mock('@/api/cricketPublic', async (original) => ({ ...(await original<typeof import('@/api/cricketPublic')>()), cricketPublicApi: { scorecard: vi.fn(), live: vi.fn() } }));
+vi.mock('@/api/cricketPublic', async (original) => ({ ...(await original<typeof import('@/api/cricketPublic')>()), cricketPublicApi: { scorecard: vi.fn(), live: vi.fn(), analytics: vi.fn() } }));
 const scorecard = vi.mocked(cricketPublicApi.scorecard);
 
 const renderPage = () => renderWithProviders(
@@ -22,6 +22,8 @@ const answer = (data = LIVE_CARD) => ({ kind: 'changed' as const, data, etag: `"
 
 beforeEach(() => {
   scorecard.mockReset();
+  vi.mocked(cricketPublicApi.analytics).mockReset();
+  vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 0, innings: [], commentary: [] });
   useAuthStore.setState({ isAuthenticated: false, user: null });
   localStorage.clear();
 });

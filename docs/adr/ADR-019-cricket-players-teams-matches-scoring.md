@@ -85,6 +85,10 @@ Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scori
 * **The screen** is the previous screen when the phone cannot score offline, and otherwise says each state in words (offline, n unsent, sending, retrying, needs sign-in, somebody else scored, refused, locked, set aside, offline scoring off, read-only, 150 and 600). No service worker (D10): the hint is "Keep this page open while scoring offline."
 * **Alternatives:** a worker for the engine (not needed: the engine takes microseconds per ball); batching (rejected in 2f, still not needed: 60 items and two tabs at once are tested); a PWA (needs HTTPS; later).
 
+## Phase 3a: analytics and commentary
+
+`GET /api/v1/matches/{id}/analytics` (public, read-only, names and numbers only, ETag and 304 like the scorecard, 404 before the first ball) returns runs per over, the running total after each over, the partnership for each wicket and a commentary line for each ball, all computed by `MatchAnalytics` (a pure function) over the commands in force, so an undo or a correction simply changes what is replayed. The public scorecard page draws them as plain SVG and asks again only when the scorecard's seq changes. The wagon wheel is not built (the scorer does not record where a shot went) and server-sent events are not built (polling with an ETag meets "follow a match live"); both are recorded in `docs/plans/DECISIONS-LOG.md`.
+
 ## Differences from the plan
 
 | Plan | Code |

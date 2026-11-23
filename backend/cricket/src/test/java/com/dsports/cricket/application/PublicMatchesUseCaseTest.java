@@ -296,4 +296,40 @@ class PublicMatchesUseCaseTest {
         assertThat(UUID_TEXT.matcher(json).results().count()).isEqualTo(1);
         assertThat(json).doesNotContain("@", "createdBy", "scorer", "booking");
     }
+
+    // ---- the analytics (charts and commentary) ------------------------------------------------------------------------
+
+    @Test
+    void theAnalyticsOfAMatchThatHasNotStartedAreNotFoundExactlyLikeOneThatDoesNotExist() {
+        assertNotFound(() -> publicMatches.analytics(fx.id()).block());
+        assertNotFound(() -> publicMatches.analytics(UUID.randomUUID()).block());
+    }
+
+    @Test
+    void theAnalyticsFollowTheLogWithNamesAndNumbersOnly() {
+        fx.scoreAll(GoldenMatch.wholeMatch());
+        var result = publicMatches.analytics(fx.id()).block();
+        assertThat(result.seq()).isEqualTo(GoldenMatch.wholeMatch().size());
+        assertThat(result.innings()).hasSize(2);
+        assertThat(result.innings().get(0).overRuns()).extracting(o -> o.runs()).containsExactly(11, 11);
+        assertThat(result.innings().get(0).partnerships().get(0).batterA()).isEqualTo("Lion 1");
+        assertThat(result.innings().get(1).worm().get(result.innings().get(1).worm().size() - 1).runs()).isEqualTo(23);
+        assertThat(result.commentary()).as("one line for each ball of both innings").hasSize(27);
+        assertThat(result.commentary().get(0).text()).isEqualTo("Tiger 1: wide");
+        assertThat(result.toString()).as("no id of a player, a team or a person, and no email").doesNotContainPattern(UUID_TEXT.pattern()).doesNotContain("@");
+    }
+
+    @Test
+    void anUndoChangesTheAnalyticsAndTheTagMovesWithEveryBallAndNoBallStaysStill() {
+        fx.score(ScoringFixture.lionsOpen());
+        fx.score(new ScoreCommand.Play(new com.dsports.cricket.domain.rules.ScoringCommand.Deliver(com.dsports.cricket.domain.rules.Delivery.runs(3))));
+        var tag = com.dsports.cricket.application.usecase.PublicScorecardEtag.of(publicMatches.analytics(fx.id()).block().seq(), publicMatches.analytics(fx.id()).block());
+        assertThat(com.dsports.cricket.application.usecase.PublicScorecardEtag.of(publicMatches.analytics(fx.id()).block().seq(), publicMatches.analytics(fx.id()).block()))
+            .as("nothing scored, the same tag").isEqualTo(tag);
+        fx.undo(com.dsports.cricket.domain.scoring.ScoringLog.UndoMode.BALL);
+        var after = publicMatches.analytics(fx.id()).block();
+        assertThat(after.innings().get(0).runs()).isZero();
+        assertThat(after.commentary()).isEmpty();
+        assertThat(com.dsports.cricket.application.usecase.PublicScorecardEtag.of(after.seq(), after)).isNotEqualTo(tag);
+    }
 }
