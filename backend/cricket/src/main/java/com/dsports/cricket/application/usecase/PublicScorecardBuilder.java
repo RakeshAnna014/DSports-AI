@@ -38,9 +38,9 @@ final class PublicScorecardBuilder {
         int bpo = state.rules().ballsPerOver();
         boolean playing = !state.isComplete();
         var requiredRate = state.target() != null && playing ? rate(Math.max(0, state.target() - state.runs()), state.ballsRemaining(), bpo) : null;
-        var batters = v.batters().stream().map(b -> new PublicScorecard.Batter(b.player().name(), b.runs(), b.balls(), b.fours(), b.sixes(), b.howOut(), b.notOut(), b.atCrease() && playing,
+        var batters = v.batters().stream().map(b -> new PublicScorecard.Batter(b.player().id(), b.player().name(), b.runs(), b.balls(), b.fours(), b.sixes(), b.howOut(), b.notOut(), b.atCrease() && playing,
             v.striker() != null && playing && b.player().id().equals(v.striker().id()))).toList();
-        var bowlers = v.bowlers().stream().map(b -> new PublicScorecard.Bowler(b.player().name(), b.overs(), b.maidens(), b.runs(), b.wickets(), b.wides(), b.noBalls(), b.economy(),
+        var bowlers = v.bowlers().stream().map(b -> new PublicScorecard.Bowler(b.player().id(), b.player().name(), b.overs(), b.maidens(), b.runs(), b.wickets(), b.wides(), b.noBalls(), b.economy(),
             v.bowler() != null && playing && b.player().id().equals(v.bowler().id()))).toList();
         var falls = v.fallOfWickets().stream().map(f -> new PublicScorecard.Fall(f.number(), f.runs(), f.batter().name(), f.overs(), f.howOut())).toList();
         var extras = v.extras();

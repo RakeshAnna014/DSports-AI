@@ -5,12 +5,12 @@ export const FIRST_INNINGS: PublicInnings = {
   target: null, runsNeeded: null, runRate: 11, requiredRate: null,
   extras: { wides: 1, noBalls: 1, byes: 1, legByes: 0, total: 3 },
   batters: [
-    { name: 'Ravi', runs: 9, balls: 6, fours: 1, sixes: 0, howOut: 'c Kiran b Tarun', notOut: false, atCrease: false, striker: false },
-    { name: 'Sam', runs: 4, balls: 3, fours: 0, sixes: 0, howOut: 'b Tarun', notOut: false, atCrease: false, striker: false },
-    { name: 'Dev', runs: 6, balls: 3, fours: 0, sixes: 1, howOut: 'not out', notOut: true, atCrease: false, striker: false },
+    { playerId: 'p-ravi', name: 'Ravi', runs: 9, balls: 6, fours: 1, sixes: 0, howOut: 'c Kiran b Tarun', notOut: false, atCrease: false, striker: false },
+    { playerId: 'p-sam', name: 'Sam', runs: 4, balls: 3, fours: 0, sixes: 0, howOut: 'b Tarun', notOut: false, atCrease: false, striker: false },
+    { playerId: 'p-dev', name: 'Dev', runs: 6, balls: 3, fours: 0, sixes: 1, howOut: 'not out', notOut: true, atCrease: false, striker: false },
   ],
   yetToBat: ['Anil', 'Bala'],
-  bowlers: [{ name: 'Tarun', overs: '1.0', maidens: 0, runs: 12, wickets: 2, wides: 1, noBalls: 0, economy: 12, bowling: false }],
+  bowlers: [{ playerId: 'p-tarun', name: 'Tarun', overs: '1.0', maidens: 0, runs: 12, wickets: 2, wides: 1, noBalls: 0, economy: 12, bowling: false }],
   fallOfWickets: [{ number: 1, runs: 12, batter: 'Ravi', overs: '0.5', howOut: 'c Kiran b Tarun' }, { number: 2, runs: 15, batter: 'Sam', overs: '1.2', howOut: 'b Tarun' }],
   waivers: [{ over: 2, text: 'Kiran bowled two overs in a row in over 2 because no other bowler was left' }],
 };
@@ -20,11 +20,11 @@ export const CHASE: PublicInnings = {
   target: 23, runsNeeded: 13, runRate: 30, requiredRate: 7.8,
   extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, total: 0 },
   batters: [
-    { name: 'Kiran', runs: 6, balls: 1, fours: 0, sixes: 1, howOut: 'not out', notOut: true, atCrease: true, striker: false },
-    { name: 'Tarun', runs: 4, balls: 1, fours: 1, sixes: 0, howOut: 'not out', notOut: true, atCrease: true, striker: true },
+    { playerId: 'p-kiran', name: 'Kiran', runs: 6, balls: 1, fours: 0, sixes: 1, howOut: 'not out', notOut: true, atCrease: true, striker: false },
+    { playerId: 'p-tarun', name: 'Tarun', runs: 4, balls: 1, fours: 1, sixes: 0, howOut: 'not out', notOut: true, atCrease: true, striker: true },
   ],
   yetToBat: [],
-  bowlers: [{ name: 'Ravi', overs: '0.2', maidens: 0, runs: 10, wickets: 0, wides: 0, noBalls: 0, economy: 30, bowling: true }],
+  bowlers: [{ playerId: 'p-ravi', name: 'Ravi', overs: '0.2', maidens: 0, runs: 10, wickets: 0, wides: 0, noBalls: 0, economy: 30, bowling: true }],
   fallOfWickets: [],
   waivers: [],
 };

@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A started match as anyone may read it, signed in or not: names and numbers only. There are no ids except the match's own (which is in the link), no emails or
- * phones, no booking, claim, scorer or user data, and nothing about who is allowed to score or correct it. It is built from the stored snapshot, so it can show only
+ * A started match as anyone may read it, signed in or not: names and numbers only. The only ids are the match's own (which is in the link) and each batter's and bowler's player id
+ * (so a name can link to that player's public career statistics; a player id opens nothing but those statistics), and there are no emails or phones, no booking, claim, scorer or user data, and nothing about who is allowed to score or correct it. It is built from the stored snapshot, so it can show only
  * what the scorers have recorded.
  */
 public record PublicScorecard(UUID matchId, int seq, String status, boolean live, String teamA, String teamB, int overs, String city, String venue, Instant scheduledAt,
@@ -22,10 +22,10 @@ public record PublicScorecard(UUID matchId, int seq, String status, boolean live
                           List<Bowler> bowlers, List<Fall> fallOfWickets, List<Waiver> waivers) {
     }
 
-    public record Batter(String name, int runs, int balls, int fours, int sixes, String howOut, boolean notOut, boolean atCrease, boolean striker) {
+    public record Batter(UUID playerId, String name, int runs, int balls, int fours, int sixes, String howOut, boolean notOut, boolean atCrease, boolean striker) {
     }
 
-    public record Bowler(String name, String overs, int maidens, int runs, int wickets, int wides, int noBalls, BigDecimal economy, boolean bowling) {
+    public record Bowler(UUID playerId, String name, String overs, int maidens, int runs, int wickets, int wides, int noBalls, BigDecimal economy, boolean bowling) {
     }
 
     public record Fall(int number, int runs, String batter, String overs, String howOut) {

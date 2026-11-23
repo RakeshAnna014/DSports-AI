@@ -1,5 +1,6 @@
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
+import { PlayerLink } from './PlayerLink';
 import type { PublicInnings, PublicScorecard } from '@/types/cricketPublic';
 
 export const rate = (value: number | null): string => (value == null ? '–' : value.toFixed(2));
@@ -35,7 +36,7 @@ const InningsDetails = ({ innings }: { innings: PublicInnings }) => (
         {innings.batters.map((b, i) => (
           <TableRow key={`${b.name}-${i}`} data-testid="public-batter" selected={b.atCrease}>
             <TableCell sx={{ fontWeight: b.striker ? 800 : 400 }}>
-              {b.name}{b.striker ? ' *' : ''}
+              <PlayerLink id={b.playerId} name={b.name} />{b.striker ? ' *' : ''}
               <Typography variant="caption" display="block" color="text.secondary">{b.howOut}</Typography>
             </TableCell>
             <TableCell align="right">{b.runs}</TableCell><TableCell align="right">{b.balls}</TableCell><TableCell align="right">{b.fours}</TableCell><TableCell align="right">{b.sixes}</TableCell>
@@ -52,7 +53,7 @@ const InningsDetails = ({ innings }: { innings: PublicInnings }) => (
       <TableBody>
         {innings.bowlers.map((b, i) => (
           <TableRow key={`${b.name}-${i}`} data-testid="public-bowler" selected={b.bowling}>
-            <TableCell>{b.name}</TableCell><TableCell align="right">{b.overs}</TableCell><TableCell align="right">{b.maidens}</TableCell><TableCell align="right">{b.runs}</TableCell>
+            <TableCell><PlayerLink id={b.playerId} name={b.name} /></TableCell><TableCell align="right">{b.overs}</TableCell><TableCell align="right">{b.maidens}</TableCell><TableCell align="right">{b.runs}</TableCell>
             <TableCell align="right">{b.wickets}</TableCell><TableCell align="right">{rate(b.economy)}</TableCell>
           </TableRow>
         ))}

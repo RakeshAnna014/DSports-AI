@@ -1,7 +1,8 @@
-/** What anyone may read about a started match, signed in or not: names and numbers only (no ids but the match's own). */
+/** What anyone may read about a started match, signed in or not: names and numbers only (the only ids are the match's own and the players', which link to their public career). */
 export type PublicStatus = 'IN_PROGRESS' | 'INNINGS_BREAK' | 'COMPLETED' | 'ABANDONED' | 'NO_RESULT';
 
 export interface PublicBatter {
+  playerId: string;
   name: string;
   runs: number;
   balls: number;
@@ -14,6 +15,7 @@ export interface PublicBatter {
 }
 
 export interface PublicBowler {
+  playerId: string;
   name: string;
   overs: string;
   maidens: number;
@@ -145,4 +147,47 @@ export interface PublicAnalytics {
   seq: number;
   innings: InningsAnalytics[];
   commentary: CommentaryLine[];
+}
+
+/** A player's career for one ball type. A ratio the server could not work out (no dismissal, no ball bowled) is null, never zero. */
+export interface PublicCareerBatting {
+  innings: number;
+  runs: number;
+  balls: number;
+  notOuts: number;
+  highest: number;
+  highestNotOut: boolean;
+  fours: number;
+  sixes: number;
+  fifties: number;
+  hundreds: number;
+  ducks: number;
+  average: number | null;
+  strikeRate: number | null;
+}
+
+export interface PublicCareerBowling {
+  innings: number;
+  overs: string;
+  runs: number;
+  wickets: number;
+  maidens: number;
+  best: string | null;
+  fiveWickets: number;
+  average: number | null;
+  economy: number | null;
+  strikeRate: number | null;
+}
+
+export interface PublicCareerLine {
+  ballType: 'LEATHER' | 'TENNIS';
+  matches: number;
+  batting: PublicCareerBatting;
+  bowling: PublicCareerBowling;
+  fielding: { catches: number; stumpings: number; runOuts: number };
+}
+
+export interface PublicPlayerStats {
+  name: string;
+  lines: PublicCareerLine[];
 }

@@ -135,10 +135,15 @@ class PublicMatchesUseCaseTest {
     @Test
     void nothingButNamesAndNumbersLeaves() throws Exception {
         fx.scoreAll(GoldenMatch.wholeMatch());
-        var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(publicMatches.scorecard(fx.id()).block());
+        var card = publicMatches.scorecard(fx.id()).block();
+        var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(card);
 
-        var uuids = UUID_TEXT.matcher(json).results().map(r -> r.group()).toList();
-        assertThat(uuids).as("the match's own id is the only id in a public scorecard").containsExactly(fx.id().toString());
+        var playerIds = card.innings().stream().flatMap(i -> java.util.stream.Stream.concat(i.batters().stream().map(x -> x.playerId()), i.bowlers().stream().map(x -> x.playerId()))).distinct()
+            .map(UUID::toString).toList();
+        assertThat(playerIds).as("a batter or bowler carries a player id, to link to that player's career").isNotEmpty();
+        var uuids = UUID_TEXT.matcher(json).results().map(r -> r.group()).distinct().toList();
+        assertThat(uuids).as("the only ids in a public scorecard are the match's own and the players on the card (no team, user or creator id)")
+            .containsExactlyInAnyOrderElementsOf(java.util.stream.Stream.concat(java.util.stream.Stream.of(fx.id().toString()), playerIds.stream()).toList());
         assertThat(json).doesNotContain("@", "email", "phone", "booking", "claim", "scorer", "userId", "createdBy", "version", "editableUntil", "canUndo", "recentEvents", "eligible");
         assertThat(json).doesNotContain("Olive", "Sam Scorer");
     }
