@@ -1,7 +1,8 @@
-# Offline queue (cricket scoring, gate 2f-2)
+# Offline scoring on the phone (cricket, gates 2f-2 to 2f-4)
 
-The part of offline scoring that decides what is saved on the phone, in what order, and what happens to it when the server answers. No screen yet (that is 2f-4)
-and no network code (the sender is 2f-4): everything here is pure functions over plain data plus a small storage interface, so all of it is tested without a browser.
+What is saved on the phone, in what order, what happens to it when the server answers, the view the pad reads when there is no server, and the hook the screen
+uses. The decisions are pure functions over plain data plus a small storage interface, so almost all of it is tested without a browser; the screen itself is
+checked by the emulated browser run (`e2e/cricket-offline.mjs`) and the real-phone script 7c (docs/SETUP-AND-DEMO.md).
 Design: [docs/plans/cricket-2f-offline-scoring.md](../../../../../docs/plans/cricket-2f-offline-scoring.md), sections 2 to 7.
 
 ```text
@@ -11,6 +12,14 @@ queue.ts        the machine: tap, sendStarted, confirm, sendFailed, syncWithServ
 load.ts         loadQueue (rebuild from storage; nothing is dropped), newQueueState, saveEngineState
 selfCheck.ts    engine version and fingerprint check that switches offline scoring on or off
 exportText.ts   "Copy unsent balls": readable text and JSON of everything the phone holds
+sender.ts       drain(): sends one item at a time, in order, and turns every server answer into one queue step
+sendErrors.ts   what each HTTP answer means (and Retry-After, backoff)
+httpSendApi.ts  the real network side (the only file that knows about HTTP)
+engineStateApi.ts  reads the engine-state route's answer strictly
+localView.ts    the scorer's view built from the phone's own log (a port of ScoringViewBuilder), proved equal to the Java view on the golden match
+useOfflineScorer.ts  the hook: opens the store, rebuilds the queue, keeps the sender running (taps, online, visible, backoff), hands the screen the view and actions
+UnsentSheets.tsx  the conflict, rejected, set-aside and copy/download sheets
+phoneScript7c.ts  the balls of the real-phone script, checked against the doc
 storage.ts      the QueueStorage interface, StorageError, and the in-memory adapter (tests)
 idbStorage.ts   the IndexedDB adapter (works over plain http; no service worker, no secure-context API)
 storageContract.ts  what every adapter must do; run against memory in Vitest and against real IndexedDB in Chrome by e2e/idb-contract.mjs

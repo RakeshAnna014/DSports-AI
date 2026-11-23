@@ -78,6 +78,13 @@ Phase 2 of the cricket plan: players (guests allowed), teams, match setup, scori
 * **`tappedAt`** (V57, nullable column, optional request field) is display only: not in the request fingerprint, never read by a rule, the 24-hour window or the ordering (the seq and the server's `created_at` decide those), clamped to the server's receipt time in code and by a CHECK in the database. The migration is a plain `ADD COLUMN`: tests prove an insert with and without it, that UPDATE, DELETE and TRUNCATE are still refused, and that a database that already holds V56 events upgrades with them untouched.
 * **Alternatives:** a separate fingerprint route (rejected: it would race the log); the fingerprint over the codec's JSON (rejected: the application layer would depend on infrastructure, and a reflective writer cannot drift from the records); a batch route (not needed: one-by-one is idempotent and tested with 60 and with two tabs at once).
 
+## Step 2f-4: the phone's side of offline scoring
+
+* **The sender** takes the first waiting item, sends it on the existing routes with its own client event id and `expectedSeq`, and turns every answer into one queue step: a conflict is read from the engine-state route and decided by the scorer (never merged), a closed window sets the rest aside as locked (an administrator's unlock is an event that changes no score and needs no decision), a refused ball switches offline scoring off and keeps everything, a lost answer is a harmless replay.
+* **The view** the pad reads is built on the phone from its own log (`localView.ts`, a port of `ScoringViewBuilder`) and proved equal to the Java view at every step of the golden match.
+* **The screen** is the previous screen when the phone cannot score offline, and otherwise says each state in words (offline, n unsent, sending, retrying, needs sign-in, somebody else scored, refused, locked, set aside, offline scoring off, read-only, 150 and 600). No service worker (D10): the hint is "Keep this page open while scoring offline."
+* **Alternatives:** a worker for the engine (not needed: the engine takes microseconds per ball); batching (rejected in 2f, still not needed: 60 items and two tabs at once are tested); a PWA (needs HTTPS; later).
+
 ## Differences from the plan
 
 | Plan | Code |

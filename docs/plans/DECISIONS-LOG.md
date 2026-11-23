@@ -23,3 +23,11 @@ Alternative: a different TS-friendly shape plus a projection function. Rejected:
 * **Another account's balls** are shown as set aside in memory only (storage untouched), so they return to WAITING when their owner signs in again (D15).
 * **The engine-state record is per match, not per user.** It holds the server's log of a match this phone was authorised to open; on a shared phone a second user's page load reads it only after the server has authorised them for that match. Alternative: key by user. Rejected: it would hide the first user's queue from the Review screen, which D15 wants shown as set aside.
 * **The IndexedDB contract runs by hand / in e2e, not in the GitHub workflow**, because the workflow has no browser step. Alternative: add `playwright install chrome` to CI. Not done: it adds minutes and a dependency install to every push; revisit when 2f-4's browser e2e is added.
+
+## 2026-11-23 · 2f-4: screen design choices
+* **One route, two screens.** The previous scorer screen is kept whole as `LegacyScorerPage` and a gate chooses: offline screen when the phone can score offline, otherwise the previous screen. Alternative: edit the one screen to work both ways. Rejected: the previous screen has 90 tests of behaviour that must not change, and a browser without IndexedDB must behave exactly as before.
+* **The tab lease is taken once, by the gate,** and passed down (two instances of the lease hook in one tab would contend).
+* **An administrator's unlock never asks the scorer to decide.** It is an event with a seq but cannot change the score. Alternative (plan section 4 case A): treat it as a conflict. Changed because the real-stack run showed the scorer being asked about something they could do nothing with.
+* **"Theirs" in the conflict sheet is whatever is not in this phone's own queue,** not "another account": the same account on another device is still somebody else's ball as far as this phone is concerned.
+* **Names and the correction window are saved beside the engine state** (display only) so a page reloaded with no signal still shows names; they are merged, never replaced.
+* **Browser scripts are not in CI** (no browser step in the workflow). Alternative: add a Chrome install step to the `frontend` job. Not done: minutes and a dependency install on every push, for tests that need the whole stack anyway.
