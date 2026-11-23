@@ -1,1 +1,198 @@
-[]
+[
+  {
+    "id": "lbw",
+    "title": "LBW (leg before wicket)",
+    "terms": ["lbw", "leg before wicket", "leg before"],
+    "answer": "A batter can be out LBW when the ball hits their body (usually the pad) without touching the bat first, and the umpire judges it would have gone on to hit the stumps. The ball must not have pitched outside leg stump. The impact must be in line between the two sets of stumps, unless the batter did not play a shot, in which case an impact outside the off stump can still be out.",
+    "source": "MCC Laws of Cricket, Law 36 (summary)"
+  },
+  {
+    "id": "no_ball",
+    "title": "No-ball",
+    "terms": ["no ball", "no balls", "noball", "no-ball"],
+    "answer": "A no-ball is an illegal delivery. The batting side gets a run (some competitions award more) and the ball is bowled again. Common reasons are the bowler's front foot landing beyond the popping crease and a full toss that passes above waist height. Off a no-ball the batter can only be out in a few ways, such as being run out. In many limited-overs matches the next ball is a free hit.",
+    "source": "MCC Laws of Cricket, Law 21 (summary)"
+  },
+  {
+    "id": "free_hit",
+    "title": "Free hit",
+    "terms": ["free hit", "free hits"],
+    "answer": "In limited-overs cricket the delivery after a no-ball for overstepping (in some competitions, after any no-ball) is a free hit. The batter cannot be bowled, caught, stumped or out LBW off it, but can still be run out. Whether free hits are used, and for which no-balls, is set by the competition.",
+    "source": "ICC white-ball playing conditions (summary)"
+  },
+  {
+    "id": "wide",
+    "title": "Wide",
+    "terms": ["wide", "wides", "wide ball"],
+    "answer": "A wide is a delivery too wide of the batter for them to hit with a normal cricket shot. It adds a run to the batting side's total and is bowled again. Off a wide the batter can be stumped or run out, but not bowled or out LBW.",
+    "source": "MCC Laws of Cricket, Law 22 (summary)"
+  },
+  {
+    "id": "byes",
+    "title": "Byes and leg byes",
+    "terms": ["bye", "byes", "leg bye", "leg byes"],
+    "answer": "A bye is a run taken when the ball passes the batter without touching the bat or the batter's body. A leg bye is a run taken after the ball touches the batter's body (not the bat, or the hand holding it); it only counts if the batter was playing a shot or trying to avoid the ball. Both are extras: they go in the team total, not to the batter, and are not charged to the bowler.",
+    "source": "MCC Laws of Cricket, Laws 25 and 26 (summary)"
+  },
+  {
+    "id": "extras",
+    "title": "Extras",
+    "terms": ["extras", "extra runs", "sundries"],
+    "answer": "Extras are runs that are not scored off the bat: wides, no-balls, byes and leg byes (and penalty runs). They are added to the team total and not to any batter. Wides and no-balls are charged to the bowler; byes and leg byes are not.",
+    "source": "MCC Laws of Cricket, Law 25 (summary)"
+  },
+  {
+    "id": "over",
+    "title": "Over",
+    "terms": ["over", "overs", "what is an over"],
+    "answer": "An over is six legal deliveries bowled by one bowler from one end. Wides and no-balls do not count as legal deliveries, so they are bowled again and the over takes more than six balls. The next over is bowled by a different bowler from the other end.",
+    "source": "MCC Laws of Cricket, Law 17 (summary)"
+  },
+  {
+    "id": "maiden",
+    "title": "Maiden over",
+    "terms": ["maiden", "maiden over", "maidens"],
+    "answer": "A maiden over is an over in which the bowler concedes no runs. Wides and no-balls count against the bowler, but byes and leg byes do not.",
+    "source": "Standard scoring convention (summary)"
+  },
+  {
+    "id": "format_overs",
+    "title": "How many overs in a match",
+    "terms": ["how many overs", "overs in an odi", "overs in a t20", "overs in t20", "overs in odi", "overs in a test"],
+    "answer": "A T20 innings is up to 20 overs per side, and a bowler can bowl at most 4 of them. A one-day international (ODI) is up to 50 overs per side, with at most 10 per bowler. A Test match has no over limit per innings and is played over up to five days. Local leagues often use shorter limits.",
+    "source": "ICC playing conditions (summary)"
+  },
+  {
+    "id": "powerplay",
+    "title": "Powerplay",
+    "terms": ["powerplay", "power play", "powerplays", "fielding restrictions"],
+    "answer": "The powerplay is the early part of a limited-overs innings where fewer fielders are allowed outside the 30-yard circle. In an ICC T20 match it is the first 6 overs, with at most two fielders outside the circle. ODIs have mandatory powerplay phases with different limits. Leagues set their own powerplay overs.",
+    "source": "ICC white-ball playing conditions (summary)"
+  },
+  {
+    "id": "net_run_rate",
+    "title": "Net run rate (NRR)",
+    "terms": ["net run rate", "nrr"],
+    "answer": "Net run rate is a tie-breaker in league tables. It is the runs a team scored per over over all its matches, minus the runs per over it conceded. A higher number is better. If a team is bowled out, its overs faced are counted as the full quota of overs, not the overs it actually batted.",
+    "source": "ICC tournament playing conditions (summary)"
+  },
+  {
+    "id": "run_rate",
+    "title": "Run rate and required run rate",
+    "terms": ["run rate", "required run rate", "rrr", "current run rate", "crr"],
+    "answer": "Run rate is the runs scored per over so far. The required run rate is the runs still needed to win divided by the overs left. If the run rate stays above the required rate, the batting side is on track.",
+    "source": "Standard scoring convention (summary)"
+  },
+  {
+    "id": "strike_rate",
+    "title": "Strike rate",
+    "terms": ["strike rate"],
+    "answer": "A batter's strike rate is runs scored per 100 balls faced. A bowler's strike rate is the average number of balls bowled for each wicket taken. For batters higher is better; for bowlers lower is better.",
+    "source": "Standard statistics convention (summary)"
+  },
+  {
+    "id": "economy",
+    "title": "Economy rate",
+    "terms": ["economy rate", "economy"],
+    "answer": "A bowler's economy rate is the runs they concede per over. Lower is better. Byes and leg byes are not counted against the bowler.",
+    "source": "Standard statistics convention (summary)"
+  },
+  {
+    "id": "average",
+    "title": "Batting and bowling average",
+    "terms": ["batting average", "bowling average", "batting avg"],
+    "answer": "A batting average is the runs a batter has scored divided by the number of times they were dismissed (innings where they stayed not out do not count as dismissals). A bowling average is the runs conceded divided by wickets taken.",
+    "source": "Standard statistics convention (summary)"
+  },
+  {
+    "id": "dls",
+    "title": "DLS method (Duckworth-Lewis-Stern)",
+    "terms": ["dls", "duckworth", "duckworth lewis", "d/l method"],
+    "answer": "The Duckworth-Lewis-Stern method sets a fair target when rain or another interruption shortens a limited-overs match. It looks at how many overs are left and how many wickets a team has in hand, and works out a revised target for the side batting second.",
+    "source": "ICC playing conditions (summary)"
+  },
+  {
+    "id": "super_over",
+    "title": "Super over",
+    "terms": ["super over", "super overs"],
+    "answer": "A super over is a tie-breaker in limited-overs cricket. Each side faces one over (six balls) and can lose at most two wickets; the higher total wins. What happens if the super over is also tied depends on the competition.",
+    "source": "ICC white-ball playing conditions (summary)"
+  },
+  {
+    "id": "ways_out",
+    "title": "Ways to be out",
+    "terms": ["wicket", "wickets", "ways to get out", "ways to be out", "dismissal", "dismissals", "how is a batter out", "how is a batsman out"],
+    "answer": "A wicket falls when a batter is out. The common ways are bowled (the ball hits the stumps), caught (a fielder catches the ball before it bounces), LBW (leg before wicket), run out, stumped, and hit wicket. Rarer ones include hitting the ball twice, obstructing the field and being timed out.",
+    "source": "MCC Laws of Cricket, Laws 30 to 40 (summary)"
+  },
+  {
+    "id": "stumped",
+    "title": "Stumped",
+    "terms": ["stumped", "stumping"],
+    "answer": "A batter is stumped when the wicketkeeper breaks the wicket with the ball in hand while the batter is out of their crease and not trying to run. It can only happen off a delivery that is not a no-ball (a wide is fine).",
+    "source": "MCC Laws of Cricket, Law 39 (summary)"
+  },
+  {
+    "id": "run_out",
+    "title": "Run out",
+    "terms": ["run out", "runout", "run-out"],
+    "answer": "A batter is run out when a fielder breaks the wicket with the ball (or with the hand holding it) while the batter is out of their ground trying to run. A batter can be run out off any delivery, including a no-ball or a wide.",
+    "source": "MCC Laws of Cricket, Law 38 (summary)"
+  },
+  {
+    "id": "caught",
+    "title": "Caught",
+    "terms": ["caught", "catch out"],
+    "answer": "A batter is out caught when a fielder catches the ball cleanly before it touches the ground, after it has hit the bat or the glove of the hand holding the bat. If the ball bounces first, the batter is not out.",
+    "source": "MCC Laws of Cricket, Law 33 (summary)"
+  },
+  {
+    "id": "duck",
+    "title": "Duck",
+    "terms": ["duck", "golden duck", "diamond duck"],
+    "answer": "A duck is a batter being dismissed without scoring. A golden duck is out on the first ball faced; a diamond duck is out without facing a ball at all (for example run out at the non-striker's end).",
+    "source": "Standard cricket terminology (summary)"
+  },
+  {
+    "id": "hat_trick",
+    "title": "Hat-trick",
+    "terms": ["hat trick", "hat-trick", "hattrick"],
+    "answer": "A hat-trick is a bowler taking three wickets with three consecutive deliveries they bowl.",
+    "source": "Standard cricket terminology (summary)"
+  },
+  {
+    "id": "follow_on",
+    "title": "Follow-on",
+    "terms": ["follow on", "follow-on", "followon"],
+    "answer": "In multi-day matches, if the team batting second finishes well behind on first innings, the other captain can ask them to bat again straight away. The required lead is 200 runs in a five-day match, 150 in a three- or four-day match, 100 in a two-day match and 75 in a one-day match.",
+    "source": "MCC Laws of Cricket, Law 14 (summary)"
+  },
+  {
+    "id": "declaration",
+    "title": "Declaration",
+    "terms": ["declaration", "declare", "declared"],
+    "answer": "In multi-day matches a captain can declare, which ends their own innings early so the match has time to reach a result. The innings is over as soon as it is declared, even though wickets remain.",
+    "source": "MCC Laws of Cricket, Law 15 (summary)"
+  },
+  {
+    "id": "yorker",
+    "title": "Yorker, bouncer and googly",
+    "terms": ["yorker", "bouncer", "googly", "bumper"],
+    "answer": "A yorker is a full delivery that lands at or near the batter's feet. A bouncer is a short-pitched delivery that rises to head or shoulder height; competitions limit how many can be bowled in an over. A googly is a leg-spinner's delivery that looks like a normal leg break but turns the other way, towards the leg side for a right-handed batter.",
+    "source": "Standard cricket terminology (summary)"
+  },
+  {
+    "id": "cover_drive",
+    "title": "How to play a cover drive",
+    "terms": ["cover drive", "cover drives"],
+    "answer": "The cover drive is a front-foot shot played through the covers, between point and mid-off, to a ball pitched up outside off stump. Step towards the line of the ball, keep your head over the ball and your front shoulder pointing at the target, lead with a high front elbow, meet the ball with a full face of the bat under your eyes, and let the bat finish high in a full follow-through. Practise it with slow, balanced throw-downs first.",
+    "source": "Standard coaching guidance (summary)"
+  },
+  {
+    "id": "stance",
+    "title": "Batting stance",
+    "terms": ["batting stance", "stance"],
+    "answer": "A balanced batting stance has the feet about shoulder-width apart, side-on to the bowler, with the weight even on both feet and slightly forward. Keep the head still and level so both eyes see the bowler, and the bat resting near the back foot or lifted slightly, with relaxed knees.",
+    "source": "Standard coaching guidance (summary)"
+  }
+]
