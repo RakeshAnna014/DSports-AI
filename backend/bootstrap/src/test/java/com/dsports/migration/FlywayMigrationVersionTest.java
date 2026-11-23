@@ -59,6 +59,20 @@ class FlywayMigrationVersionTest {
         "CREATE\\s+TRIGGER\\s+trg_ball_events_no_truncate\\s+BEFORE\\s+TRUNCATE\\s+ON\\s+ball_events\\s+FOR\\s+EACH\\s+STATEMENT\\s+EXECUTE\\s+FUNCTION\\s+refuse_ball_event_change\\(\\)\\s*;",
         Pattern.CASE_INSENSITIVE);
 
+    /** The same exemption, equally exact, for the guard of the shot table (V59): that exact trigger definition, in that file only. */
+    private static final String SHOT_GUARD_MIGRATION = "V59__cricket_ball_shots.sql";
+    private static final Pattern SHOT_TRUNCATE_GUARD = Pattern.compile(
+        "CREATE\\s+TRIGGER\\s+trg_ball_shots_no_truncate\\s+BEFORE\\s+TRUNCATE\\s+ON\\s+ball_shots\\s+FOR\\s+EACH\\s+STATEMENT\\s+EXECUTE\\s+FUNCTION\\s+refuse_ball_shot_change\\(\\)\\s*;",
+        Pattern.CASE_INSENSITIVE);
+
+    @Test
+    void theShotGuardIsExemptOnlyAsThatExactTriggerInItsOwnFile() {
+        var guard = "CREATE TRIGGER trg_ball_shots_no_truncate\n    BEFORE TRUNCATE ON ball_shots\n    FOR EACH STATEMENT EXECUTE FUNCTION refuse_ball_shot_change();";
+        assertThat(SHOT_TRUNCATE_GUARD.matcher(guard).replaceAll("")).doesNotContainIgnoringCase("TRUNCATE");
+        assertThat(DESTRUCTIVE.matcher(SHOT_TRUNCATE_GUARD.matcher(guard + "\nTRUNCATE ball_shots;").replaceAll("")).find()).isTrue();
+        assertThat(DESTRUCTIVE.matcher(SHOT_TRUNCATE_GUARD.matcher(guard.replace("ON ball_shots", "ON orders")).replaceAll("")).find()).as("any other table is not exempt").isTrue();
+    }
+
     @Test
     void theTruncateGuardIsTheOnlyTruncateAllowedAndOnlyAsThatExactTriggerDefinition() {
         var guard = "CREATE TRIGGER trg_ball_events_no_truncate\n    BEFORE TRUNCATE ON ball_events\n    FOR EACH STATEMENT EXECUTE FUNCTION refuse_ball_event_change();";
@@ -77,6 +91,9 @@ class FlywayMigrationVersionTest {
                 .replaceAll("--[^\\n]*", "");
             if (TRUNCATE_GUARD_MIGRATION.equals(resource.getFilename())) {
                 sql = TRUNCATE_GUARD.matcher(sql).replaceAll("");
+            }
+            if (SHOT_GUARD_MIGRATION.equals(resource.getFilename())) {
+                sql = SHOT_TRUNCATE_GUARD.matcher(sql).replaceAll("");
             }
             if (DESTRUCTIVE.matcher(sql).find()) {
                 offenders.add(resource.getFilename());
