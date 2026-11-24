@@ -49,6 +49,23 @@ uv run python eval/topic/run_topic_eval.py --cases eval/topic/holdout.yaml --liv
 
 Label call, live, on the 24 messages the rules left unsure: 22 of 24 labelled correctly (92%), all 24 returned a usable label, average 151.8 input tokens and 3.0 output tokens, average latency 1,021 ms (maximum 4,546 ms). The one leaked off-topic message was labelled CRICKET, so it is answered with the fixed "not in my glossary" reply and never reaches a model; the one wrongly refused in-scope message got the fixed refusal. The rules were not changed after this run.
 
+### The owner's 25 messages (added to the held-out set after the first runs, `holdout-rules-20261124-054734.json` and `holdout-live-20261124-054805.json`)
+
+Written and labelled by the owner (customer and admin expectation per message); no rule was changed before this run. Whole held-out set is now 109 messages.
+
+| | Customer as expected | Admin as expected | Notes |
+|---|---|---|---|
+| rules only | 20 of 25 (4 unsure) | 20 of 25 | miss: `OW11` "is java a bat brand you sell" refused by the code deny rule (the word java); unsure: `OW14`, `OW17`, `OW19`, `OW20` |
+| rules + live label | 24 of 25 | 24 of 25 | the only miss is `OW11`; the label call fixed `OW14` (CRICKET), `OW17`, `OW19`, `OW20` (OFF_TOPIC) |
+
+Whole 109-message set, live: label call 26 of 28 on the unsure messages (avg 151.8 input / 3.1 output tokens, avg 1,000 ms, max 5,253 ms); 2 of 59 in-scope messages refused (`HC01` "what does retired hurt mean", `OW11`; 3.4%), 1 off-topic message allowed (`HO13`, labelled CRICKET and answered by a fixed reply), 0 business messages leaked to a customer. `OW12` ("what is a free hit") is identical to a dev message (`C09`); it is kept as labelled and named in the guard test.
+
+### Changes made after these runs (not measured on unseen data)
+
+* A message containing a distinctive glossary term is CRICKET by rule (commit `7deb577`). This was written for `HC01`, so a rules-only re-run of the held-out set after it (`holdout-rules-20261124-055647.json`) is not an unbiased measurement for that message: held-out rules-only now decides 76 of 103 plain messages, 1 in-scope refused (`OW11`), 0 leaked, 18 off-topic still unsure. Generic glossary words (over, wide, duck, average, bumper, run out, follow on) still need the word cricket and a rules question.
+* A failed label call now replies "The assistant is temporarily unavailable" with a Try again chip (status `ai_unavailable`); an invalid label keeps "please rephrase".
+* The glossary gained "retired hurt / retired out" and lost its law numbers (they were written from memory and are unreliable).
+
 What this does and does not show: the free rules made no wrong decision on either set, but they generalise less well than they fit (92% decided on dev, 69% on held-out). The undecided messages go to the label call; its accuracy on them has **not** been measured live. Worst case (every unsure message labelled wrongly), the held-out run would refuse 6 of 44 in-scope messages and let 15 of 24 off-topic ones reach the normal pipeline (where Tier 1 and the existing grounding checks still apply). The live run above replaced that worst case with a measured number. The rules were not changed after either run.
 
 Attacks (8 dev, 3 held-out) were all stopped before any model call, by the security guard or the topic rules.
