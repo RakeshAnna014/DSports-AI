@@ -50,9 +50,13 @@ _OWN = re.compile(r"\b(my|our|mera|meri|mere)\b[^.?!]{0,25}\b(cases?|complaints?
                   r"stats|cart|account|delivery|shipment|package|tournaments?|league|innings|score|scorecard)\b", re.I)
 _CODE_SAFE = re.compile(r"\b(promo|coupon|voucher|referral|discount|gift|offer|pin|zip|postal|qr|dress|area|country|tracking|order|otp) ?(code|codes)\b|\bcode of conduct\b", re.I)
 
+# "Java" is also a bat brand: it is code only when no gear or brand word sits next to it ("is java a bat brand you sell"); "what is java" stays refused.
+_JAVA_GEAR = _re(r"\bjava\b[^.?!]{0,25}\b(bats?|brands?|gear|kit|shoes|jerseys?|balls?|pads?|gloves?|helmets?|equipment|products?|sell|sells|stocks?|catalogue)\b", r"\b(bats?|brands?|gear|kit|shoes|jerseys?|balls?|pads?|gloves?|helmets?|equipment|products?|sell|sells|stocks?|catalogue)\b[^.?!]{0,25}\bjava\b")
+
 # (name, pattern, own-data exemption applies, safe-word exemption)
 _DENY: list[tuple[str, re.Pattern[str], bool, re.Pattern[str] | None]] = [
-    ("code", _re(r"\b(css|html|javascript|typescript|python|java|sql|flexbox|regex|kotlin|golang|php|jquery|nodejs|node\.js|django|kubernetes|pandas|numpy|reactjs|angular)\b",
+    ("code_java", _re(r"\bjava\b"), False, _JAVA_GEAR),
+    ("code", _re(r"\b(css|html|javascript|typescript|python|sql|flexbox|regex|kotlin|golang|php|jquery|nodejs|node\.js|django|kubernetes|pandas|numpy|reactjs|angular)\b",
                  r"(?<!\w)c\+\+|(?<!\w)c#", r"\breact (component|hook|hooks|app|js)\b", r"\b(stack ?trace|segfault|compile error|null pointer|syntax error|unit tests?)\b"), False, None),
     ("code_action", _re(r"\b(write|create|generate|fix|debug|explain|make|build|implement|refactor)\b[^.?!]{0,30}\b(code|program|script|function|class|query|algorithm|website|web page|component|bug)\b"),
      False, _CODE_SAFE),

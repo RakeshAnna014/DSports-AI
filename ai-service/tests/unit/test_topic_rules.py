@@ -162,3 +162,15 @@ def test_generic_words_that_are_also_glossary_terms_do_not_make_a_message_cricke
 def test_gear_that_contains_a_glossary_term_stays_shopping():
     assert decide("lbw guard shin pad for batting").topic is Topic.SHOP
     assert decide("a bouncer proof helmet").topic is Topic.SHOP
+
+
+# ---------------------------------------------------------------- "java" is a bat brand and a language
+
+@pytest.mark.parametrize("message", ["is java a bat brand you sell", "do you sell java gloves", "java bat price"])
+def test_java_next_to_a_gear_or_brand_word_is_shopping(message):
+    assert decide(message, has_context=False).topic is Topic.SHOP
+
+
+@pytest.mark.parametrize("message", ["what is java", "explain java streams", "write java code for a bat brand", "java and python difference"])
+def test_java_as_a_language_stays_off_topic(message):
+    assert decide(message, has_context=False).topic is Topic.OFF_TOPIC
