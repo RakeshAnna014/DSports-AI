@@ -24,6 +24,7 @@ from app.agent.runtime import Runtime
 from app.guard.grounding import check_grounding, collect_facts
 from app.guard import topic_templates as topic_tpl
 from app.guard.input import check_input
+from app.guard import topic_metrics
 from app.guard.topic import Topic, audience_of
 from app.llm.base import LLMError
 from app.obs import metrics
@@ -85,7 +86,9 @@ async def topic_gate(state: AgentState, config) -> AgentState:
     if gate is None or rt.forced_route is not None:     # disabled by configuration, or a step the service itself offered and resolved
         rt.topic_state = "bypassed"
         return {"done": False}
-    decision = await gate.check(state["message"], audience=audience_of(rt.principal), has_context=_has_context(rt.conv), customer_hash=rt.customer_hash)
+    audience = audience_of(rt.principal)
+    decision = await gate.check(state["message"], audience=audience, has_context=_has_context(rt.conv), customer_hash=rt.customer_hash)
+    topic_metrics.record(decision, audience)
     if decision.label is not None and decision.label.called_model:
         rt.note_route_usage(decision.label.tokens_in, decision.label.tokens_out, decision.label.model or rt.settings.intent_model, 1)
         rt.highest_tier = max(rt.highest_tier, 1)
@@ -123,6 +126,8 @@ async def route_node(state: AgentState, config) -> AgentState:
         try:
             route = await rt.services.tier1.classify(message, rt.conv, rt.customer_hash)
             rt.note_route_usage(route.tokens_in, route.tokens_out, rt.settings.intent_model, 0 if route.source == "cache" else 1)
+            if route.source == "model":
+                topic_metrics.CLASSIFIER_USAGE.observe(route.tokens_in, route.tokens_out)
             if route.source != "cache":
                 rt.highest_tier = max(rt.highest_tier, 1)
         except LLMError as exc:
