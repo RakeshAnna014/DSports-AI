@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Turns a stored {@link MatchScore} into the {@link PublicScorecard}. It reuses the scorer's innings view (so the two never disagree about a dismissal or a bowling
@@ -20,11 +22,12 @@ final class PublicScorecardBuilder {
     private PublicScorecardBuilder() {
     }
 
-    static PublicScorecard build(Match match, int seq, MatchScore score, ScoringViewBuilder.Names names) {
+    /** {@code linkable}: whether a player id may appear (the player has a public page). Everyone else shows a name only, with no id to follow. */
+    static PublicScorecard build(Match match, int seq, MatchScore score, ScoringViewBuilder.Names names, Predicate<UUID> linkable) {
         var innings = new ArrayList<PublicScorecard.Innings>();
         for (int i = 0; i < score.innings().size(); i++) {
             var state = score.innings().get(i);
-            innings.add(innings(ScoringViewBuilder.inningsView(i + 1, state, List.of(), names), state));
+            innings.add(innings(ScoringViewBuilder.inningsView(i + 1, state, List.of(), names), state, linkable));
         }
         var status = score.status();
         var result = ScoringViewBuilder.result(score, names);
@@ -34,13 +37,13 @@ final class PublicScorecardBuilder {
             result == null ? null : new PublicScorecard.Result(result.type(), result.winner() == null ? null : result.winner().name(), result.text()));
     }
 
-    private static PublicScorecard.Innings innings(ScoringView.Innings v, InningsState state) {
+    private static PublicScorecard.Innings innings(ScoringView.Innings v, InningsState state, Predicate<UUID> linkable) {
         int bpo = state.rules().ballsPerOver();
         boolean playing = !state.isComplete();
         var requiredRate = state.target() != null && playing ? rate(Math.max(0, state.target() - state.runs()), state.ballsRemaining(), bpo) : null;
-        var batters = v.batters().stream().map(b -> new PublicScorecard.Batter(b.player().id(), b.player().name(), b.runs(), b.balls(), b.fours(), b.sixes(), b.howOut(), b.notOut(), b.atCrease() && playing,
+        var batters = v.batters().stream().map(b -> new PublicScorecard.Batter(linkable.test(b.player().id()) ? b.player().id() : null, b.player().name(), b.runs(), b.balls(), b.fours(), b.sixes(), b.howOut(), b.notOut(), b.atCrease() && playing,
             v.striker() != null && playing && b.player().id().equals(v.striker().id()))).toList();
-        var bowlers = v.bowlers().stream().map(b -> new PublicScorecard.Bowler(b.player().id(), b.player().name(), b.overs(), b.maidens(), b.runs(), b.wickets(), b.wides(), b.noBalls(), b.economy(),
+        var bowlers = v.bowlers().stream().map(b -> new PublicScorecard.Bowler(linkable.test(b.player().id()) ? b.player().id() : null, b.player().name(), b.overs(), b.maidens(), b.runs(), b.wickets(), b.wides(), b.noBalls(), b.economy(),
             v.bowler() != null && playing && b.player().id().equals(v.bowler().id()))).toList();
         var falls = v.fallOfWickets().stream().map(f -> new PublicScorecard.Fall(f.number(), f.runs(), f.batter().name(), f.overs(), f.howOut())).toList();
         var extras = v.extras();

@@ -17,6 +17,7 @@ import com.dsports.cricket.domain.scoring.ScoreCommand;
 import com.dsports.cricket.domain.scoring.ScoringLog;
 import com.dsports.cricket.application.port.ScoringStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dsports.cricket.application.result.PublicScorecard;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -132,15 +133,48 @@ class PublicMatchesUseCaseTest {
         assertThat(card.live()).isFalse();
     }
 
+    /** Gives every fixture player an account (and a public page), except {@code hidden}, who has chosen to hide it. A fixture player is a guest until this is called. */
+    private void linkEveryPlayerToAnAccount(UUID hidden) {
+        for (var p : List.copyOf(fx.players.store.values())) {
+            fx.players.store.put(p.getId(), Player.reconstitute(p.getId(), p.getDetails(), UUID.randomUUID(), !p.getId().equals(hidden), p.getCreatedBy(), p.getVersion(), p.getCreatedAt(), p.getUpdatedAt()));
+        }
+    }
+
+    private static List<UUID> linkedIds(PublicScorecard card) {
+        return card.innings().stream().flatMap(i -> java.util.stream.Stream.concat(i.batters().stream().map(PublicScorecard.Batter::playerId), i.bowlers().stream().map(PublicScorecard.Bowler::playerId)))
+            .filter(java.util.Objects::nonNull).distinct().toList();
+    }
+
+    @Test
+    void aGuestPlayerHasNoLinkOnTheScorecardButStillHasAName() {
+        fx.scoreAll(GoldenMatch.wholeMatch());
+        var card = publicMatches.scorecard(fx.id()).block();
+        assertThat(linkedIds(card)).as("every fixture player is a guest, so no id leaves").isEmpty();
+        assertThat(card.innings().get(0).batters()).isNotEmpty().allSatisfy(b -> assertThat(b.name()).isNotBlank());
+    }
+
+    @Test
+    void aLinkedPlayerWhoHidTheirPageHasNoLinkOthersKeepTheirs() {
+        fx.scoreAll(GoldenMatch.wholeMatch());
+        var firstBatter = publicMatches.scorecard(fx.id()).block().innings().get(0).batters().get(0).name();
+        var hidden = fx.players.store.values().stream().filter(p -> p.getName().equals(firstBatter)).findFirst().orElseThrow().getId();
+        linkEveryPlayerToAnAccount(hidden);
+        var card = publicMatches.scorecard(fx.id()).block();
+        assertThat(linkedIds(card)).isNotEmpty().doesNotContain(hidden);
+        assertThat(card.innings().get(0).batters().get(0).name()).isEqualTo(firstBatter);
+        assertThat(card.innings().get(0).batters().get(0).playerId()).isNull();
+    }
+
     @Test
     void nothingButNamesAndNumbersLeaves() throws Exception {
         fx.scoreAll(GoldenMatch.wholeMatch());
+        linkEveryPlayerToAnAccount(null);
         var card = publicMatches.scorecard(fx.id()).block();
         var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(card);
 
         var playerIds = card.innings().stream().flatMap(i -> java.util.stream.Stream.concat(i.batters().stream().map(x -> x.playerId()), i.bowlers().stream().map(x -> x.playerId()))).distinct()
             .map(UUID::toString).toList();
-        assertThat(playerIds).as("a batter or bowler carries a player id, to link to that player's career").isNotEmpty();
+        assertThat(playerIds).as("a linked batter or bowler carries a player id, to link to that player's career").isNotEmpty();
         var uuids = UUID_TEXT.matcher(json).results().map(r -> r.group()).distinct().toList();
         assertThat(uuids).as("the only ids in a public scorecard are the match's own and the players on the card (no team, user or creator id)")
             .containsExactlyInAnyOrderElementsOf(java.util.stream.Stream.concat(java.util.stream.Stream.of(fx.id().toString()), playerIds.stream()).toList());

@@ -68,7 +68,8 @@ public class PublicMatchesUseCase {
     }
 
     public Mono<PublicScorecard> scorecard(UUID matchId) {
-        return started(matchId).flatMap(s -> NameLookup.forMatch(s.match(), teams, players, id -> "A scorer").map(names -> PublicScorecardBuilder.build(s.match(), s.seq(), s.score(), names)));
+        return started(matchId).flatMap(s -> Mono.zip(NameLookup.forMatch(s.match(), teams, players, id -> "A scorer"), NameLookup.publicPlayers(s.match(), players))
+            .map(t -> PublicScorecardBuilder.build(s.match(), s.seq(), s.score(), t.getT1(), t.getT2()::contains)));
     }
 
     /** The charts and commentary of a started match, worked out from its log. A match that has not started is "not found", exactly as for the scorecard. */

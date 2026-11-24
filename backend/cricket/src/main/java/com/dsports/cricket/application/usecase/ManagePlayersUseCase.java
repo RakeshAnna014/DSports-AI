@@ -50,6 +50,16 @@ public class ManagePlayersUseCase {
         return usable(actor, playerId).map(p -> PlayerResult.from(p, actor.id()));
     }
 
+    /** The caller shows or hides the public statistics page of their own linked player. A guest (and an account with no profile) has nothing to change: 404. */
+    public Mono<PlayerResult> setPublicProfile(Actor actor, boolean visible) {
+        return players.findByCustomer(actor.id())
+            .switchIfEmpty(Mono.error(new CricketDomainException(CricketErrorCode.PLAYER_NOT_FOUND, "You have no player profile yet")))
+            .flatMap(player -> {
+                player.setPublicProfile(visible, clock.instant());
+                return players.save(player);
+            }).map(p -> PlayerResult.from(p, actor.id()));
+    }
+
     /** Edits are version-checked: a stale edit is a conflict, not a silent overwrite. */
     public Mono<PlayerResult> update(Actor actor, UUID playerId, Player.Details details, int expectedVersion) {
         return usable(actor, playerId).flatMap(player -> {

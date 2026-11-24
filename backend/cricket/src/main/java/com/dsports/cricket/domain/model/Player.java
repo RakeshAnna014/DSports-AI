@@ -25,15 +25,17 @@ public final class Player {
     private final UUID id;
     private Details details;
     private UUID customerId;
+    private boolean publicProfile;
     private final UUID createdBy;
     private int version;
     private final Instant createdAt;
     private Instant updatedAt;
 
-    private Player(UUID id, Details details, UUID customerId, UUID createdBy, int version, Instant createdAt, Instant updatedAt) {
+    private Player(UUID id, Details details, UUID customerId, boolean publicProfile, UUID createdBy, int version, Instant createdAt, Instant updatedAt) {
         this.id = Objects.requireNonNull(id);
         this.details = details;
         this.customerId = customerId;
+        this.publicProfile = publicProfile;
         this.createdBy = Objects.requireNonNull(createdBy);
         this.version = version;
         this.createdAt = createdAt;
@@ -42,16 +44,20 @@ public final class Player {
 
     /** A guest: no account, created by {@code createdBy}. */
     public static Player guest(UUID createdBy, Details details, Instant now) {
-        return new Player(UUID.randomUUID(), normalise(details), null, createdBy, 0, now, now);
+        return new Player(UUID.randomUUID(), normalise(details), null, true, createdBy, 0, now, now);
     }
 
     /** A registered customer's own profile: linked to them from the start. */
     public static Player forCustomer(UUID customerId, Details details, Instant now) {
-        return new Player(UUID.randomUUID(), normalise(details), customerId, customerId, 0, now, now);
+        return new Player(UUID.randomUUID(), normalise(details), customerId, true, customerId, 0, now, now);
     }
 
     public static Player reconstitute(UUID id, Details details, UUID customerId, UUID createdBy, int version, Instant createdAt, Instant updatedAt) {
-        return new Player(id, details, customerId, createdBy, version, createdAt, updatedAt);
+        return reconstitute(id, details, customerId, true, createdBy, version, createdAt, updatedAt);
+    }
+
+    public static Player reconstitute(UUID id, Details details, UUID customerId, boolean publicProfile, UUID createdBy, int version, Instant createdAt, Instant updatedAt) {
+        return new Player(id, details, customerId, publicProfile, createdBy, version, createdAt, updatedAt);
     }
 
     public void update(Details newDetails, Instant now) {
@@ -71,6 +77,22 @@ public final class Player {
     public boolean isLinked() {
         return customerId != null;
     }
+
+    /** Whether the player has a public statistics page and a link from public scorecards: only a player linked to an account who has not hidden it. A guest never has one. */
+    public boolean isPublic() {
+        return customerId != null && publicProfile;
+    }
+
+    /** The player's own choice to show or hide the public page. A guest has no account to decide, so the flag cannot be changed before a claim is approved. */
+    public void setPublicProfile(boolean visible, Instant now) {
+        if (customerId == null) {
+            throw new CricketDomainException(CricketErrorCode.VALIDATION_ERROR, "Only a player linked to an account has a public profile to show or hide");
+        }
+        this.publicProfile = visible;
+        this.updatedAt = now;
+    }
+
+    public boolean isPublicProfile() { return publicProfile; }
 
     /** Whether {@code user} may put this player in a team or a match: the person who created it, or the customer it is linked to. */
     public boolean usableBy(UUID user) {

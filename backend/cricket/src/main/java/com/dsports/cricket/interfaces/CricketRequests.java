@@ -24,6 +24,9 @@ public final class CricketRequests {
     private CricketRequests() {
     }
 
+    public record PublicProfileRequest(@jakarta.validation.constraints.NotNull Boolean visible) {
+    }
+
     public record PlayerRequest(
         @NotBlank @Size(max = 80) String name,
         @Size(max = 20) String phone,

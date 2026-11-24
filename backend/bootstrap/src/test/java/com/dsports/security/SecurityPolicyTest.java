@@ -151,7 +151,7 @@ class SecurityPolicyTest {
 
     @ParameterizedTest(name = "{0} {1} without a token -> 401")
     @CsvSource({"POST,/api/v1/matches/x/scorecard", "PUT,/api/v1/matches/x/scorecard", "DELETE,/api/v1/matches/x/scorecard", "POST,/api/v1/matches/x/analytics", "PUT,/api/v1/matches/x/analytics", "DELETE,/api/v1/matches/x/analytics", "POST,/api/v1/public/matches/live", "PUT,/api/v1/public/matches/live",
-            "DELETE,/api/v1/public/matches/live", "POST,/api/v1/matches", "HEAD,/api/v1/matches/x/scorecard", "POST,/api/v1/players/x/stats", "PUT,/api/v1/players/x/stats", "DELETE,/api/v1/players/x/stats"})
+            "DELETE,/api/v1/public/matches/live", "POST,/api/v1/matches", "HEAD,/api/v1/matches/x/scorecard", "POST,/api/v1/players/x/stats", "PUT,/api/v1/players/x/stats", "DELETE,/api/v1/players/x/stats", "PUT,/api/v1/players/me/public-profile", "GET,/api/v1/players/me/public-profile"})
     void thePublicCricketRoutesAreReadOnlyOtherMethodsStillNeedASignIn(String method, String path) {
         client.method(org.springframework.http.HttpMethod.valueOf(method)).uri(path).exchange().expectStatus().isUnauthorized();
     }

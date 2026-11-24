@@ -371,8 +371,12 @@ class CricketScoringHttpIntegrationTest {
 
         assertThat(score(s, s.organiser(), 35, commands.get(35)).status()).isEqualTo(200);
         assertThat(statsRowCount(s.matchId())).as("every player of both elevens").isEqualTo(22);
+        assertThat(get(null, "/api/v1/players/" + bowler + "/stats").status()).as("a guest (no account) has no public page however many matches they played").isEqualTo(404);
+        assertThat(get(null, "/api/v1/matches/" + s.matchId() + "/scorecard").body().toString()).as("and no link from the public scorecard").doesNotContain(bowler);
+        db.sql("UPDATE players SET customer_id = :c WHERE id = :p").bind("c", s.stranger().id()).bind("p", UUID.fromString(bowler)).fetch().rowsUpdated().block();
         var career = get(null, "/api/v1/players/" + bowler + "/stats");
-        assertThat(career.status()).as("a player's career needs no sign-in").isEqualTo(200);
+        assertThat(career.status()).as("a player linked to an account has a public page, on by default, and it needs no sign-in").isEqualTo(200);
+        assertThat(get(null, "/api/v1/matches/" + s.matchId() + "/scorecard").body().toString()).as("the scorecard links to it").contains(bowler);
         assertThat(career.body().get("name")).isEqualTo("Tigers player 1");
         assertThat(career.body().toString()).as("names and numbers only").doesNotContain(bowler, "phone", "customer");
         @SuppressWarnings("unchecked")
@@ -380,6 +384,17 @@ class CricketScoringHttpIntegrationTest {
         assertThat(line.get("matches")).isEqualTo(1);
         assertThat(((Map<?, ?>) line.get("bowling")).get("wickets")).isEqualTo(1);
         assertThat(((Map<?, ?>) line.get("bowling")).get("overs")).isEqualTo("1.0");
+
+        assertThat(call(HttpMethod.PUT, s.scorer(), "/api/v1/players/me/public-profile", Map.of("visible", false)).status()).as("an account with no player profile has nothing to hide").isEqualTo(404);
+        assertThat(call(HttpMethod.PUT, null, "/api/v1/players/me/public-profile", Map.of("visible", false)).status()).isEqualTo(401);
+        assertThat(call(HttpMethod.PUT, s.stranger(), "/api/v1/players/me/public-profile", Map.of()).status()).as("the flag is required").isEqualTo(400);
+        var hidden = call(HttpMethod.PUT, s.stranger(), "/api/v1/players/me/public-profile", Map.of("visible", false));
+        assertThat(hidden.status()).isEqualTo(200);
+        assertThat(hidden.body().get("publicProfile")).isEqualTo(false);
+        assertThat(get(null, "/api/v1/players/" + bowler + "/stats").status()).as("hidden is the same 404 as an unknown player").isEqualTo(404);
+        assertThat(get(null, "/api/v1/matches/" + s.matchId() + "/scorecard").body().toString()).as("hidden removes the scorecard link, the name stays").doesNotContain(bowler).contains("Tigers player 1");
+        assertThat(call(HttpMethod.PUT, s.stranger(), "/api/v1/players/me/public-profile", Map.of("visible", true)).status()).isEqualTo(200);
+        assertThat(get(null, "/api/v1/players/" + bowler + "/stats").status()).as("shown again").isEqualTo(200);
 
         var reopened = undo(s, s.organiser(), 36);
         assertThat(reopened.status()).isEqualTo(200);

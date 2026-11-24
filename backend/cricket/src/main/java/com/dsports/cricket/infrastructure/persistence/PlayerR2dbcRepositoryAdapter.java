@@ -71,7 +71,7 @@ public class PlayerR2dbcRepositoryAdapter implements PlayerRepository {
     static Player toDomain(PlayerEntity e) {
         var details = new Player.Details(e.getName(), e.getPhone(), e.getPlayingRole() == null ? null : PlayingRole.valueOf(e.getPlayingRole()),
             e.getBattingHand() == null ? null : BattingHand.valueOf(e.getBattingHand()), e.getBowlingStyle(), e.getPhotoUrl());
-        return Player.reconstitute(e.getId(), details, e.getCustomerId(), e.getCreatedBy(), e.getVersion(), e.getCreatedAt(), e.getUpdatedAt());
+        return Player.reconstitute(e.getId(), details, e.getCustomerId(), e.isPublicProfile(), e.getCreatedBy(), e.getVersion(), e.getCreatedAt(), e.getUpdatedAt());
     }
 
     static PlayerEntity toEntity(Player p) {
@@ -85,6 +85,7 @@ public class PlayerR2dbcRepositoryAdapter implements PlayerRepository {
         e.setBowlingStyle(d.bowlingStyle());
         e.setPhotoUrl(d.photoUrl());
         e.setCustomerId(p.getCustomerId());
+        e.setPublicProfile(p.isPublicProfile());
         e.setCreatedBy(p.getCreatedBy());
         e.setVersion(p.getVersion());
         e.setCreatedAt(p.getCreatedAt());

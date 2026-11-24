@@ -7,6 +7,7 @@ import com.dsports.cricket.application.result.ClaimResult;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.Player;
+import com.dsports.cricket.domain.model.ClaimStatus;
 import com.dsports.cricket.domain.model.PlayerClaim;
 import com.dsports.shared.application.TransactionRunner;
 import org.slf4j.Logger;
@@ -131,6 +132,7 @@ public class PlayerClaimsUseCase {
 
     private static ClaimResult present(PlayerClaim c, Player player, CustomerDirectoryPort.Person claimant) {
         return new ClaimResult(c.getId(), c.getPlayerId(), player == null ? null : player.getName(), c.getStatus().name(),
-            claimant == null ? null : claimant.name(), claimant == null ? null : claimant.email(), c.getCreatedAt(), c.getDecidedAt());
+            claimant == null ? null : claimant.name(), claimant == null ? null : claimant.email(), c.getCreatedAt(), c.getDecidedAt(),
+            c.getStatus() == ClaimStatus.REJECTED ? null : ClaimResult.APPROVED_NOTICE);
     }
 }

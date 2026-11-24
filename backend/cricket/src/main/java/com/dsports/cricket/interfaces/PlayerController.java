@@ -57,6 +57,13 @@ public class PlayerController {
         return players.createOwn(Principals.actor(authentication), request.toDetails());
     }
 
+    @PutMapping("/me/public-profile")
+    @Operation(summary = "Show or hide my public statistics page", description = "Only for the player linked to your account (on by default). Hidden means the career page answers 404 and public scorecards "
+        + "show your name without a link. Takes effect at once. 404 if you have no player profile.")
+    public Mono<PlayerResult> setPublicProfile(Authentication authentication, @Valid @RequestBody CricketRequests.PublicProfileRequest request) {
+        return players.setPublicProfile(Principals.actor(authentication), request.visible());
+    }
+
     @GetMapping
     @Operation(summary = "My players", description = "The players you created and the one linked to your account, by name.")
     public Flux<PlayerResult> mine(Authentication authentication) {

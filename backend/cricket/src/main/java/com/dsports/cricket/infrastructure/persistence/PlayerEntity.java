@@ -36,6 +36,9 @@ public class PlayerEntity {
     @Column("customer_id")
     private UUID customerId;
 
+    @Column("public_profile")
+    private boolean publicProfile = true;
+
     @Column("created_by")
     private UUID createdBy;
 
@@ -65,6 +68,8 @@ public class PlayerEntity {
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
     public UUID getCustomerId() { return customerId; }
     public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+    public boolean isPublicProfile() { return publicProfile; }
+    public void setPublicProfile(boolean publicProfile) { this.publicProfile = publicProfile; }
     public UUID getCreatedBy() { return createdBy; }
     public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
     public int getVersion() { return version; }

@@ -23,6 +23,14 @@ final class NameLookup {
             .map(t -> id -> id.equals(match.getTeamAId()) ? t.getT1() : t.getT2());
     }
 
+    /** The players of {@code match} that have a public statistics page (linked to an account and not hidden): only these may be linked from a public scorecard. */
+    static Mono<java.util.Set<UUID>> publicPlayers(Match match, PlayerRepository players) {
+        var ids = new HashSet<UUID>();
+        ids.addAll(match.playingXi(match.getTeamAId()));
+        ids.addAll(match.playingXi(match.getTeamBId()));
+        return players.findAllById(ids).filter(Player::isPublic).map(Player::getId).collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
     /** The names for {@code match}; {@code actor} says how the person who made a change is shown (scorer-only views name people, public ones never do). */
     static Mono<ScoringViewBuilder.Names> forMatch(Match match, TeamRepository teams, PlayerRepository players, Function<UUID, String> actor) {
         var playerIds = new HashSet<UUID>();

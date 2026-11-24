@@ -7,6 +7,7 @@ import com.dsports.cricket.application.result.PublicPlayerStats;
 import com.dsports.cricket.domain.exception.CricketDomainException;
 import com.dsports.cricket.domain.exception.CricketErrorCode;
 import com.dsports.cricket.domain.model.BallType;
+import com.dsports.cricket.domain.model.Player;
 import com.dsports.cricket.domain.scoring.CareerStats;
 import com.dsports.cricket.domain.scoring.MatchSetup;
 import com.dsports.cricket.domain.scoring.ScoringLog;
@@ -37,9 +38,9 @@ public class PlayerStatsUseCase {
         this.store = store;
     }
 
-    /** The career of a player who has played a finished match. An unknown player and one with no finished match are the same 404, so nothing can be learned about who exists. */
+    /** The career of a player who has played a finished match. An unknown player, a guest (no account), a player who hid the page and one with no finished match are all the same 404, so nothing can be learned about who exists or who opted out. */
     public Mono<PublicPlayerStats> career(UUID playerId) {
-        return players.findById(playerId).switchIfEmpty(Mono.error(notFound(playerId))).flatMap(player -> store.statsOf(playerId).collectList().flatMap(rows -> {
+        return players.findById(playerId).filter(Player::isPublic).switchIfEmpty(Mono.error(notFound(playerId))).flatMap(player -> store.statsOf(playerId).collectList().flatMap(rows -> {
             var lines = Arrays.stream(BallType.values()).map(type -> CareerStats.total(playerId, type, rows)).flatMap(java.util.Optional::stream)
                 .map(c -> PublicPlayerStats.line(c, BALLS_PER_OVER)).toList();
             return lines.isEmpty() ? Mono.<PublicPlayerStats>error(notFound(playerId)) : Mono.just(new PublicPlayerStats(player.getName(), lines));
