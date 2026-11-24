@@ -22,6 +22,7 @@ Interactive documentation exists only outside production: Java `/swagger-ui.html
 * JSON everywhere. Authenticated calls send `Authorization: Bearer <access token>`; the same token works for both services. Send `X-Correlation-Id` to correlate logs (it is created if absent and returned in the response).
 * Money amounts are decimals with a currency code; timestamps are ISO-8601 UTC.
 * Idempotent writes accept an `Idempotency-Key` header (refund requests, returns, confirmed assistant actions).
+* Assistant replies (`POST /v1/chat`, `POST /v1/confirm`) carry `suggestions`: chips of three kinds. A message chip has `message` (send it as the next message), an action chip has `choiceId` (a step the service already resolved), and a link chip has `href` (an app route such as `/venues`, opened instead of sending anything). The topic-guardrail refusals and pointers use message and link chips (ADR-020).
 * Errors use one envelope in both services. Validation errors add `validationErrors`; unexpected errors never include internals. Malformed input is a 4xx, never a 500.
 
 ## Examples (recorded from the running stack on 2026-10-16; no credentials or personal data)

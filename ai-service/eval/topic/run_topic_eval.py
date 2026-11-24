@@ -21,6 +21,7 @@ import datetime as dt
 import json
 import math
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -60,7 +61,9 @@ async def make_label_fn(live: bool):
     labeler = TopicLabeler(VertexGemini(settings, UsageRecorder(settings.price_table, sink=None)), cache_ttl_s=0)
 
     async def label(text: str):
-        return (await labeler.label(text, cacheable=False, customer_hash=None)).topic
+        started = time.perf_counter()
+        result = await labeler.label(text, cacheable=False, customer_hash=None)
+        return result.topic, {"tokens_in": result.tokens_in, "tokens_out": result.tokens_out, "latency_ms": round((time.perf_counter() - started) * 1000), "source": result.source}
     return label
 
 
@@ -71,12 +74,13 @@ async def evaluate(cases: list[dict], label_fn) -> dict:
         verdict = decide(c["text"], has_context=bool(c.get("context")))
         guard_blocked = not check_input(c["text"]).allowed
         topic = verdict.topic
-        source = "rules"
+        source, usage = "rules", None
         if topic is None and not verdict.context and not guard_blocked and label_fn is not None:
-            topic, source = await label_fn(c["text"]), "label"
+            topic, usage = await label_fn(c["text"])
+            source = "label"
         rows.append({"id": c["id"], "text": c["text"], "expected": expected.value, "lang": c.get("lang"), "attack": bool(c.get("attack")), "forward": c.get("forward"),
                      "got": topic.value if topic else None, "source": source if topic else ("context" if verdict.context else "unsure"),
-                     "got_forward": verdict.forward, "guard_blocked": guard_blocked})
+                     "got_forward": verdict.forward, "guard_blocked": guard_blocked, "label_usage": usage})
     return {"rows": rows}
 
 
@@ -106,8 +110,16 @@ def summarise(rows: list[dict], live: bool) -> dict:
     mixed_ok = [r for r in mixed if r["got_forward"] and _same(r["got_forward"], r["forward"])]
     topic_wrong = [r for r in plain if r["got"] is not None and r["got"] != r["expected"] and not (Topic(r["expected"]) in PUBLIC and Topic(r["got"]) in PUBLIC)]
     decided = [r for r in plain if r["got"] is not None and r["source"] == "rules"]
+    called = [r["label_usage"] for r in rows if r.get("label_usage")]
+    labelled = [r for r in plain if r["source"] == "label"]
+    label_right = [r for r in labelled if r["got"] == r["expected"] or (Topic(r["expected"]) in PUBLIC and r["got"] is not None and Topic(r["got"]) in PUBLIC)]
+    label_stats = ({"calls": len(called), "valid_label": len([r for r in labelled]), "no_usable_label": len(called) - len(labelled),
+                    "accuracy_on_unsure_plain_messages": f"{len(label_right)} of {len(labelled)}",
+                    "wrong": [{"id": r["id"], "expected": r["expected"], "got": r["got"], "text": r["text"]} for r in labelled if r not in label_right],
+                    "avg_tokens_in": round(sum(u["tokens_in"] for u in called) / len(called), 1), "avg_tokens_out": round(sum(u["tokens_out"] for u in called) / len(called), 1),
+                    "avg_latency_ms": round(sum(u["latency_ms"] for u in called) / len(called)), "max_latency_ms": max(u["latency_ms"] for u in called)} if called else None)
     return {
-        "live_label": live, "messages": len(rows), "in_scope": len(in_scope), "off_topic": len(off), "business": len(biz), "attacks": len(attacks), "mixed": len(mixed),
+        "label_call": label_stats, "live_label": live, "messages": len(rows), "in_scope": len(in_scope), "off_topic": len(off), "business": len(biz), "attacks": len(attacks), "mixed": len(mixed),
         "decided_by_free_rules": len(decided), "left_to_label_call": len([r for r in plain if r["source"] in ("unsure", "label")]),
         "in_scope_wrongly_refused": {"count": len(wrong_refused), "rate": round(len(wrong_refused) / max(1, len(in_scope)), 4),
                                     "wilson95_upper": round(wilson_upper(len(wrong_refused), len(in_scope)), 4), "ids": [r["id"] for r in wrong_refused],
