@@ -44,7 +44,8 @@ class TopicGate:
             return GateDecision(True, None, "context")
         label = await self._labeler.label(message, cacheable=not has_context, customer_hash=customer_hash)
         if label.topic is None:
-            return GateDecision(False, None, label.source, template=templates.UNSURE, label=label)
+            template = templates.UNAVAILABLE if label.source == "error" else templates.UNSURE      # model down -> "unavailable"; model answered badly -> "rephrase"
+            return GateDecision(False, None, label.source, template=template, label=label)
         return self._apply(label.topic, audience, label.source, label=label)
 
     @staticmethod

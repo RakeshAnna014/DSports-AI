@@ -101,10 +101,17 @@ async def test_an_unsure_message_costs_one_tiny_call_and_an_off_topic_label_stop
     assert r.meta.llm_calls == 1 and r.meta.tokens_in > 0 and explainer_calls(rig) == []
 
 
-async def test_when_the_label_model_is_down_the_reply_is_the_fixed_rephrase_one(rig):
+async def test_when_the_label_model_is_down_the_reply_says_so_with_a_try_again_chip(rig):
     rig.llm.label_script = [LLMError("LLM_UNAVAILABLE", "down")]
     r = await say(rig, "tell me something interesting")
-    assert r.status == "ok" and r.message == templates.UNSURE.text and r.suggestions and explainer_calls(rig) == []
+    assert r.status == "ai_unavailable" and r.error_code == "AI_UNAVAILABLE" and r.message == templates.UNAVAILABLE.text and explainer_calls(rig) == []
+    assert [(s.label, s.message) for s in r.suggestions] == [("Try again", "tell me something interesting")]
+
+
+async def test_when_the_label_is_invalid_the_reply_is_the_rephrase_one(rig):
+    rig.llm.label_script = ["I am not sure"]
+    r = await say(rig, "tell me something interesting")
+    assert r.status == "ok" and r.message == templates.UNSURE.text and r.suggestions and r.error_code is None and explainer_calls(rig) == []
 
 
 async def test_an_in_scope_label_continues_into_the_normal_pipeline(rig):

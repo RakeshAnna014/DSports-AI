@@ -96,8 +96,12 @@ async def topic_gate(state: AgentState, config) -> AgentState:
     source = decision.stage
     if not decision.allowed:
         rt.topic_state = "refused"
-        refused = decision.template is not topic_tpl.UNSURE
-        _fixed(rt, decision.template, status="refused" if refused else "ok", error_code=f"TOPIC_{decision.topic.value}" if refused and decision.topic else None)
+        if decision.template is topic_tpl.UNAVAILABLE:      # the label model is down: the same status the rest of the assistant uses, so the UI shows its "taking a break" state
+            _fixed(rt, decision.template, status="ai_unavailable", error_code="AI_UNAVAILABLE")
+            rt.turn.suggestions = [topic_tpl.retry_chip(state["message"]).as_suggestion()]
+        else:
+            refused = decision.template is not topic_tpl.UNSURE
+            _fixed(rt, decision.template, status="refused" if refused else "ok", error_code=f"TOPIC_{decision.topic.value}" if refused and decision.topic else None)
         rt.conv.intent = Intent.OUT_OF_SCOPE.value
         return {"route": Route(Intent.OUT_OF_SCOPE, 1 if decision.model_calls else 0, source=source), "done": True}
     rt.topic_state = "context" if decision.stage == "context" else "allowed"

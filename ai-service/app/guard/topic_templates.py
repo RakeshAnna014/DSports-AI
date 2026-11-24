@@ -43,6 +43,15 @@ BUSINESS_POINTER = Template("business_pointer",
 UNSURE = Template("unsure",
                   "I couldn't tell what you're asking. Could you rephrase it? For example, ask about a product, your order, a court booking or your cricket matches.",
                   SHOPPER_CHIPS)
+# The label call itself failed (the model is down or timed out): say so, and offer to try again. The "Try again" chip re-sends the customer's own message,
+# so it is built per turn by retry_chip(); the text is fixed. An INVALID label (the model answered, but not with a topic) keeps UNSURE above.
+UNAVAILABLE = Template("unavailable", "The assistant is temporarily unavailable. Please try again in a moment.", ())
+
+
+def retry_chip(message: str) -> Chip:
+    return Chip("Try again", message=message)
+
+
 BOOKING_POINTER = Template("booking_pointer",
                            "I can't search or book courts from this chat yet. The venues page shows what is available and lets you book, and your bookings are under My bookings.",
                            (Chip("Courts and venues", href="/venues"), Chip("My bookings", href="/bookings")))

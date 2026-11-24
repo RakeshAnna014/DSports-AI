@@ -72,10 +72,10 @@ async def test_an_invalid_label_gets_the_fixed_rephrase_reply(reply):
     assert not d.allowed and d.template is templates.UNSURE and d.stage == "invalid" and len(llm.prompts) == 1
 
 
-async def test_when_the_model_is_down_the_reply_is_the_fixed_rephrase_one_and_nothing_else_is_called():
+async def test_when_the_model_is_down_the_reply_says_so_and_nothing_else_is_called():
     gate, llm = make(LLMError("LLM_UNAVAILABLE", "down"))
     d = await check(gate, "tell me something interesting")
-    assert not d.allowed and d.template is templates.UNSURE and d.stage == "error" and len(llm.prompts) == 1
+    assert not d.allowed and d.template is templates.UNAVAILABLE and d.stage == "error" and len(llm.prompts) == 1
 
 
 async def test_a_label_of_business_is_still_refused_for_a_customer_and_allowed_for_an_admin():
@@ -141,6 +141,12 @@ async def test_a_mixed_message_with_a_business_part_is_refused_for_a_customer():
 # ---------------------------------------------------------------- templates
 
 ALL_TEMPLATES = [templates.OFF_TOPIC, templates.BUSINESS_REFUSED, templates.BUSINESS_POINTER, templates.UNSURE, templates.BOOKING_POINTER, templates.CRICKET_POINTER, templates.COACHING_SOON]
+
+
+def test_the_unavailable_reply_is_fixed_text_and_its_retry_chip_resends_the_customers_own_message():
+    assert "temporarily unavailable" in templates.UNAVAILABLE.text and "{" not in templates.UNAVAILABLE.text
+    chip = templates.retry_chip("tell me something interesting")
+    assert chip.label == "Try again" and chip.message == "tell me something interesting" and chip.href is None
 
 
 @pytest.mark.parametrize("template", ALL_TEMPLATES, ids=lambda t: t.key)
