@@ -80,8 +80,32 @@ async def evaluate(cases: list[dict], label_fn) -> dict:
             source = "label"
         rows.append({"id": c["id"], "text": c["text"], "expected": expected.value, "lang": c.get("lang"), "attack": bool(c.get("attack")), "forward": c.get("forward"),
                      "got": topic.value if topic else None, "source": source if topic else ("context" if verdict.context else "unsure"),
-                     "got_forward": verdict.forward, "guard_blocked": guard_blocked, "label_usage": usage})
+                     "got_forward": verdict.forward, "guard_blocked": guard_blocked, "label_usage": usage,
+                     "owner": bool(c.get("owner")), "exp_customer": c.get("customer"), "exp_admin": c.get("admin")})
     return {"rows": rows}
+
+
+def outcome(row: dict, audience: Audience) -> str:
+    """What this role would get: answer (an in-scope reply, or for an admin on a business question the fixed workspace pointer), refuse, or unsure (rules only, no label)."""
+    if row["guard_blocked"]:
+        return "refuse"
+    if row["got"] is None:
+        return "answer" if row["source"] == "context" else "unsure"
+    return "answer" if is_allowed(audience, Topic(row["got"])) else "refuse"
+
+
+def owner_report(rows: list[dict]) -> dict | None:
+    owner = [r for r in rows if r["owner"]]
+    if not owner:
+        return None
+    table = []
+    for r in owner:
+        c, a = outcome(r, Audience.CUSTOMER), outcome(r, Audience.ADMIN)
+        table.append({"id": r["id"], "text": r["text"], "customer": f"{c} (expected {r['exp_customer']})", "admin": f"{a} (expected {r['exp_admin']})", "decided_by": r["source"],
+                      "label": r["got"], "ok": c == r["exp_customer"] and a == r["exp_admin"]})
+    return {"cases": len(owner), "customer_as_expected": len([r for r in owner if outcome(r, Audience.CUSTOMER) == r["exp_customer"]]),
+            "admin_as_expected": len([r for r in owner if outcome(r, Audience.ADMIN) == r["exp_admin"]]),
+            "customer_unsure": len([r for r in owner if outcome(r, Audience.CUSTOMER) == "unsure"]), "table": table}
 
 
 def summarise(rows: list[dict], live: bool) -> dict:
@@ -119,7 +143,7 @@ def summarise(rows: list[dict], live: bool) -> dict:
                     "avg_tokens_in": round(sum(u["tokens_in"] for u in called) / len(called), 1), "avg_tokens_out": round(sum(u["tokens_out"] for u in called) / len(called), 1),
                     "avg_latency_ms": round(sum(u["latency_ms"] for u in called) / len(called)), "max_latency_ms": max(u["latency_ms"] for u in called)} if called else None)
     return {
-        "label_call": label_stats, "live_label": live, "messages": len(rows), "in_scope": len(in_scope), "off_topic": len(off), "business": len(biz), "attacks": len(attacks), "mixed": len(mixed),
+        "owner_set": owner_report(rows), "label_call": label_stats, "live_label": live, "messages": len(rows), "in_scope": len(in_scope), "off_topic": len(off), "business": len(biz), "attacks": len(attacks), "mixed": len(mixed),
         "decided_by_free_rules": len(decided), "left_to_label_call": len([r for r in plain if r["source"] in ("unsure", "label")]),
         "in_scope_wrongly_refused": {"count": len(wrong_refused), "rate": round(len(wrong_refused) / max(1, len(in_scope)), 4),
                                     "wilson95_upper": round(wilson_upper(len(wrong_refused), len(in_scope)), 4), "ids": [r["id"] for r in wrong_refused],
