@@ -96,6 +96,8 @@ async def topic_gate(state: AgentState, config) -> AgentState:
     source = decision.stage
     if not decision.allowed:
         rt.topic_state = "refused"
+        if decision.topic in (Topic.OFF_TOPIC, Topic.BUSINESS) and rt.services.refusals is not None:
+            await rt.services.refusals.record(topic=decision.topic.value, role=audience.name, text=state["message"])
         if decision.template is topic_tpl.UNAVAILABLE:      # the label model is down: the same status the rest of the assistant uses, so the UI shows its "taking a break" state
             _fixed(rt, decision.template, status="ai_unavailable", error_code="AI_UNAVAILABLE")
             rt.turn.suggestions = [topic_tpl.retry_chip(state["message"]).as_suggestion()]

@@ -48,6 +48,7 @@ import LiveMatchesPage from '@/features/cricket/public/LiveMatchesPage';
 import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
 import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
 import AdminSportsPage from '@/features/admin/AdminSportsPage';
+import RefusedMessagesPage from '@/features/admin/RefusedMessagesPage';
 
 const router = createBrowserRouter([
   // Internal, business-facing area: its own layout (no storefront chrome). Access is enforced by the backend (ADMIN role) on every request.
@@ -94,6 +95,7 @@ const router = createBrowserRouter([
       { path: '/admin/ground-owners', element: <AdminGroundOwnersPage /> },
       { path: '/admin/venues', element: <AdminVenuesPage /> },
       { path: '/admin/sports', element: <AdminSportsPage /> },
+      { path: '/admin/refused-messages', element: <RefusedMessagesPage /> },
       { path: '/support/:ref?', element: <MyCasesPage /> },
       { path: '/orders', element: <OrdersPage /> },
       { path: '/orders/:id', element: <OrderDetailPage /> },

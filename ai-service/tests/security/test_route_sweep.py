@@ -25,6 +25,7 @@ CUSTOMER_OK = ANONYMOUS_OK | {("GET", "/v1/me"), ("POST", "/v1/confirm"), ("GET"
 AREAS = {
     "/v1/inventory": {"ADMIN"},
     "/v1/engineering": {"ADMIN"},
+    "/v1/topic": {"ADMIN"},
     "/v1/planning": {"ADMIN", "CATEGORY_MANAGER", "SALES_PLANNER", "REGIONAL_MANAGER", "STORE_MANAGER"},
     "/v1/sourcing": {"ADMIN", "CATEGORY_MANAGER", "PROCUREMENT_BUYER"},
     "/v1/support/staff": {"ADMIN", "SUPPORT_EXECUTIVE"},

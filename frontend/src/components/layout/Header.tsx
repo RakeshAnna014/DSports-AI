@@ -76,6 +76,7 @@ const Header = () => {
                 <MenuItem onClick={() => goto('/engineering-ai')} data-testid="nav-engineering-ai">Engineering AI</MenuItem>
                 <MenuItem onClick={() => goto('/fulfilment')} data-testid="nav-fulfilment">Fulfilment</MenuItem>
                 <MenuItem onClick={() => goto('/support-cases')} data-testid="nav-support-console">Support console</MenuItem>
+                <MenuItem onClick={() => goto('/admin/refused-messages')} data-testid="admin-refused-messages">Refused messages</MenuItem>
               </Menu>
             </>
           )}
