@@ -4,14 +4,14 @@
     "title": "LBW (leg before wicket)",
     "terms": ["lbw", "leg before wicket", "leg before"],
     "answer": "A batter can be out LBW when the ball hits their body (usually the pad) without touching the bat first, and the umpire judges it would have gone on to hit the stumps. The ball must not have pitched outside leg stump. The impact must be in line between the two sets of stumps, unless the batter did not play a shot, in which case an impact outside the off stump can still be out.",
-    "source": "MCC Laws of Cricket, Law 36 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "no_ball",
     "title": "No-ball",
     "terms": ["no ball", "no balls", "noball", "no-ball"],
     "answer": "A no-ball is an illegal delivery. The batting side gets a run (some competitions award more) and the ball is bowled again. Common reasons are the bowler's front foot landing beyond the popping crease and a full toss that passes above waist height. Off a no-ball the batter can only be out in a few ways, such as being run out. In many limited-overs matches the next ball is a free hit.",
-    "source": "MCC Laws of Cricket, Law 21 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "free_hit",
@@ -25,28 +25,28 @@
     "title": "Wide",
     "terms": ["wide", "wides", "wide ball"],
     "answer": "A wide is a delivery too wide of the batter for them to hit with a normal cricket shot. It adds a run to the batting side's total and is bowled again. Off a wide the batter can be stumped or run out, but not bowled or out LBW.",
-    "source": "MCC Laws of Cricket, Law 22 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "byes",
     "title": "Byes and leg byes",
     "terms": ["bye", "byes", "leg bye", "leg byes"],
     "answer": "A bye is a run taken when the ball passes the batter without touching the bat or the batter's body. A leg bye is a run taken after the ball touches the batter's body (not the bat, or the hand holding it); it only counts if the batter was playing a shot or trying to avoid the ball. Both are extras: they go in the team total, not to the batter, and are not charged to the bowler.",
-    "source": "MCC Laws of Cricket, Laws 25 and 26 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "extras",
     "title": "Extras",
     "terms": ["extras", "extra runs", "sundries"],
     "answer": "Extras are runs that are not scored off the bat: wides, no-balls, byes and leg byes (and penalty runs). They are added to the team total and not to any batter. Wides and no-balls are charged to the bowler; byes and leg byes are not.",
-    "source": "MCC Laws of Cricket, Law 25 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "over",
     "title": "Over",
     "terms": ["over", "overs", "what is an over"],
     "answer": "An over is six legal deliveries bowled by one bowler from one end. Wides and no-balls do not count as legal deliveries, so they are bowled again and the over takes more than six balls. The next over is bowled by a different bowler from the other end.",
-    "source": "MCC Laws of Cricket, Law 17 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "maiden",
@@ -123,28 +123,28 @@
     "title": "Ways to be out",
     "terms": ["wicket", "wickets", "ways to get out", "ways to be out", "dismissal", "dismissals", "how is a batter out", "how is a batsman out"],
     "answer": "A wicket falls when a batter is out. The common ways are bowled (the ball hits the stumps), caught (a fielder catches the ball before it bounces), LBW (leg before wicket), run out, stumped, and hit wicket. Rarer ones include hitting the ball twice, obstructing the field and being timed out.",
-    "source": "MCC Laws of Cricket, Laws 30 to 40 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "stumped",
     "title": "Stumped",
     "terms": ["stumped", "stumping"],
     "answer": "A batter is stumped when the wicketkeeper breaks the wicket with the ball in hand while the batter is out of their crease and not trying to run. It can only happen off a delivery that is not a no-ball (a wide is fine).",
-    "source": "MCC Laws of Cricket, Law 39 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "run_out",
     "title": "Run out",
     "terms": ["run out", "runout", "run-out"],
     "answer": "A batter is run out when a fielder breaks the wicket with the ball (or with the hand holding it) while the batter is out of their ground trying to run. A batter can be run out off any delivery, including a no-ball or a wide.",
-    "source": "MCC Laws of Cricket, Law 38 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "caught",
     "title": "Caught",
     "terms": ["caught", "catch out"],
     "answer": "A batter is out caught when a fielder catches the ball cleanly before it touches the ground, after it has hit the bat or the glove of the hand holding the bat. If the ball bounces first, the batter is not out.",
-    "source": "MCC Laws of Cricket, Law 33 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "duck",
@@ -165,14 +165,14 @@
     "title": "Follow-on",
     "terms": ["follow on", "follow-on", "followon"],
     "answer": "In multi-day matches, if the team batting second finishes well behind on first innings, the other captain can ask them to bat again straight away. The required lead is 200 runs in a five-day match, 150 in a three- or four-day match, 100 in a two-day match and 75 in a one-day match.",
-    "source": "MCC Laws of Cricket, Law 14 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "declaration",
     "title": "Declaration",
     "terms": ["declaration", "declare", "declared"],
     "answer": "In multi-day matches a captain can declare, which ends their own innings early so the match has time to reach a result. The innings is over as soon as it is declared, even though wickets remain.",
-    "source": "MCC Laws of Cricket, Law 15 (summary)"
+    "source": "MCC Laws of Cricket (summary)"
   },
   {
     "id": "yorker",
@@ -194,5 +194,12 @@
     "terms": ["batting stance", "stance"],
     "answer": "A balanced batting stance has the feet about shoulder-width apart, side-on to the bowler, with the weight even on both feet and slightly forward. Keep the head still and level so both eyes see the bowler, and the bat resting near the back foot or lifted slightly, with relaxed knees.",
     "source": "Standard coaching guidance (summary)"
+  },
+  {
+    "id": "retired",
+    "title": "Retired hurt and retired out",
+    "terms": ["retired hurt", "retired out", "retired not out", "retire hurt", "retires hurt", "retiring hurt"],
+    "answer": "A batter can retire during their innings. Retired hurt (recorded as retired not out) is leaving because of injury, illness or another unavoidable cause; they may come back later in the same innings, when a wicket falls or another batter retires, and if they do not it is recorded as not out. A batter who retires for any other reason can only come back with the opposing captain's consent; if they do not, they are recorded as retired out, which counts as a dismissal.",
+    "source": "MCC Laws of Cricket (summary)"
   }
 ]
