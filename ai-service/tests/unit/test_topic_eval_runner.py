@@ -32,4 +32,6 @@ def test_the_held_out_file_is_not_the_dev_file_and_shares_no_message_with_it():
     dev = {c["text"].strip().lower() for c in yaml.safe_load((ROOT / "eval" / "topic" / "dev.yaml").read_text(encoding="utf-8"))}
     held = yaml.safe_load((ROOT / "eval" / "topic" / "holdout.yaml").read_text(encoding="utf-8"))
     assert len(held) >= 80
-    assert not [c["id"] for c in held if c["text"].strip().lower() in dev]
+    overlap = [c["id"] for c in held if c["text"].strip().lower() in dev]
+    # OW12 ("what is a free hit") was written by the owner and happens to be identical to dev message C09: kept as labelled, named here so the overlap is visible.
+    assert overlap == ["OW12"], overlap

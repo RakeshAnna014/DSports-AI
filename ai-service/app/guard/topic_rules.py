@@ -151,7 +151,8 @@ def _glossary_hit(text: str, *, named_cricket: bool) -> bool:
 
 
 _GENERIC_TERMS = {"over", "overs", "wide", "wides", "average", "economy", "wicket", "wickets", "caught", "declare", "declared", "declaration", "duck", "extras", "stance",
-                  "bye", "byes", "maiden", "maidens", "dismissal", "dismissals", "sundries", "run rate"}
+                  "bye", "byes", "maiden", "maidens", "dismissal", "dismissals", "sundries", "run rate",
+                  "bumper", "run out", "run-out", "follow on", "follow-on"}      # also ordinary words: "bumper offer", "run out of stock", "follow on Instagram"
 
 
 @functools.lru_cache(maxsize=1)
@@ -201,8 +202,10 @@ def _allow_topic(text: str) -> tuple[Topic, str] | None:
         return Topic.CRICKET, "cricket_own"
     if not product and _CRICKET_RULES.search(text):
         return Topic.CRICKET, "cricket_rules"
-    if not product and _RULES_QUESTION.search(text) and _glossary_hit(text, named_cricket=_CRICKET_WORD.search(text) is not None):
-        return Topic.CRICKET, "cricket_glossary"
+    if not product and _glossary_hit(text, named_cricket=False):
+        return Topic.CRICKET, "cricket_glossary"          # a distinctive glossary term ("lbw", "retired hurt", "free hit") is enough on its own
+    if not product and _CRICKET_WORD.search(text) and _RULES_QUESTION.search(text) and _glossary_hit(text, named_cricket=True):
+        return Topic.CRICKET, "cricket_glossary_generic"  # a generic word ("duck", "wide", "over") needs the word cricket and a rules question
     if _VOCAB.search(text):
         return Topic.SHOP, "shop_vocab"
     if _COMMERCE.search(text):

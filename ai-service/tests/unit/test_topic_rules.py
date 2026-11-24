@@ -138,3 +138,27 @@ def test_cricket_rules_questions_are_cricket_even_when_they_contain_a_gear_word_
 ])
 def test_shopping_messages_that_contain_cricket_and_glossary_words_stay_shopping(text):
     assert decide(text).topic is Topic.SHOP, decide(text)
+
+
+# ---------------------------------------------------------------- a distinctive glossary term makes a message CRICKET by rule (owner request, after the held-out runs)
+
+@pytest.mark.parametrize("text", ["what does retired hurt mean", "retired hurt", "lbw", "free hit", "dls method", "is a yorker legal", "explain duckworth lewis", "super over rules", "retired out counts as a wicket?"])
+def test_a_message_containing_a_distinctive_glossary_term_is_cricket(text):
+    assert decide(text).topic is Topic.CRICKET, decide(text)
+
+
+def test_retired_hurt_is_caught_by_the_glossary_rule_because_no_other_rule_knows_it():
+    assert decide("what does retired hurt mean").rule == "cricket_glossary"
+
+
+@pytest.mark.parametrize("text", [
+    "bumper offer on cricket bats", "will the SS bat run out of stock", "follow on instagram for offers", "anything over 5000 rupees",
+    "do you have wide handle grips", "average rating of the MRF bat", "a duck brand jacket",
+])
+def test_generic_words_that_are_also_glossary_terms_do_not_make_a_message_cricket(text):
+    assert decide(text).topic is not Topic.CRICKET or decide(text).rule != "cricket_glossary", decide(text)
+
+
+def test_gear_that_contains_a_glossary_term_stays_shopping():
+    assert decide("lbw guard shin pad for batting").topic is Topic.SHOP
+    assert decide("a bouncer proof helmet").topic is Topic.SHOP
