@@ -18,7 +18,7 @@ Branch `feature/ground-booking`. Started this run at `3591c8a`.
 | 3c | Career stats screen (player page `/p/:id`), linked from the public scorecard (adds `playerId` to the public scorecard) | **done** (c515e61) |
 | 3d | Guest players linked to a real account by the organiser (owner decision): met by the existing claim + approval flow, id kept (test) | **done** (03e9e26) |
 | 3e | Optional shot direction after a scoring ball (off by default) and the wagon wheel (owner decision; migration V59) | **done** (backend f0c2d6a; screen and wheel in the next commit; scorer-screen flow has no page-level test) |
-| 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | **partly done**: pure `Fixtures` (round robin by the circle method, seeded knockout first round with byes) is built and tested (`FixturesAndTableTest`). NOT built: the `Tournament` aggregate, V60 tables, use cases, routes, SecurityPolicyTest rows, HTTP test |
+| 4a | Tournaments (no fees): aggregate, teams, groups, fixtures, migration | **partly done**: pure `Fixtures` (round robin by the circle method, seeded knockout first round with byes) is built and tested (`FixturesAndTableTest`). NOT built: the `Tournament` aggregate, V61 tables, use cases, routes, SecurityPolicyTest rows, HTTP test |
 | 4b | Points table with NRR, leaderboards, awards | **partly done**: pure `PointsTable` (points, net run rate with the all-out quota rule, ordered by points, wins, NRR, head to head, id) built and tested. NOT built: feeding it from stored fixtures, the route, leaderboards (from `player_match_stats`), awards |
 | 4c | Tournament screens (organiser console, public page); fee extension point written in the ADR, no payments | todo |
 | 4d | Scorer invite link: single use, 48 h, revocable, sign-in required (owner decision) | todo |
@@ -173,7 +173,7 @@ Verified so far:
 * **Never run in a clean worktree: 3b to 3e and the tournament core.** The full backend suite (`mvn test` for the whole backend, then the Docker integration tests), the full frontend suite, and the browser scripts (`e2e/cricket-offline.mjs`, `e2e/cricket-ui.mjs`) must still be run after the next gate. `docs/api/java-backend.md` has not been regenerated since 3a (it needs the running backend's `/api-docs`; routes added since: `GET /api/v1/players/{id}/stats`, `POST /api/v1/admin/cricket/stats/rebuild`, `POST /api/v1/matches/{id}/scoring/shots`, and the analytics `shots`).
 
 Next, in order:
-1. **4a persistence and routes.** Migration **V60** (next free number): `tournaments` (id, name, organiser_id, city, starts_on, ends_on, format LEAGUE | KNOCKOUT | GROUPS_THEN_KNOCKOUT, points_win/tie/no_result, status, version, created_at), `tournament_teams` (tournament_id, team_id, group_no, seed, withdrawn; unique per team in a tournament), `tournament_fixtures` (id, tournament_id, round, position, team_a, team_b nullable for a bye, match_id nullable unique). Use cases: create, add and remove a team before the first fixture has a log, generate fixtures with `Fixtures`, create the fixture's `Match` through `ManageMatchesUseCase.create` and store `match_id`. Organiser-only edits, version check (OPTIMISTIC_LOCKING_CONFLICT). Every route goes into `SecurityPolicyTest` (public: read a tournament; organiser: the rest, decided in the use case). No fees (owner decision): see the ADR paragraph "Tournaments: the fee extension point".
+1. **4a persistence and routes.** Migration **V61** (next free number; V60 is the players' `public_profile` flag, see Gate 0): `tournaments` (id, name, organiser_id, city, starts_on, ends_on, format LEAGUE | KNOCKOUT | GROUPS_THEN_KNOCKOUT, points_win/tie/no_result, status, version, created_at), `tournament_teams` (tournament_id, team_id, group_no, seed, withdrawn; unique per team in a tournament), `tournament_fixtures` (id, tournament_id, round, position, team_a, team_b nullable for a bye, match_id nullable unique). Use cases: create, add and remove a team before the first fixture has a log, generate fixtures with `Fixtures`, create the fixture's `Match` through `ManageMatchesUseCase.create` and store `match_id`. Organiser-only edits, version check (OPTIMISTIC_LOCKING_CONFLICT). Every route goes into `SecurityPolicyTest` (public: read a tournament; organiser: the rest, decided in the use case). No fees (owner decision): see the ADR paragraph "Tournaments: the fee extension point".
 2. **4b**: map each completed fixture's score to `PointsTable.Played` (runs, balls, all out, quota from the innings' own overs), public `GET /api/v1/tournaments/{id}/table`; leaderboards (most runs, wickets, sixes; strike rate and economy with a minimum-balls qualifier) from `player_match_stats` restricted to the tournament's matches; player of the match by a points formula written in the ADR.
 3. **4c** screens: organiser console and public tournament page. **4d** scorer invite link (single use, 48 h, revocable, sign-in required, SecurityPolicyTest rows; owner decision).
 4. **5a, 5b, 5c** AI service tools (`get_match_summary`, player stats, head to head, team insights, ground finder, `book_ground` as a confirmed write) in `ai-service/`; **5d** "Looking" and feed behind a setting that is off by default.
@@ -191,3 +191,26 @@ Clean worktree at HEAD, real `pnpm install`:
 * Frontend: `tsc -b` clean, lint clean (0 warnings), `vite build` ok, **842 tests in 60 files**, 0 failures.
 Fresh local stack (jar rebuilt, backend restarted so Flyway migrated the populated local `dsports` database V57 -> V59, Vite restarted): `node e2e/venues-ui.mjs`, `cricket-ui.mjs`, `cricket-offline.mjs` all **ALL STEPS PASSED**; `idb-contract.mjs` **contract met (8 fresh databases)**. These are emulated phones, not a real phone.
 Not done in this run: regenerating `docs/api/java-backend.md`; the GitHub workflow itself (never pushed); the real-phone script 7c.
+
+
+---
+
+## Owner brief of 2026-11-24 (Gates 0 to 5)
+
+The brief (pasted by the owner; paste it again to resume) orders the remaining work as Gate 0 (secure what exists, then **STOP** for the owner to push and run CI), Gate 1 tournaments (4a to 4d), Gate 2 AI tools in the customer assistant, Gate 3 community ("Looking" posts and feed), Gate 4 launch readiness (**STOP** before any real external account), Gate 5 final checks. Out of scope: live video, AI video highlights, Pro subscription, invitations to other clubs' teams, native app, DLS, super over, penalty runs, overthrows, tournament entry-fee payments.
+
+**Where the brief does not match the code (found before building):**
+* V60 was reserved for the tournament tables here; it is now `players.public_profile` (Gate 0), so tournaments take V61.
+* "Guests get no public stats page" is read as *guest players* (players with no account), not signed-out visitors. Signed-out visitors keep reading public scorecards and the pages of linked players, which is what the public routes are for.
+* The brief names tools `search_venues`, `get_court_slots`, `book_court`; the older plan in this file says `search_grounds`, `get_ground_slots`, `book_ground`. The brief wins; the code says venues and courts.
+* 5d here was "simplest version behind a setting that is off by default"; the brief makes it a full gate (Gate 3).
+* The cricket glossary explains DLS and super overs (words only; nothing scores with them). The brief puts both out of scope for the scoring engine, which is unchanged.
+
+### Gate 0: secure what exists (state: built, awaiting the owner's push)
+
+1. **Secret scan** of every commit reachable from any branch (no scanner is installed here, so: `git log --all -p` plus patterns for private keys, service-account JSON, cloud and API key prefixes, JWTs, `password=`/`secret=`/`token=` values, `.env`/`*.pem`/`*.key` files). No real secret found. Findings are reported to the owner in the Gate 0 message (dev defaults `dsports123` and the `JWT_SECRET` local fallback, test fixtures, a committed `node_modules` and `.pyc`/zip files, and the work e-mail address on commits).
+2. **Small items:** `java` next to a gear or brand word is shopping (`9133826`); R1 asserts the AI button by accessible name (`e2e/ai-redesign.mjs`); a refused-messages log, an ADMIN-only route `GET /v1/topic/refusals` (JSON or CSV) and the page Admin > Refused messages; the guest-privacy fix did **not** exist and was built (V60 `players.public_profile`, default on; guest or hidden player = 404 and no link on the scorecard; `PUT /api/v1/players/me/public-profile`; switch on the Players page; a notice on claims).
+3. The 29 glossary entries were printed to the owner for review (source file `ai-service/app/agent/data/cricket_glossary.json`).
+4. Push command and PR description given to the owner.
+
+**Resume point:** after the owner has pushed, merged and pasted any CI failures, start **Gate 1, 4a**: migration V61, the `Tournament` aggregate, use cases and routes around the existing pure `Fixtures` and `PointsTable`.
