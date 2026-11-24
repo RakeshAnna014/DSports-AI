@@ -20,6 +20,7 @@ def test_the_glossary_file_is_well_formed():
         assert set(r) == {"id", "title", "terms", "answer", "source"} and r["terms"] and r["source"], r["id"]
         assert all(t == t.lower() for t in r["terms"]), f"{r['id']}: terms are lower case"
         assert 40 < len(r["answer"]) <= 700, f"{r['id']}: an answer should be short enough to read in chat"
+        assert not re.search(r"\blaws? ?\d", r["source"], re.I), f"{r['id']}: no law numbers unless they have been checked against the MCC text"
 
 
 def test_no_term_belongs_to_two_entries():
@@ -42,7 +43,7 @@ def test_answers_make_no_claim_about_dsports_features_prices_or_people():
     ("what is the DLS method", "dls"), ("how does a super over work", "super_over"), ("what is a maiden over", "maiden"), ("explain powerplay overs in T20", "powerplay"),
     ("when is a batter given out stumped", "stumped"), ("what is a duck in cricket", "duck"), ("how many overs in an ODI innings", "format_overs"),
     ("how to play a cover drive", "cover_drive"), ("kya LBW out hota hai", "lbw"), ("what is strike rate", "strike_rate"), ("wicket kaise girta hai cricket mein", "ways_out"),
-    ("what is a required run rate", "run_rate"), ("what does a hat-trick mean", "hat_trick"), ("what is a follow on", "follow_on"),
+    ("what is a required run rate", "run_rate"), ("what does retired hurt mean", "retired"), ("what does a hat-trick mean", "hat_trick"), ("what is a follow on", "follow_on"),
 ])
 def test_a_rules_question_finds_exactly_its_entry(message, entry):
     assert [e.id for e in cricket.find(message, GLOSSARY)] == [entry]
