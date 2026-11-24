@@ -6,6 +6,7 @@ export const cricketApi = {
   players: {
     mine: () => apiClient.get<Player[]>('/v1/players').then((r) => r.data),
     createGuest: (input: PlayerInput) => apiClient.post<Player>('/v1/players', input).then((r) => r.data),
+    setPublicProfile: (visible: boolean) => apiClient.put<Player>('/v1/players/me/public-profile', { visible }).then((r) => r.data),
     createOwn: (input: PlayerInput) => apiClient.post<Player>('/v1/players/me', input).then((r) => r.data),
     update: (id: string, player: PlayerInput, expectedVersion: number) => apiClient.put<Player>(`/v1/players/${id}`, { player, expectedVersion }).then((r) => r.data),
     claimable: (phone: string) => apiClient.get<Claimable[]>('/v1/players/claimable', { params: { phone } }).then((r) => r.data),

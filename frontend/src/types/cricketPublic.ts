@@ -2,7 +2,8 @@
 export type PublicStatus = 'IN_PROGRESS' | 'INNINGS_BREAK' | 'COMPLETED' | 'ABANDONED' | 'NO_RESULT';
 
 export interface PublicBatter {
-  playerId: string;
+  /** Null for a guest or a player who hid their public page: show the name without a link. */
+  playerId: string | null;
   name: string;
   runs: number;
   balls: number;
@@ -15,7 +16,8 @@ export interface PublicBatter {
 }
 
 export interface PublicBowler {
-  playerId: string;
+  /** Null for a guest or a player who hid their public page: show the name without a link. */
+  playerId: string | null;
   name: string;
   overs: string;
   maidens: number;

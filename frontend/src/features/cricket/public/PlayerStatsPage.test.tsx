@@ -93,6 +93,15 @@ describe('the player page', () => {
     expect(await screen.findByTestId('player-name')).toBeInTheDocument();
   });
 
+  it('shows a guest or a hidden player as a name with no link', async () => {
+    const card = { ...FINISHED_CARD, innings: FINISHED_CARD.innings.map((i) => ({ ...i, batters: i.batters.map((b) => ({ ...b, playerId: null })), bowlers: i.bowlers.map((w) => ({ ...w, playerId: null })) })) };
+    vi.mocked(cricketPublicApi.scorecard).mockResolvedValue({ kind: 'changed', data: card, etag: '"1"' });
+    vi.mocked(cricketPublicApi.analytics).mockResolvedValue({ seq: 1, innings: [], commentary: [], shots: [] });
+    renderWithProviders(<Routes><Route path="/m/:id" element={<PublicScorecardPage />} /></Routes>, '/m/m-1');
+    expect((await screen.findAllByTestId('player-name-plain')).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('player-link')).toBeNull();
+  });
+
   it('is reached from a name on the public scorecard', async () => {
     const user = userEvent.setup();
     vi.mocked(cricketPublicApi.scorecard).mockResolvedValue({ kind: 'changed', data: FINISHED_CARD, etag: '"1"' });

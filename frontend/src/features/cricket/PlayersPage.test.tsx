@@ -12,7 +12,7 @@ vi.mock('@/api/cricket', () => ({
   cricketApi: {
     players: {
       mine: vi.fn(), createGuest: vi.fn(), createOwn: vi.fn(), claimable: vi.fn(), claim: vi.fn(),
-      incomingClaims: vi.fn(), myClaims: vi.fn(), approveClaim: vi.fn(), rejectClaim: vi.fn(),
+      incomingClaims: vi.fn(), myClaims: vi.fn(), approveClaim: vi.fn(), rejectClaim: vi.fn(), setPublicProfile: vi.fn(),
     },
   },
 }));
@@ -124,6 +124,29 @@ describe('PlayersPage', () => {
     const box = await screen.findByTestId('my-claims');
     expect(box).toHaveTextContent('Waiting for the person who added them to agree');
     expect(box).toHaveTextContent('Not approved');
+  });
+
+  it('lets me hide and show my public statistics page, saying what it does', async () => {
+    const user = userEvent.setup();
+    api.mine.mockReset();
+    api.mine.mockResolvedValueOnce([OWN, PLAYER]).mockResolvedValue([{ ...OWN, publicProfile: false }, PLAYER]);
+    api.setPublicProfile.mockResolvedValue({ ...OWN, publicProfile: false });
+    renderPage();
+    const toggle = await screen.findByRole('checkbox', { name: 'Public statistics page' });
+    expect(toggle).toBeChecked();
+    expect(screen.getByTestId('public-profile-note')).toHaveTextContent('Anyone can see your career numbers');
+    await user.click(toggle);
+    await waitFor(() => expect(api.setPublicProfile).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Public statistics page' })).not.toBeChecked());
+    expect(screen.getByTestId('public-profile-note')).toHaveTextContent('Your career page is hidden');
+  });
+
+  it('tells the person deciding a claim, and the claimant, what approval makes public', async () => {
+    api.incomingClaims.mockResolvedValue([CLAIM]);
+    api.myClaims.mockResolvedValue([{ ...CLAIM, claimantName: null, claimantEmail: null }]);
+    renderPage();
+    expect(await screen.findByTestId('claim-notice')).toHaveTextContent('public page');
+    expect(await screen.findByTestId('my-claim-notice')).toHaveTextContent('hide the page at any time');
   });
 });
 

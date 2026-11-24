@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Chip, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, FormControlLabel, MenuItem, Paper, Stack, Switch, TextField, Typography } from '@mui/material';
 import { Person } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { cricketApi } from '@/api/cricket';
@@ -55,9 +55,14 @@ const PlayersPage = () => {
         : code === 'CLAIM_ALREADY_PENDING' ? 'You have already asked for this profile.' : getApiErrorMessage(err, 'The claim could not be sent.') });
     },
   });
+  const publicProfile = useMutation({
+    mutationFn: (visible: boolean) => cricketApi.players.setPublicProfile(visible),
+    onSuccess: () => refresh(),
+    onError: (err) => setMessage({ severity: 'error', text: getApiErrorMessage(err, 'The setting could not be saved.') }),
+  });
   const decide = useMutation({
     mutationFn: ({ id, approve }: { id: string; approve: boolean }) => (approve ? cricketApi.players.approveClaim(id) : cricketApi.players.rejectClaim(id)),
-    onSuccess: (c) => { setMessage({ severity: 'success', text: c.status === 'APPROVED' ? 'Approved: the profile now belongs to that account.' : 'Rejected.' }); refresh(); },
+    onSuccess: (c) => { setMessage({ severity: 'success', text: c.status === 'APPROVED' ? 'Approved: the profile now belongs to that account. Its career statistics now have a public page; the player can hide it from their profile.' : 'Rejected.' }); refresh(); },
     onError: (err) => setMessage({ severity: 'error', text: getApiErrorMessage(err, 'The claim could not be decided.') }),
   });
 
@@ -75,7 +80,14 @@ const PlayersPage = () => {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" sx={{ mb: 1 }}>My profile</Typography>
         {own ? (
-          <Typography variant="body1" data-testid="own-profile">{own.name} <Chip size="small" color="primary" label="You" /></Typography>
+          <>
+            <Typography variant="body1" data-testid="own-profile">{own.name} <Chip size="small" color="primary" label="You" /></Typography>
+            <FormControlLabel sx={{ display: 'block', mt: 0.5 }} label="Public statistics page"
+              control={<Switch checked={own.publicProfile} disabled={publicProfile.isPending} onChange={(e) => publicProfile.mutate(e.target.checked)} inputProps={{ 'aria-label': 'Public statistics page' }} data-testid="public-profile-toggle" />} />
+            <Typography variant="caption" color="text.secondary" display="block" data-testid="public-profile-note">
+              {own.publicProfile ? 'Anyone can see your career numbers, and your name on a scorecard links to them. Turn this off to show your name only.' : 'Your career page is hidden. Your name still appears on scorecards of matches you play, without a link.'}
+            </Typography>
+          </>
         ) : (
           <Stack component="form" direction={{ xs: 'column', sm: 'row' }} spacing={1.5} onSubmit={(e) => { e.preventDefault(); if (ownName.trim()) createOwn.mutate(); }}>
             <TextField size="small" label="Your player name" value={ownName} onChange={(e) => setOwnName(e.target.value)} inputProps={{ maxLength: 80 }} />
@@ -113,7 +125,10 @@ const PlayersPage = () => {
           <Stack spacing={1}>
             {incoming.data!.map((c) => (
               <Stack key={c.id} direction="row" justifyContent="space-between" alignItems="center" data-testid="incoming-claim">
-                <Typography variant="body2"><b>{c.claimantName}</b> ({c.claimantEmail}) says they are <b>{c.playerName}</b>.</Typography>
+                <Box>
+                  <Typography variant="body2"><b>{c.claimantName}</b> ({c.claimantEmail}) says they are <b>{c.playerName}</b>.</Typography>
+                  {c.notice && <Typography variant="caption" color="text.secondary" data-testid="claim-notice">{c.notice}</Typography>}
+                </Box>
                 <Stack direction="row" spacing={1}>
                   <Button size="small" variant="contained" onClick={() => decide.mutate({ id: c.id, approve: true })} data-testid="approve-claim">Approve</Button>
                   <Button size="small" color="error" onClick={() => decide.mutate({ id: c.id, approve: false })} data-testid="reject-claim">Reject</Button>
@@ -148,7 +163,12 @@ const PlayersPage = () => {
         <Paper variant="outlined" sx={{ p: 2 }} data-testid="my-claims">
           <Typography variant="h6" sx={{ mb: 1 }}>My claims</Typography>
           <Stack spacing={0.5}>
-            {myClaims.data!.map((c) => <Typography key={c.id} variant="body2" color="text.secondary">{c.playerName}: {CLAIM_TEXT[c.status]}</Typography>)}
+            {myClaims.data!.map((c) => (
+              <Box key={c.id}>
+                <Typography variant="body2" color="text.secondary">{c.playerName}: {CLAIM_TEXT[c.status]}</Typography>
+                {c.notice && <Typography variant="caption" color="text.secondary" data-testid="my-claim-notice">{c.notice}</Typography>}
+              </Box>
+            ))}
           </Stack>
         </Paper>
       )}

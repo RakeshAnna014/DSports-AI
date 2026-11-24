@@ -17,6 +17,8 @@ export interface Player {
   linked: boolean;
   /** Linked to the signed-in user's own account. */
   mine: boolean;
+  /** Has a public statistics page: linked to an account and not hidden. */
+  publicProfile: boolean;
   version: number;
 }
 
@@ -63,6 +65,8 @@ export interface Claim {
   claimantEmail: string | null;
   createdAt: string;
   decidedAt: string | null;
+  /** What approval makes public and how to hide it; null once rejected. */
+  notice: string | null;
 }
 
 export type BallType = 'LEATHER' | 'TENNIS';
