@@ -24,7 +24,7 @@ Honest framing for any audience: this is a proof of concept on a developer machi
 
 ```mermaid
 flowchart LR
-  FE[React app :3000] -- "/api" --> J["Java backend :8080<br/>identity, catalog, pricing, inventory, cart, order,<br/>payment, shipment, returns, review, wishlist, notification, SUPPORT"]
+  FE[React app :3000] -- "/api" --> J["Java backend :8080<br/>identity, catalog, pricing, inventory, cart, order,<br/>payment, shipment, returns, review, wishlist, notification, SUPPORT, GROUND (venue booking)"]
   FE -- "/ai-api" --> A["Python AI service :8090<br/>FastAPI, LangGraph, typed tools, MCP, RAG"]
   A -- "customer's own JWT + X-Correlation-Id" --> J
   A --> G[Gemini on Vertex AI]
@@ -33,7 +33,7 @@ flowchart LR
   A --> V[(PostgreSQL+pgvector: dsports_ai)]
 ```
 
-* **Boundaries.** Java owns the `dsports` database (Flyway V1-V47). Python owns `dsports_ai` (embeddings, conversations, pending actions, audit, usage, the synthetic inventory mart). The AI service calls Java **only through public REST** with the caller's own bearer token, so Java's ownership and role checks remain the real authorization boundary (`DSportsClient.request @ ai-service/app/tools/dsports_client.py:32-47`; ADR-009).
+* **Boundaries.** Java owns the `dsports` database (Flyway V1-V52). Python owns `dsports_ai` (embeddings, conversations, pending actions, audit, usage, the synthetic inventory mart). The AI service calls Java **only through public REST** with the caller's own bearer token, so Java's ownership and role checks remain the real authorization boundary (`DSportsClient.request @ ai-service/app/tools/dsports_client.py:32-47`; ADR-009).
 * **Identity.** Both services verify the same HS256-family JWT (`JwtWebFilter.filter @ backend/bootstrap/.../JwtWebFilter.java:36-61`, `verify_token @ ai-service/app/auth/jwt.py:45-72`). In AI storage customers appear only as an HMAC hash.
 * **Ports and processes (verified on the dev machine):** Vite 3000, Java 8080, AI service 8090, PostgreSQL 5432 (container `pgvector/pgvector:pg16-trixie`), Tika 9998 (`docker-compose.yml`). The Vite proxy rewrites `/ai-api` to the AI service (`frontend/vite.config.ts:21-26`).
 * **Failure isolation.** The AI service starts even without its database (`lifespan @ ai-service/app/main.py:31-71`), and the storefront, orders, checkout and support-case pages do not depend on it.

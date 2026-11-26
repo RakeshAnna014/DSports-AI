@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "name": "ts-0039",
+  "description": "A seeded random match made by the TypeScript engine: mostly sensible commands, some refused ones, some undos.",
+  "setup": {"battingFirst":"00000000-0000-0002-0000-000000000002","overs":3,"rules":{"ballsPerOver":5,"freeHitEnabled":false,"lastManStands":true,"maxOversPerBowler":null,"noBallPenalty":0,"playersPerSide":6,"widePenalty":0},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001","00000000-0000-000a-0000-000000000002","00000000-0000-000a-0000-000000000003","00000000-0000-000a-0000-000000000004","00000000-0000-000a-0000-000000000005","00000000-0000-000a-0000-000000000006"],"xiB":["00000000-0000-0014-0000-000000000001","00000000-0000-0014-0000-000000000002","00000000-0000-0014-0000-000000000003","00000000-0000-0014-0000-000000000004","00000000-0000-0014-0000-000000000005","00000000-0000-0014-0000-000000000006"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-000a-0000-000000000006","nonStriker":"00000000-0000-0014-0000-000000000002","striker":"00000000-0000-0014-0000-000000000001","type":"START_INNINGS"},"expect":{"end":null,"fp":"67e5aeac9e93c72a","next":"DELIVER","result":"accepted","resultType":null,"seq":1,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":3,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"1a4bc6f45a11194f","next":"DELIVER","result":"accepted","resultType":null,"seq":2,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"WIDE","runs":7},"type":"DELIVER"},"expect":{"end":null,"fp":"0ea220ffdb24be10","next":"DELIVER","result":"accepted","resultType":null,"seq":3,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"target":38,"type":"REVISE_TARGET"},"expect":{"result":"rejected","violation":"NO_TARGET_TO_REVISE"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":1,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"17c263b3f6136448","next":"DELIVER","result":"accepted","resultType":null,"seq":4,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":true,"kind":"NORMAL","runs":6,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"3bbf05b87d01d7f0","next":"DELIVER","result":"accepted","resultType":null,"seq":5,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"dismissal":{"batterOut":"00000000-0000-0014-0000-000000000001","end":"BOWLERS_END","type":"RUN_OUT"},"kind":"NORMAL","runs":4,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"294df583dead726d","next":"SELECT_BATTER","result":"accepted","resultType":null,"seq":6,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000005","type":"SELECT_BATTER"},"expect":{"end":null,"fp":"c19ae687a265065d","next":"DELIVER","result":"accepted","resultType":null,"seq":7,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"WIDE","runs":2},"type":"DELIVER"},"expect":{"end":null,"fp":"ae286c2a70730a2a","next":"DELIVER","result":"accepted","resultType":null,"seq":8,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000004","type":"SELECT_BATTER"},"expect":{"result":"rejected","violation":"NO_BATTER_NEEDED"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000005","retirement":"HURT","type":"RETIRE_BATTER"},"expect":{"end":null,"fp":"4c802151dcddb205","next":"SELECT_BATTER","result":"accepted","resultType":null,"seq":9,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"reason":"NO_RESULT","type":"END_MATCH"},"expect":{"end":null,"fp":"545c467a3bf4b552","next":"NONE","result":"accepted","resultType":null,"seq":10,"status":"NO_RESULT"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000005","type":"SELECT_BATTER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000006","type":"SELECT_BATTER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"batterId":"00000000-0000-0014-0000-000000000006","type":"SELECT_BATTER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"}
+  ]
+}

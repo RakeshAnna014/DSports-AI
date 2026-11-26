@@ -78,7 +78,7 @@ class CapturePaymentUseCaseTest {
         when(paymentRepository.findById(payment.getId())).thenReturn(Mono.just(payment));
         when(paymentRepository.save(any())).thenReturn(Mono.empty());
         when(orderPaymentPort.getOrderData(orderId, userId)).thenReturn(Mono.just(order("PENDING_PAYMENT")));
-        when(paymentCompletionPort.completeOrder(orderId)).thenReturn(Mono.empty());
+        when(paymentCompletionPort.complete(orderId, payment.getId().value())).thenReturn(Mono.just(true));
         when(outboxWriter.enqueue(any())).thenReturn(Mono.empty());
         when(paymentGateway.capturePayment("GW-1")).thenReturn(Mono.just(
             new PaymentGateway.GatewayResult(true, "TXN-CAP", "GW-1", "captured")));
@@ -90,7 +90,7 @@ class CapturePaymentUseCaseTest {
             .assertNext(result -> assertThat(result.status()).isEqualTo("SUCCESS"))
             .verifyComplete();
 
-        verify(paymentCompletionPort).completeOrder(orderId);
+        verify(paymentCompletionPort).complete(orderId, payment.getId().value());
         var message = ArgumentCaptor.forClass(OutboxMessage.class);
         verify(outboxWriter).enqueue(message.capture());
         assertThat(message.getValue().type()).isEqualTo(OutboxMessageTypes.NOTIFY_PAYMENT_SUCCEEDED);
@@ -105,7 +105,7 @@ class CapturePaymentUseCaseTest {
             .assertNext(result -> assertThat(result.status()).isEqualTo("SUCCESS"))
             .verifyComplete();
         verify(paymentGateway, never()).capturePayment(any());
-        verify(paymentCompletionPort, never()).completeOrder(any());
+        verify(paymentCompletionPort, never()).complete(any(), any());
     }
 
     @Test
@@ -119,7 +119,7 @@ class CapturePaymentUseCaseTest {
                 assertThat(result.failureReason()).isEqualTo("Insufficient funds");
             })
             .verifyComplete();
-        verify(paymentCompletionPort, never()).completeOrder(any());
+        verify(paymentCompletionPort, never()).complete(any(), any());
         var message = ArgumentCaptor.forClass(OutboxMessage.class);
         verify(outboxWriter).enqueue(message.capture());
         assertThat(message.getValue().type()).isEqualTo(OutboxMessageTypes.NOTIFY_PAYMENT_FAILED);
@@ -133,7 +133,7 @@ class CapturePaymentUseCaseTest {
             .expectErrorMatches(e -> isCode(e, PaymentErrorCode.GATEWAY_TIMEOUT))
             .verify();
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PROCESSING);
-        verify(paymentCompletionPort, never()).completeOrder(any());
+        verify(paymentCompletionPort, never()).complete(any(), any());
     }
 
     @Test
@@ -143,7 +143,7 @@ class CapturePaymentUseCaseTest {
         StepVerifier.create(useCase.execute(command()))
             .assertNext(result -> assertThat(result.status()).isEqualTo("SUCCESS"))
             .verifyComplete();
-        verify(paymentCompletionPort).completeOrder(orderId);
+        verify(paymentCompletionPort).complete(orderId, payment.getId().value());
     }
 
     @Test
@@ -157,8 +157,21 @@ class CapturePaymentUseCaseTest {
     }
 
     @Test
+    void aPaymentWhoseItemIsNoLongerAvailableIsRecordedRefundedAndReportedAsAFailureNotASuccess() {
+        when(paymentCompletionPort.complete(orderId, payment.getId().value())).thenReturn(Mono.just(false));
+
+        StepVerifier.create(useCase.execute(command()))
+            .expectErrorMatches(e -> isCode(e, PaymentErrorCode.PAID_ITEM_NO_LONGER_AVAILABLE))
+            .verify();
+
+        verify(paymentRepository, atLeastOnce()).save(any());
+        assertThat(payment.getStatus().isCaptured()).isTrue();
+        verify(outboxWriter, never()).enqueue(any());
+    }
+
+    @Test
     void failedOrderCompletionKeepsPaymentRetryable() {
-        when(paymentCompletionPort.completeOrder(orderId)).thenReturn(Mono.error(new IllegalStateException("db")));
+        when(paymentCompletionPort.complete(orderId, payment.getId().value())).thenReturn(Mono.error(new IllegalStateException("db")));
 
         StepVerifier.create(useCase.execute(command()))
             .expectError(IllegalStateException.class)

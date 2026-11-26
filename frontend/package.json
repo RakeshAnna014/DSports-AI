@@ -10,6 +10,7 @@
     "test": "vitest run",
     "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "vectors:ts": "node scripts/write-ts-vectors.mjs",
     "validate:catalog": "node scripts/validate-catalog.mjs",
     "validate:catalog:live": "node scripts/validate-catalog.mjs --live"
   },

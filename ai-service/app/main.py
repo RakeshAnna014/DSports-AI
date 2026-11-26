@@ -20,6 +20,7 @@ from app.obs.logging import configure_logging
 from app.obs.middleware import install_request_context
 from app.services import build_services
 from app.planning.api import router as planning_router
+from app.guard.topic_api import router as topic_router
 from app.sourcing.api import router as sourcing_router
 from app.support.staff_api import router as support_staff_router
 from app.store.db import Store
@@ -87,6 +88,7 @@ def create_app(settings: Settings | None = None, **overrides: Any) -> FastAPI:
     app.include_router(support_staff_router)
     app.include_router(sourcing_router)
     app.include_router(planning_router)
+    app.include_router(topic_router)
 
     async def mcp_mount(scope, receive, send):
         """The MCP app is built in the lifespan (it needs the services), so the mount delegates to it lazily."""

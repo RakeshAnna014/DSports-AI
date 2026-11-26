@@ -20,6 +20,10 @@ import com.dsports.review.domain.exception.ReviewDomainException;
 import com.dsports.review.domain.exception.ReviewErrorCode;
 import com.dsports.returns.domain.exception.ReturnsDomainException;
 import com.dsports.returns.domain.exception.ReturnsErrorCode;
+import com.dsports.cricket.domain.exception.CricketDomainException;
+import com.dsports.cricket.domain.exception.CricketErrorCode;
+import com.dsports.ground.domain.exception.GroundDomainException;
+import com.dsports.ground.domain.exception.GroundErrorCode;
 import com.dsports.support.domain.exception.SupportDomainException;
 import com.dsports.support.domain.exception.SupportErrorCode;
 import com.dsports.shipment.domain.exception.ShipmentDomainException;
@@ -79,6 +83,9 @@ public class GlobalExceptionHandler {
 
     private static final Map<ErrorCode, HttpStatus> ERROR_STATUS_MAP = Map.ofEntries(
         Map.entry(ErrorCode.DUPLICATE_EMAIL, HttpStatus.CONFLICT),
+        Map.entry(ErrorCode.USER_NOT_REGISTERED, HttpStatus.NOT_FOUND),
+        Map.entry(ErrorCode.ROLE_NOT_HELD, HttpStatus.NOT_FOUND),
+        Map.entry(ErrorCode.CANNOT_CHANGE_OWN_ROLE, HttpStatus.FORBIDDEN),
         Map.entry(ErrorCode.INVALID_EMAIL, HttpStatus.BAD_REQUEST),
         Map.entry(ErrorCode.INVALID_PHONE_NUMBER, HttpStatus.BAD_REQUEST),
         Map.entry(ErrorCode.INVALID_CUSTOMER_NAME, HttpStatus.BAD_REQUEST),
@@ -356,6 +363,7 @@ public class GlobalExceptionHandler {
         Map.entry(PaymentErrorCode.ORDER_NOT_FOUND, HttpStatus.NOT_FOUND),
         Map.entry(PaymentErrorCode.ORDER_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
         Map.entry(PaymentErrorCode.ORDER_ALREADY_PAID, HttpStatus.CONFLICT),
+        Map.entry(PaymentErrorCode.PAID_ITEM_NO_LONGER_AVAILABLE, HttpStatus.CONFLICT),
         Map.entry(PaymentErrorCode.CANNOT_REFUND_NON_SUCCESS_PAYMENT, HttpStatus.BAD_REQUEST),
         Map.entry(PaymentErrorCode.CANNOT_CANCEL_TERMINAL_PAYMENT, HttpStatus.CONFLICT),
         Map.entry(PaymentErrorCode.GATEWAY_ERROR, HttpStatus.BAD_GATEWAY),
@@ -409,6 +417,89 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ReturnsDomainException.class)
     public Mono<ResponseEntity<ApiError>> handleReturnsDomainException(ReturnsDomainException ex, ServerWebExchange exchange) {
         var status = RETURNS_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
+        return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+    }
+
+    private static final Map<CricketErrorCode, HttpStatus> CRICKET_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(CricketErrorCode.PLAYER_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.TEAM_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.CLAIM_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.NOT_ALLOWED, HttpStatus.FORBIDDEN),
+        Map.entry(CricketErrorCode.MATCH_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.USER_NOT_REGISTERED, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.NOT_A_SCORER, HttpStatus.NOT_FOUND),
+        Map.entry(CricketErrorCode.MATCH_STARTED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.INVALID_TEAMS, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.INVALID_PLAYING_XI, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.INVALID_TOSS, HttpStatus.BAD_REQUEST),
+        Map.entry(CricketErrorCode.BOOKING_NOT_USABLE, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.BOOKING_ALREADY_USED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SCORER_ALREADY_ADDED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.DUPLICATE_PLAYER_PHONE, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.DUPLICATE_TEAM_NAME, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.PLAYER_ALREADY_LINKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CLAIMANT_ALREADY_LINKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CLAIM_ALREADY_PENDING, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CLAIM_NOT_PENDING, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.ALREADY_A_MEMBER, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.NOT_A_MEMBER, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.TEAM_FULL, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.TEAM_ARCHIVED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CANNOT_REMOVE_CAPTAIN, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SCORE_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.CLIENT_EVENT_REUSED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SCORING_REJECTED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(CricketErrorCode.MATCH_LOCKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.NOT_LOCKED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.NOTHING_TO_UNDO, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.SHOT_NOT_ALLOWED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(CricketErrorCode.SHOT_ALREADY_RECORDED, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.MATCH_NOT_READY, HttpStatus.CONFLICT),
+        Map.entry(CricketErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(CricketErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
+    @ExceptionHandler(CricketDomainException.class)
+    public Mono<ResponseEntity<ApiError>> handleCricketDomainException(CricketDomainException ex, ServerWebExchange exchange) {
+        var status = CRICKET_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
+        if (ex.getDetails() == null) {
+            return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
+        }
+        logStatus(status, ex.getMessage(), null);
+        return respond(ApiErrors.of(status, ex.getErrorCode().name(), ex.getMessage(), exchange).withDetails(ex.getDetails()));
+    }
+
+    private static final Map<GroundErrorCode, HttpStatus> GROUND_ERROR_STATUS_MAP = Map.ofEntries(
+        Map.entry(GroundErrorCode.VENUE_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.COURT_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.BOOKING_NOT_FOUND, HttpStatus.NOT_FOUND),
+        Map.entry(GroundErrorCode.VENUE_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.VENUE_NOT_ACCEPTING_BOOKINGS, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.OWNER_NOT_ELIGIBLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.DUPLICATE_COURT_NAME, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.SPORT_NOT_SUPPORTED, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(GroundErrorCode.SPORT_NOT_BOOKABLE, HttpStatus.UNPROCESSABLE_ENTITY),
+        Map.entry(GroundErrorCode.BOOKING_NOT_OWNED_BY_USER, HttpStatus.FORBIDDEN),
+        Map.entry(GroundErrorCode.SLOT_UNAVAILABLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.HOLD_LIMIT_REACHED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.HOLD_EXPIRED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.BOOKING_NOT_PAYABLE, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.PAYMENT_IN_PROGRESS, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.BLACKOUT_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.INVALID_STATUS_TRANSITION, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.IDEMPOTENCY_KEY_REUSED, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.OPTIMISTIC_LOCKING_CONFLICT, HttpStatus.CONFLICT),
+        Map.entry(GroundErrorCode.INVALID_SLOT, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.BOOKING_TOO_SOON, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.BOOKING_TOO_FAR, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST),
+        Map.entry(GroundErrorCode.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR)
+    );
+
+    @ExceptionHandler(GroundDomainException.class)
+    public Mono<ResponseEntity<ApiError>> handleGroundDomainException(GroundDomainException ex, ServerWebExchange exchange) {
+        var status = GROUND_ERROR_STATUS_MAP.getOrDefault(ex.getErrorCode(), HttpStatus.BAD_REQUEST);
         return domainError(status, ex.getErrorCode().name(), ex.getMessage(), exchange);
     }
 

@@ -24,6 +24,7 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -128,22 +129,29 @@ public class CapturePaymentUseCase {
     }
 
     private Mono<Payment> complete(Payment payment, PaymentGateway.GatewayResult result) {
+        var completed = new AtomicBoolean(true);
         return transactionRunner.inTransaction(() -> {
                 payment.markSuccess(result.transactionId(), result.gatewayReference());
                 return paymentRepository.save(payment)
-                    .then(Mono.defer(() -> paymentCompletionPort.completeOrder(payment.getOrderId())))
-                    .then(Mono.defer(() -> outboxWriter.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_PAYMENT_SUCCEEDED,
-                        payment.getId().value(), Map.of(
-                            "userId", payment.getUserId().toString(),
-                            "orderId", payment.getOrderId().toString(),
-                            "amount", payment.getAmount().toPlainString(),
-                            "currency", payment.getCurrency(),
-                            "paymentReference", payment.getPaymentReference().value())))))
+                    .then(Mono.defer(() -> paymentCompletionPort.complete(payment.getOrderId(), payment.getId().value())))
+                    .flatMap(ok -> {
+                        completed.set(ok);
+                        return ok ? outboxWriter.enqueue(OutboxMessage.of(OutboxMessageTypes.NOTIFY_PAYMENT_SUCCEEDED,
+                            payment.getId().value(), Map.of(
+                                "userId", payment.getUserId().toString(),
+                                "orderId", payment.getOrderId().toString(),
+                                "amount", payment.getAmount().toPlainString(),
+                                "currency", payment.getCurrency(),
+                                "paymentReference", payment.getPaymentReference().value()))) : Mono.<Void>empty();
+                    })
                     .thenReturn(payment);
             })
             .doOnNext(this::publishEvents)
+            .flatMap(p -> completed.get() ? Mono.just(p) : Mono.<Payment>error(new PaymentDomainException(PaymentErrorCode.PAID_ITEM_NO_LONGER_AVAILABLE,
+                "Your payment " + p.getPaymentReference().value() + " was received, but what you paid for is no longer available "
+                    + "(its hold had ended). A full refund has been started automatically.")))
             .doOnNext(p -> log.info("Payment {} captured; order {} confirmed", p.getPaymentReference().value(), p.getOrderId()))
-            .doOnError(e -> log.error("Payment {} was captured by the gateway but completing order {} failed: {}. "
+            .doOnError(e -> !isNoLongerAvailable(e), e -> log.error("Payment {} was captured by the gateway but completing order {} failed: {}. "
                 + "It stays PROCESSING and the capture can be retried.",
                 payment.getPaymentReference().value(), payment.getOrderId(), e.toString()));
     }
@@ -166,6 +174,10 @@ public class CapturePaymentUseCase {
     private void publishEvents(Payment payment) {
         payment.getDomainEvents().forEach(eventPublisher::publish);
         payment.clearDomainEvents();
+    }
+
+    private static boolean isNoLongerAvailable(Throwable e) {
+        return e instanceof PaymentDomainException pde && pde.getErrorCode() == PaymentErrorCode.PAID_ITEM_NO_LONGER_AVAILABLE;
     }
 
     private static boolean isConcurrentModification(Throwable e) {

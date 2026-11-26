@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "name": "ts-0005",
+  "description": "A seeded random match made by the TypeScript engine: mostly sensible commands, some refused ones, some undos.",
+  "setup": {"battingFirst":"00000000-0000-0002-0000-000000000002","overs":4,"rules":{"ballsPerOver":5,"freeHitEnabled":false,"lastManStands":false,"maxOversPerBowler":null,"noBallPenalty":2,"playersPerSide":4,"widePenalty":0},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001","00000000-0000-000a-0000-000000000002","00000000-0000-000a-0000-000000000003","00000000-0000-000a-0000-000000000004"],"xiB":["00000000-0000-0014-0000-000000000001","00000000-0000-0014-0000-000000000002","00000000-0000-0014-0000-000000000003","00000000-0000-0014-0000-000000000004"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-000a-0000-000000000002","nonStriker":"00000000-0000-0014-0000-000000000003","striker":"00000000-0000-0014-0000-000000000004","type":"START_INNINGS"},"expect":{"end":null,"fp":"86719b283bb130a5","next":"DELIVER","result":"accepted","resultType":null,"seq":1,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":true,"kind":"NORMAL","runs":4,"runsType":"LEG_BYE"},"type":"DELIVER"},"expect":{"end":null,"fp":"f4864a632f495430","next":"DELIVER","result":"accepted","resultType":null,"seq":2,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":2,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"5a0162e5a86f062f","next":"DELIVER","result":"accepted","resultType":null,"seq":3,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":2,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"db5ac0bb2b4feedc","next":"DELIVER","result":"accepted","resultType":null,"seq":4,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":2,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"f503a854b2b68d7d","next":"DELIVER","result":"accepted","resultType":null,"seq":5,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":3,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"858b89536aca946e","next":"SELECT_BOWLER","result":"accepted","resultType":null,"seq":6,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-000a-0000-000000000001","type":"SELECT_BOWLER"},"expect":{"end":null,"fp":"df9c4caa5a46eab6","next":"DELIVER","result":"accepted","resultType":null,"seq":7,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"reason":"NO_RESULT","type":"END_MATCH"},"expect":{"end":null,"fp":"5f4a53477407c154","next":"NONE","result":"accepted","resultType":null,"seq":8,"status":"NO_RESULT"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":0,"runsType":"BAT"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"dismissal":{"type":"BOWLED"},"kind":"NORMAL","runs":0,"runsType":"BAT"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"delivery":{"boundary":true,"kind":"NO_BALL","runs":6,"runsType":"LEG_BYE"},"type":"DELIVER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"}
+  ]
+}

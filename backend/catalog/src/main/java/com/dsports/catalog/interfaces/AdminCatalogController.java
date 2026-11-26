@@ -132,7 +132,7 @@ public class AdminCatalogController {
     })
     public Mono<SportResult> updateSport(@Parameter(description = "Sport ID") @PathVariable UUID id,
                                           @Valid @RequestBody UpdateSportRequestBody body) {
-        var command = new UpdateSportCommand(SportId.fromUUID(id), body.name(), body.slug(), body.description());
+        var command = new UpdateSportCommand(SportId.fromUUID(id), body.name(), body.slug(), body.description(), body.bookable());
         return updateSportUseCase.execute(command);
     }
 

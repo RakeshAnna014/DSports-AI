@@ -40,8 +40,18 @@ class PublicCatalogControllerTest {
                 Instant.now(), Instant.now());
         when(getSportsUseCase.execute()).thenReturn(Flux.just(result));
 
-        StepVerifier.create(controller.getSports())
+        StepVerifier.create(controller.getSports(null))
                 .expectNextMatches(r -> r.name().equals("Cricket") && r.slug().equals("cricket"))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldReturnBookableSportsWhenAsked() {
+        var result = new SportResult(UUID.randomUUID(), "Pickleball", "pickleball", null, "ACTIVE", Instant.now(), Instant.now(), true);
+        when(getSportsUseCase.bookable()).thenReturn(Flux.just(result));
+
+        StepVerifier.create(controller.getSports(true))
+                .expectNextMatches(r -> r.slug().equals("pickleball") && r.bookable())
                 .verifyComplete();
     }
 

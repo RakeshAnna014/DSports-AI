@@ -1,0 +1,29 @@
+package com.dsports.ground.domain.exception;
+
+public enum GroundErrorCode {
+    VENUE_NOT_FOUND,
+    VENUE_NOT_OWNED_BY_USER,
+    /** The venue exists but its owner no longer holds the ground-owner role: it takes no NEW bookings until an administrator reassigns it. */
+    VENUE_NOT_ACCEPTING_BOOKINGS,
+    COURT_NOT_FOUND,
+    SPORT_NOT_SUPPORTED,
+    SPORT_NOT_BOOKABLE,
+    OWNER_NOT_ELIGIBLE,
+    DUPLICATE_COURT_NAME,
+    BOOKING_NOT_FOUND,
+    BOOKING_NOT_OWNED_BY_USER,
+    INVALID_SLOT,
+    BOOKING_TOO_SOON,
+    BOOKING_TOO_FAR,
+    SLOT_UNAVAILABLE,
+    HOLD_LIMIT_REACHED,
+    HOLD_EXPIRED,
+    BOOKING_NOT_PAYABLE,
+    PAYMENT_IN_PROGRESS,
+    BLACKOUT_CONFLICT,
+    INVALID_STATUS_TRANSITION,
+    IDEMPOTENCY_KEY_REUSED,
+    VALIDATION_ERROR,
+    OPTIMISTIC_LOCKING_CONFLICT,
+    INTERNAL_ERROR
+}

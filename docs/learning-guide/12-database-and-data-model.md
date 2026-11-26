@@ -6,7 +6,7 @@ No passwords, tokens, connection secrets or customer personal data appear in thi
 
 | Database | Owner / writer | Schema tooling | Created by |
 |---|---|---|---|
-| `dsports` | Java backend (R2DBC at runtime, Flyway at startup) | Flyway V1-V47, forward-only (`spring.flyway.locations: classpath:db/migration`, `application.yml:29-34`) | docker-compose (`POSTGRES_DB: dsports`) |
+| `dsports` | Java backend (R2DBC at runtime, Flyway at startup) | Flyway V1-V52, forward-only (`spring.flyway.locations: classpath:db/migration`, `application.yml:29-34`) | docker-compose (`POSTGRES_DB: dsports`) |
 | `dsports_ai` | Python AI service (asyncpg) | idempotent `CREATE ... IF NOT EXISTS` SQL applied at startup by `Store.ensure_schema` (`ai-service/app/store/db.py:37-43`; files `schema.sql`, `schema_rag.sql`, `inventory/schema_inventory.sql`), guarded by `pg_advisory_xact_lock(7_020_001)` | `ai-service/db/init-ai-db.sql` (`CREATE DATABASE dsports_ai OWNER dsports`, run on a fresh volume, or manually on an existing one) |
 
 The two databases live in the same PostgreSQL container (`pgvector/pgvector:pg16-trixie`, `docker-compose.yml:4`) but are separate databases: there are no cross-database joins and the AI service never reads Java tables directly (it uses the REST APIs). The real `dsports` database is never dropped or recreated by validation (Testcontainers and `dsports_e2e_val` are used for destructive runs).
@@ -27,6 +27,8 @@ The two databases live in the same PostgreSQL container (`pgvector/pgvector:pg16
 | review / wishlist / notification | `reviews`, `review_helpful_votes`, `wishlists`, `wishlist_items`, `notifications`, `notification_templates` |
 | platform | `outbox_events` (V33, bootstrap) |
 | support | `support_cases`, `support_case_messages`, `support_case_events`, sequence `support_case_seq` (V44) |
+| ground | `venues`, `courts` (V51; `sport_ids UUID[]` with a GIN index), `ground_blackouts`, `ground_bookings` (`no_overlap_court` exclusion constraint), sequence `ground_booking_seq` (V48); the V48 `grounds` table is kept, unused |
+| catalog / identity additions | `sports.bookable` (V50); `role_audit_log` (V52) |
 
 Seeding: V8-V10 sports/categories/brands; V15-V17 products, inventory, prices; V41-V43 enrichment, INR prices and the multisport demo catalogue (134 products). These are demo/sample data (`SYNTHETIC / POC DATA` for products and prices).
 

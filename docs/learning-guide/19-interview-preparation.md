@@ -41,7 +41,7 @@ Notation: `path:lines` references are in the detailed guides (docs 02-17).
 - **Caveat:** orders return 403 for foreign orders, which does reveal existence; this is a pre-existing choice.
 
 **Q5. What does Flyway do here and what are the migration rules?**
-- **Answer:** Flyway applies versioned SQL migrations V1-V47 at startup, forward-only, `out-of-order: false`. The real `dsports` database is never dropped; destructive tests use Testcontainers or a throwaway database.
+- **Answer:** Flyway applies versioned SQL migrations V1-V52 at startup, forward-only, `out-of-order: false`. The real `dsports` database is never dropped; destructive tests use Testcontainers or a throwaway database.
 - **Deeper:** `FlywayMigrationVersionTest` pins the expected version. V44 added the support tables and the `support_case_seq` sequence.
 - **Study:** `application.yml:29-34`, `backend/support/src/main/resources/db/migration/V44__create_support_cases.sql`, doc 12.
 - **Example:** `ck_support_resolved_has_outcome` makes the database refuse a RESOLVED case without an outcome.

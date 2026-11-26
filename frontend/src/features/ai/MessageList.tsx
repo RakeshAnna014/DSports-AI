@@ -109,7 +109,7 @@ export const AssistantMessage = ({ response, onNavigate, wide = false }: { respo
         <Typography key={d} variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{d}</Typography>
       ))}
       {response.status === 'refused' && <Alert severity="warning" sx={{ mt: 0.75 }} icon={false}>That request was declined for safety.</Alert>}
-      {kind !== 'CONFIRMATION' && <SuggestionChips suggestions={(response.suggestions ?? []).filter((s) => !(s === returnAction && response.eligibility))} onPick={pick} disabled={sending} />}
+      {kind !== 'CONFIRMATION' && <SuggestionChips suggestions={(response.suggestions ?? []).filter((s) => !(s === returnAction && response.eligibility))} onPick={pick} onNavigate={onNavigate} disabled={sending} />}
     </Box>
   );
 };

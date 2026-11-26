@@ -80,6 +80,21 @@ public class SportR2dbcRepositoryAdapter implements SportRepository {
     }
 
     @Override
+    public Flux<Sport> findAllShoppable() {
+        return databaseClient.sql("SELECT s.* FROM sports s WHERE s.status = 'ACTIVE' AND (NOT s.bookable OR EXISTS "
+                        + "(SELECT 1 FROM products p WHERE p.sport_id = s.id AND p.status = 'ACTIVE')) ORDER BY s.name")
+                .map((row, metadata) -> mapper.toDomain(mapEntity(row)))
+                .all();
+    }
+
+    @Override
+    public Flux<Sport> findAllBookable() {
+        return databaseClient.sql("SELECT * FROM sports WHERE status = 'ACTIVE' AND bookable ORDER BY name")
+                .map((row, metadata) -> mapper.toDomain(mapEntity(row)))
+                .all();
+    }
+
+    @Override
     public Flux<Sport> findAll() {
         return springRepository.findAll()
                 .map(mapper::toDomain);
@@ -122,6 +137,7 @@ public class SportR2dbcRepositoryAdapter implements SportRepository {
         entity.setSlug(row.get("slug", String.class));
         entity.setDescription(row.get("description", String.class));
         entity.setStatus(row.get("status", String.class));
+        entity.setBookable(Boolean.TRUE.equals(row.get("bookable", Boolean.class)));
         entity.setCreatedAt(row.get("created_at", java.time.Instant.class));
         entity.setUpdatedAt(row.get("updated_at", java.time.Instant.class));
         entity.setVersion(row.get("version", Integer.class));

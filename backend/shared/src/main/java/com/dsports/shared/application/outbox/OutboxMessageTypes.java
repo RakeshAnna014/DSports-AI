@@ -13,6 +13,10 @@ public final class OutboxMessageTypes {
     public static final String NOTIFY_REFUND_COMPLETED = "NOTIFY_REFUND_COMPLETED";
     public static final String CREATE_SHIPMENT = "CREATE_SHIPMENT";
     public static final String VOID_PAYMENT_AUTHORIZATION = "VOID_PAYMENT_AUTHORIZATION";
+    public static final String NOTIFY_BOOKING_CONFIRMED = "NOTIFY_BOOKING_CONFIRMED";
+    public static final String NOTIFY_BOOKING_CANCELLED = "NOTIFY_BOOKING_CANCELLED";
+    /** Pays out a refund that was requested by the system itself (a captured payment whose booking could not be honoured). Aggregate id = the refund id. */
+    public static final String PROCESS_REFUND = "PROCESS_REFUND";
 
     private OutboxMessageTypes() {
     }

@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "name": "ts-0035",
+  "description": "A seeded random match made by the TypeScript engine: mostly sensible commands, some refused ones, some undos.",
+  "setup": {"battingFirst":"00000000-0000-0002-0000-000000000002","overs":3,"rules":{"ballsPerOver":8,"freeHitEnabled":true,"lastManStands":true,"maxOversPerBowler":null,"noBallPenalty":2,"playersPerSide":2,"widePenalty":1},"teamA":"00000000-0000-0001-0000-000000000001","teamB":"00000000-0000-0002-0000-000000000002","xiA":["00000000-0000-000a-0000-000000000001","00000000-0000-000a-0000-000000000002"],"xiB":["00000000-0000-0014-0000-000000000001","00000000-0000-0014-0000-000000000002"]},
+  "steps": [
+    {"command":{"bowler":"00000000-0000-000a-0000-000000000001","nonStriker":"00000000-0000-0014-0000-000000000001","striker":"00000000-0000-0014-0000-000000000002","type":"START_INNINGS"},"expect":{"end":null,"fp":"ffdbbb29663abce8","next":"DELIVER","result":"accepted","resultType":null,"seq":1,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"delivery":{"boundary":false,"kind":"NORMAL","runs":4,"runsType":"BAT"},"type":"DELIVER"},"expect":{"end":null,"fp":"b097c283970a5539","next":"DELIVER","result":"accepted","resultType":null,"seq":2,"status":"IN_PROGRESS"},"op":"command"},
+    {"command":{"target":39,"type":"REVISE_TARGET"},"expect":{"result":"rejected","violation":"NO_TARGET_TO_REVISE"},"op":"command"},
+    {"command":{"reason":"NO_RESULT","type":"END_MATCH"},"expect":{"end":null,"fp":"88974986402a03a1","next":"NONE","result":"accepted","resultType":null,"seq":3,"status":"NO_RESULT"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-000a-0000-000000000002","type":"SELECT_BOWLER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"bowlerId":"00000000-0000-000a-0000-000000000002","type":"CHANGE_BOWLER"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"},
+    {"command":{"reason":"NO_BATTERS_LEFT","type":"END_INNINGS"},"expect":{"result":"rejected","violation":"MATCH_ENDED"},"op":"command"}
+  ]
+}

@@ -2,7 +2,7 @@
 
 Exported from the running backend's /api-docs (springdoc), which is disabled in the prod profile.
 
-Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 159 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
+Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.py` - 224 operations. Role rules are enforced in code (see the authorization matrix); the `Auth` column shows only whether the OpenAPI document declares a bearer requirement.
 
 ## Actuator
 
@@ -104,6 +104,15 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | POST | `/api/auth/refresh` | Refresh access token | bearer | 200,401 |
 | POST | `/api/auth/register` | Register new user | bearer | 201,409 |
 
+## Bookings
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/bookings` | Hold a slot | bearer | 200,201,400,404,409,422 |
+| GET | `/api/v1/bookings/{bookingId}` | Get one of my bookings | bearer | 200,403,404 |
+| POST | `/api/v1/bookings/{bookingId}/cancel` | Cancel my booking | bearer | 200,403,404,409 |
+| GET | `/api/v1/me/bookings` | My bookings | bearer | 200 |
+
 ## Catalog
 
 | Method | Path | Summary | Auth | Responses |
@@ -134,6 +143,71 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | POST | `/api/v1/checkout/{checkoutId}/promotion` | Apply a promotion code | bearer | 200,400,404,409 |
 | GET | `/api/v1/checkout/{checkoutId}/promotions` | Offers for this checkout | bearer | 200,401,403,404 |
 
+## Cricket matches
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/matches` | My matches | bearer | 200 |
+| POST | `/api/v1/matches` | Create a match | bearer | 201,400,404,409 |
+| GET | `/api/v1/matches/{matchId}` | Get a match for setup | bearer | 200 |
+| PUT | `/api/v1/matches/{matchId}` | Change a match's settings | bearer | 200 |
+| PUT | `/api/v1/matches/{matchId}/playing-xi` | Set one side's playing XI | bearer | 200,409 |
+| POST | `/api/v1/matches/{matchId}/scorers` | Let a registered user score this match | bearer | 201 |
+| DELETE | `/api/v1/matches/{matchId}/scorers/{userId}` | Remove a scorer | bearer | 200 |
+| POST | `/api/v1/matches/{matchId}/toss` | Record the toss | bearer | 200 |
+
+## Cricket players
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/players` | My players | bearer | 200 |
+| POST | `/api/v1/players` | Add a guest player | bearer | 201,400,409 |
+| GET | `/api/v1/players/claimable` | Guest profiles that might be me | bearer | 200 |
+| GET | `/api/v1/players/claims/incoming` | Claims waiting for my decision | bearer | 200 |
+| GET | `/api/v1/players/claims/mine` | My claims | bearer | 200 |
+| POST | `/api/v1/players/claims/{claimId}/approve` | Approve a claim | bearer | 200 |
+| POST | `/api/v1/players/claims/{claimId}/reject` | Reject a claim | bearer | 200 |
+| POST | `/api/v1/players/me` | Create my own player profile | bearer | 200 |
+| GET | `/api/v1/players/{playerId}` | Get a player | bearer | 200 |
+| PUT | `/api/v1/players/{playerId}` | Edit a player | bearer | 200 |
+| POST | `/api/v1/players/{playerId}/claims` | Ask to claim a guest profile | bearer | 201,404,409 |
+
+## Cricket public scorecards
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/matches/{matchId}/analytics` | A started match's charts and commentary (no sign-in) | bearer | 200,304,404 |
+| GET | `/api/v1/matches/{matchId}/scorecard` | A started match's scorecard (no sign-in) | bearer | 200,304,404 |
+| GET | `/api/v1/public/matches/live` | Matches being played (no sign-in) | bearer | 200,400 |
+
+## Cricket scoring
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/matches/{matchId}/scoring` | The match as the scorer needs it | bearer | 200,403,404 |
+| POST | `/api/v1/matches/{matchId}/scoring/commands` | Score one command | bearer | 200,409,422 |
+| GET | `/api/v1/matches/{matchId}/scoring/engine-state` | Everything a phone needs to score offline | bearer | 200,403,404 |
+| POST | `/api/v1/matches/{matchId}/scoring/undo` | Undo | bearer | 200 |
+
+## Cricket scoring (admin)
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/admin/matches/{matchId}/scoring/unlock` | Unlock a locked match | bearer | 200 |
+
+## Cricket teams
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/teams` | My teams | bearer | 200 |
+| POST | `/api/v1/teams` | Create a team | bearer | 201,409 |
+| GET | `/api/v1/teams/{teamId}` | Get a team with its members | bearer | 200,404 |
+| PUT | `/api/v1/teams/{teamId}` | Rename a team or change its city | bearer | 200 |
+| POST | `/api/v1/teams/{teamId}/archive` | Archive a team | bearer | 200 |
+| PUT | `/api/v1/teams/{teamId}/captain` | Choose the captain | bearer | 200 |
+| POST | `/api/v1/teams/{teamId}/members` | Add a player to a team | bearer | 201,404,409 |
+| DELETE | `/api/v1/teams/{teamId}/members/{playerId}` | Remove a player from a team | bearer | 200 |
+
 ## Customer Profile
 
 | Method | Path | Summary | Auth | Responses |
@@ -146,6 +220,15 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | Method | Path | Summary | Auth | Responses |
 |---|---|---|---|---|
 | GET | `/api/v1/admin/fulfilment/orders` | Orders and shipments for the fulfilment console (ADMIN) | bearer | 200 |
+
+## Ground owner administration
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/admin/ground-owners` | List ground owners | bearer | 200 |
+| POST | `/api/v1/admin/ground-owners` | Make a registered user a ground owner | bearer | 200,201,403,404 |
+| GET | `/api/v1/admin/ground-owners/audit` | Audit log of ground-owner changes | bearer | 200 |
+| DELETE | `/api/v1/admin/ground-owners/{userId}` | Remove the ground-owner role | bearer | 204,404 |
 
 ## Inventory
 
@@ -286,6 +369,43 @@ Generated from the service's own OpenAPI document by `tools/docs/openapi_to_md.p
 | POST | `/api/v1/support/staff/cases/{ref}/resolve` | Resolve a case with an outcome and a note | bearer | 200 |
 | POST | `/api/v1/support/staff/cases/{ref}/status` | Change the status | bearer | 200 |
 | GET | `/api/v1/support/staff/report` | Ticket report for a period | bearer | 200 |
+
+## Venue administration
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/admin/venues` | List venues | bearer | 200 |
+| POST | `/api/v1/admin/venues` | Create a venue | bearer | 201,400,403,409 |
+| GET | `/api/v1/admin/venues/{venueId}` | Get a venue I manage | bearer | 200,403,404 |
+| PUT | `/api/v1/admin/venues/{venueId}` | Edit a venue | bearer | 200,403,404,409 |
+| GET | `/api/v1/admin/venues/{venueId}/blackouts` | A venue's blackouts | bearer | 200 |
+| POST | `/api/v1/admin/venues/{venueId}/blackouts` | Add a blackout | bearer | 201,403,409 |
+| POST | `/api/v1/admin/venues/{venueId}/courts` | Add a court | bearer | 201,400,403,409,422 |
+| PUT | `/api/v1/admin/venues/{venueId}/courts/{courtId}` | Edit a court | bearer | 200,403,404,409,422 |
+
+## Venue owner
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/owner/bookings/{bookingId}/cancel` | Cancel a booking at my venue | bearer | 200,403,409 |
+| POST | `/api/v1/owner/bookings/{bookingId}/no-show` | Mark a booking as a no-show | bearer | 200,403,409 |
+| GET | `/api/v1/owner/venues` | List venues | bearer | 200 |
+| POST | `/api/v1/owner/venues` | Create a venue | bearer | 201,400,403,409 |
+| GET | `/api/v1/owner/venues/{venueId}` | Get a venue I manage | bearer | 200,403,404 |
+| PUT | `/api/v1/owner/venues/{venueId}` | Edit a venue | bearer | 200,403,404,409 |
+| GET | `/api/v1/owner/venues/{venueId}/blackouts` | A venue's blackouts | bearer | 200 |
+| POST | `/api/v1/owner/venues/{venueId}/blackouts` | Add a blackout | bearer | 201,403,409 |
+| GET | `/api/v1/owner/venues/{venueId}/bookings` | Bookings at one of my venues | bearer | 200,403 |
+| POST | `/api/v1/owner/venues/{venueId}/courts` | Add a court | bearer | 201,400,403,409,422 |
+| PUT | `/api/v1/owner/venues/{venueId}/courts/{courtId}` | Edit a court | bearer | 200,403,404,409,422 |
+
+## Venues
+
+| Method | Path | Summary | Auth | Responses |
+|---|---|---|---|---|
+| GET | `/api/v1/venues` | Search venues | bearer | 200,400 |
+| GET | `/api/v1/venues/{venueId}` | Get a venue | bearer | 200,404 |
+| GET | `/api/v1/venues/{venueId}/courts/{courtId}/slots` | Slots of a court on a day | bearer | 200,400,404 |
 
 ## Wishlist
 

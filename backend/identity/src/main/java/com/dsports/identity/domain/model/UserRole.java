@@ -19,6 +19,8 @@ public enum UserRole {
     CUSTOMER(0),
     CUSTOMER_B2B(1),
     FRANCHISE_OWNER(2),
+    // Ground booking: owns and manages their own grounds and sees bookings of those grounds only (checked in the use cases). Granted by SQL, like ADMIN.
+    GROUND_OWNER(2),
     WAREHOUSE_MANAGER(3),
     INVENTORY_MANAGER(4),
     // Product & Supplier Intelligence (AI service, Phase 5). The Java backend only stores and issues these names; the AI service enforces what they allow

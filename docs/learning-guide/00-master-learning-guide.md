@@ -24,7 +24,7 @@ See [01-business-context.md](01-business-context.md). Objectives: help customers
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Vite, MUI 6, React Router 7, Zustand, TanStack Query, Axios |
-| Commerce backend | Java 21, Spring Boot 3.4 WebFlux, R2DBC, Flyway (V1-V47), Spring Security (JWT), springdoc OpenAPI, Testcontainers |
+| Commerce backend | Java 21, Spring Boot 3.4 WebFlux, R2DBC, Flyway (V1-V52), Spring Security (JWT), springdoc OpenAPI, Testcontainers |
 | AI service | Python 3.13, uv, FastAPI, LangGraph, official MCP SDK, Pydantic, httpx, asyncpg, numpy |
 | LLM | Gemini on Google Vertex AI: `gemini-2.5-flash-lite` (Tier 1), `gemini-2.5-flash` (Tier 2), `text-embedding-005` (768-d) |
 | Data | PostgreSQL 16 + pgvector (`dsports` owned by Java, `dsports_ai` owned by Python), Apache Tika + Tesseract OCR |

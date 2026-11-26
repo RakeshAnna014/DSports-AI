@@ -32,6 +32,8 @@
         <module>billing</module>
         <module>returns</module>
         <module>support</module>
+        <module>ground</module>
+        <module>cricket</module>
         <module>review</module>
         <module>shipment</module>
         <module>franchise</module>
@@ -109,6 +111,16 @@
             <dependency>
                 <groupId>com.dsports</groupId>
                 <artifactId>dsports-support</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
+                <artifactId>dsports-ground</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dsports</groupId>
+                <artifactId>dsports-cricket</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -12,4 +12,14 @@ import java.util.UUID;
 public interface PaymentCompletionPort {
 
     Mono<Void> completeOrder(UUID orderId);
+
+    /**
+     * Completes whatever the payment was for and reports whether it still could be. {@code false} means the thing paid for was no
+     * longer available (for example a held booking that expired or was cancelled): the capture is still recorded, the implementation has
+     * already queued a full refund in the same transaction, and the caller must tell the customer clearly instead of reporting success.
+     * The default suits orders, which are always completed or the whole capture fails and can be retried.
+     */
+    default Mono<Boolean> complete(UUID orderId, UUID paymentId) {
+        return completeOrder(orderId).thenReturn(true);
+    }
 }

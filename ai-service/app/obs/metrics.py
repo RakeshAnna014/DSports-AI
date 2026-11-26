@@ -47,3 +47,10 @@ INV_TRAIN_SECONDS = Histogram("inventory_train_duration_seconds", "Duration of a
                               buckets=(2, 5, 10, 20, 40, 80, 160))
 INV_SCENARIOS = Counter("inventory_scenarios_total", "Promotion what-if calculations", ["source"], registry=REGISTRY)
 INV_HOLDOUT_WAPE = Gauge("inventory_model_holdout_wape", "Held-out daily WAPE of the current forecast model", ["model"], registry=REGISTRY)
+
+# --- Topic gate (docs/ai/topic-guardrails.md). Labels are low-cardinality: topic, audience (guest|customer|admin), stage, decision. No message text, no customer data.
+TOPIC_DECISIONS = Counter("ai_topic_decisions_total", "Topic gate decisions", ["audience", "stage", "decision"], registry=REGISTRY)   # decision: allowed | refused | unsure | mixed
+TOPIC_REFUSALS = Counter("ai_topic_refusals_total", "Messages the topic gate refused, by topic and role", ["topic", "audience"], registry=REGISTRY)
+TOPIC_LABEL_CALLS = Counter("ai_topic_label_calls_total", "Label-only model calls made by the topic gate", ["result"], registry=REGISTRY)           # model | cache | invalid | error
+TOPIC_TOKENS_SAVED = Counter("ai_topic_tokens_saved_estimate_total", "ESTIMATED model tokens not spent because the topic gate answered with a fixed reply "
+                             "(the classifier's average measured usage per avoided call, minus the label call's own tokens)", ["audience"], registry=REGISTRY)

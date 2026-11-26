@@ -108,7 +108,8 @@ Columns: **Path**, **Purpose**, **Important symbols**, **Called by -> calls**, *
 | `support/.../SupportCaseController.java`, `StaffSupportController.java`, `SupportRequests.java`, `SupportResponses.java` | REST | 11 |
 | `support/.../SupportCaseR2dbcRepositoryAdapter.java` (284) | persistence | 11, 12 |
 | `support/src/main/resources/db/migration/V44__create_support_cases.sql` | schema | 12 |
-| `*/src/main/resources/db/migration/V*.sql` | Flyway migrations V1-V47 | 12 |
+| `ground/src/main/java/com/dsports/ground/` (`domain/model/{Venue,Court,Booking}.java`, `application/usecase/{HoldBooking,ManageVenues,ManageCourts,SearchVenues}UseCase.java`, `infrastructure/persistence/*Adapter.java`, `interfaces/{Venue,VenueManagement,OwnerVenue,AdminVenue}Controller.java`) | venue -> court -> booking (doc 03 section 7a) | `Venue`, `Court`, `Booking`, `HoldBookingUseCase` | `GroundBookingFlow`: `bootstrap/.../BookingPaymentFlowIntegrationTest` | 03, 12 |
+| `*/src/main/resources/db/migration/V*.sql` | Flyway migrations V1-V52 | 12 |
 | Tests: `support/.../SupportCaseTest`, `PriorityPolicyTest`, `SupportCaseIntegrationTest`; `returns/.../ReturnPolicyTest`, `CreateReturnUseCaseTest`, `ReturnsIntegrationTest`; `bootstrap/.../FlywayMigrationVersionTest`, `GlobalExceptionHandlerTest` | | 03, 14 |
 
 ## H. Frontend (`frontend/src/`)

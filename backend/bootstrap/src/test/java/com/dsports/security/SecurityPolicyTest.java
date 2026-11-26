@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,7 +53,7 @@ class SecurityPolicyTest {
     @RestController
     static class Probe {
         @GetMapping({"/api/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/metrics", "/actuator/info", "/actuator/env", "/api/catalog/products",
-                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi",
+                "/api/inventory/x", "/api/prices/x", "/api/v1/orders", "/api/admin/anything", "/api/v1/admin/sales/lines", "/api/v1/support/staff/cases", "/api/v1/cart", "/api-docs/openapi", "/api/v1/venues", "/api/v1/venues/x/courts/y/slots", "/api/v1/owner/venues", "/api/v1/owner/bookings", "/api/v1/admin/venues", "/api/v1/admin/ground-owners", "/api/v1/admin/ground-owners/audit", "/api/v1/players", "/api/v1/teams", "/api/v1/matches", "/api/v1/matches/x", "/api/v1/matches/x/scorecard", "/api/v1/matches/x/analytics", "/api/v1/players/x/stats", "/api/v1/matches/x/scoring/shots", "/api/v1/players/x/y/stats", "/api/v1/players/stats", "/api/v1/admin/cricket/stats/rebuild", "/api/v1/public/matches/live", "/api/v1/matches/x/scoring", "/api/v1/matches/x/scoring/engine-state", "/api/v1/admin/matches/x/scoring/unlock", "/api/v1/me/bookings",
                 "/some/unknown/route"})
         String ok() {
             return "ok";
@@ -99,6 +100,35 @@ class SecurityPolicyTest {
             // everything else needs a signed-in user
             "/api/v1/orders,anonymous,401", "/api/v1/cart,anonymous,401", "/some/unknown/route,anonymous,401", "/actuator/metrics,anonymous,401",
             "/api/v1/orders,customer,200", "/api/v1/cart,customer,200",
+            // ground booking: browsing is public, bookings need an account, owner routes need the owner role
+            "/api/v1/venues,anonymous,200", "/api/v1/venues/x/courts/y/slots,anonymous,200", "/api/v1/me/bookings,anonymous,401", "/api/v1/me/bookings,customer,200",
+            "/api/v1/owner/venues,anonymous,401", "/api/v1/owner/venues,customer,403", "/api/v1/owner/venues,admin,403", "/api/v1/owner/venues,owner,200",
+            // venue administration is for administrators only (an owner cannot use it to reach other owners' venues)
+            "/api/v1/admin/venues,anonymous,401", "/api/v1/admin/venues,customer,403", "/api/v1/admin/venues,owner,403", "/api/v1/admin/venues,admin,200",
+            // cricket players and teams: signed-in users only (the use cases decide who sees what)
+            "/api/v1/players,anonymous,401", "/api/v1/players,customer,200", "/api/v1/teams,anonymous,401", "/api/v1/teams,customer,200", "/api/v1/matches,anonymous,401", "/api/v1/matches,customer,200",
+            // cricket public scorecards: exactly two read-only routes need no sign-in, decided by path alone (a started match's scorecard, and the live list on its own path);
+            // /api/v1/matches is "my matches" whatever its query string says, and a match's setup and every other path under it stay behind a sign-in
+            "/api/v1/matches/x/scorecard,anonymous,200", "/api/v1/matches/x/scorecard,customer,200", "/api/v1/matches/x/analytics,anonymous,200", "/api/v1/matches/x/analytics,customer,200",
+            "/api/v1/matches/x/y/analytics,anonymous,401", "/api/v1/matches/x/analytic,anonymous,401", "/api/v1/public/matches/live,anonymous,200", "/api/v1/public/matches/live?city=Chennai&page=1&size=5,anonymous,200",
+            "/api/v1/public/matches/live,customer,200", "/api/v1/public/matches/live/x,anonymous,401", "/api/v1/public/matches,anonymous,401", "/api/v1/public/matches/livex,anonymous,401",
+            "/api/v1/matches?city=Chennai,anonymous,401", "/api/v1/matches?Status=LIVE,anonymous,401", "/api/v1/matches?status=LIVE,customer,200",
+            "/api/v1/matches/x,anonymous,401", "/api/v1/matches/x,customer,200", "/api/v1/matches/x/y/scorecard,anonymous,401", "/api/v1/matches/x/scorecards,anonymous,401",
+            // a player's career statistics are public (read-only, path only); the rebuild is for administrators; every other path under /api/v1/players needs a sign-in
+            "/api/v1/players/x/stats,anonymous,200", "/api/v1/players/x/stats,customer,200", "/api/v1/players/x/y/stats,anonymous,401", "/api/v1/players/stats,anonymous,401", "/api/v1/players/x/statsx,anonymous,401",
+            "/api/v1/admin/cricket/stats/rebuild,anonymous,401", "/api/v1/admin/cricket/stats/rebuild,customer,403", "/api/v1/admin/cricket/stats/rebuild,owner,403", "/api/v1/admin/cricket/stats/rebuild,support,403",
+            "/api/v1/admin/cricket/stats/rebuild,admin,200",
+            // where a ball went (optional, display only): signed-in users only; the use case decides who may score
+            "/api/v1/matches/x/scoring/shots,anonymous,401", "/api/v1/matches/x/scoring/shots,customer,200",
+            // cricket scoring: signed-in users only (the use case decides who may score); unlocking a locked match is for administrators only
+            "/api/v1/matches/x/scoring,anonymous,401", "/api/v1/matches/x/scoring,customer,200",
+            "/api/v1/matches/x/scoring/engine-state,anonymous,401", "/api/v1/matches/x/scoring/engine-state,customer,200", "/api/v1/matches/x/scoring/engine-state,owner,200",
+            "/api/v1/matches/x/scoring/engine-state,admin,200", "/api/v1/admin/matches/x/scoring/unlock,anonymous,401",
+            "/api/v1/admin/matches/x/scoring/unlock,customer,403", "/api/v1/admin/matches/x/scoring/unlock,owner,403", "/api/v1/admin/matches/x/scoring/unlock,support,403", "/api/v1/admin/matches/x/scoring/unlock,admin,200",
+            // granting and removing the ground-owner role, and its audit log: administrators only
+            "/api/v1/admin/ground-owners,anonymous,401", "/api/v1/admin/ground-owners,customer,403", "/api/v1/admin/ground-owners,owner,403", "/api/v1/admin/ground-owners,support,403", "/api/v1/admin/ground-owners,admin,200",
+            "/api/v1/admin/ground-owners/audit,customer,403", "/api/v1/admin/ground-owners/audit,owner,403", "/api/v1/admin/ground-owners/audit,admin,200",
+            "/api/v1/owner/bookings,anonymous,401", "/api/v1/owner/bookings,customer,403", "/api/v1/owner/bookings,admin,403", "/api/v1/owner/bookings,owner,200",
             // staff and admin areas
             "/api/admin/anything,anonymous,401", "/api/admin/anything,customer,403", "/api/admin/anything,support,403", "/api/admin/anything,admin,200",
             "/api/v1/admin/sales/lines,anonymous,401", "/api/v1/admin/sales/lines,customer,403", "/api/v1/admin/sales/lines,planner,403", "/api/v1/admin/sales/lines,admin,200",
@@ -113,9 +143,25 @@ class SecurityPolicyTest {
             case "support" -> valid("CUSTOMER", "SUPPORT_EXECUTIVE");
             case "planner" -> valid("CUSTOMER", "SALES_PLANNER");
             case "admin" -> valid("CUSTOMER", "ADMIN");
+            case "owner" -> valid("CUSTOMER", "GROUND_OWNER");
             default -> throw new IllegalArgumentException(who);
         };
         org.assertj.core.api.Assertions.assertThat(status(path, bearer)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "{0} {1} without a token -> 401")
+    @CsvSource({"POST,/api/v1/matches/x/scorecard", "PUT,/api/v1/matches/x/scorecard", "DELETE,/api/v1/matches/x/scorecard", "POST,/api/v1/matches/x/analytics", "PUT,/api/v1/matches/x/analytics", "DELETE,/api/v1/matches/x/analytics", "POST,/api/v1/public/matches/live", "PUT,/api/v1/public/matches/live",
+            "DELETE,/api/v1/public/matches/live", "POST,/api/v1/matches", "HEAD,/api/v1/matches/x/scorecard", "POST,/api/v1/players/x/stats", "PUT,/api/v1/players/x/stats", "DELETE,/api/v1/players/x/stats", "PUT,/api/v1/players/me/public-profile", "GET,/api/v1/players/me/public-profile"})
+    void thePublicCricketRoutesAreReadOnlyOtherMethodsStillNeedASignIn(String method, String path) {
+        client.method(org.springframework.http.HttpMethod.valueOf(method)).uri(path).exchange().expectStatus().isUnauthorized();
+    }
+
+    /** The old shared-path design opened /api/v1/matches when a status parameter was present; the path alone decides now, so no spelling of the parameter can open it. */
+    @ParameterizedTest(name = "/api/v1/matches?{0} without a token -> 401")
+    @ValueSource(strings = {"status=LIVE", "status=live", "status=%4CIVE", "status=LIVE&status=X", "status=LIVE,FINISHED", "status=LIVE&city=Chennai", "status=", "status", "STATUS=LIVE",
+            "status=LIVE&size=5&page=0"})
+    void theMyMatchesPathNeedsASignInWhateverTheQueryStringSays(String query) {
+        client.get().uri(java.net.URI.create("/api/v1/matches?" + query)).exchange().expectStatus().isUnauthorized();
     }
 
     @Test

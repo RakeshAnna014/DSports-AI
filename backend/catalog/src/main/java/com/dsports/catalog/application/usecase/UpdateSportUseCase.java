@@ -45,6 +45,9 @@ public class UpdateSportUseCase {
                                 }
                                 try {
                                     sport.update(newName, newSlug, command.description());
+                                    if (command.bookable() != null) {
+                                        sport.changeBookable(command.bookable());
+                                    }
                                 } catch (IllegalStateException e) {
                                     return Mono.error(new CatalogDomainException(CatalogErrorCode.ARCHIVED_ENTITY,
                                             "Cannot update an archived sport"));

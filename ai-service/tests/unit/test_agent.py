@@ -268,7 +268,7 @@ async def test_context_dependent_or_identifying_messages_are_not_cached(rig):
     rig.llm.default = json.dumps({"intent": "OUT_OF_SCOPE"})
     await say(rig, "what about 4242424242424242 hmm")
     await say(rig, "what about 4242424242424242 hmm")
-    assert rig.llm.tiers.count("intent") == 2
+    assert [p["intent"] for p in rig.llm.prompts].count("classify") == 2        # the classifier ran both times; the topic label call is a separate call
 
 
 # ---------------------------------------------------------------- resilience

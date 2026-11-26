@@ -63,6 +63,18 @@ public class IdentityInfrastructureConfiguration {
     }
 
     @Bean
+    public com.dsports.identity.application.port.RoleAdminRepository roleAdminRepository(DatabaseClient databaseClient) {
+        return new com.dsports.identity.infrastructure.persistence.repository.RoleAdminR2dbcRepositoryAdapter(databaseClient);
+    }
+
+    @Bean
+    public com.dsports.identity.application.usecase.ManageGroundOwnersUseCase manageGroundOwnersUseCase(
+            com.dsports.identity.application.port.RoleAdminRepository roleAdminRepository,
+            com.dsports.shared.application.TransactionRunner transactionRunner, java.time.Clock clock) {
+        return new com.dsports.identity.application.usecase.ManageGroundOwnersUseCase(roleAdminRepository, transactionRunner, clock);
+    }
+
+    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoderAdapter();
     }

@@ -30,6 +30,25 @@ import FulfilmentApp from '@/features/fulfilment/FulfilmentApp';
 import SourcingApp from '@/features/sourcing/SourcingApp';
 import PlanningApp from '@/features/planning/PlanningApp';
 import MyCasesPage from '@/features/support/MyCasesPage';
+import VenuesPage from '@/features/venues/VenuesPage';
+import VenueDetailPage from '@/features/venues/VenueDetailPage';
+import BookingPaymentPage from '@/features/venues/BookingPaymentPage';
+import MyBookingsPage from '@/features/venues/MyBookingsPage';
+import OwnerVenuesPage from '@/features/venues/OwnerVenuesPage';
+import TeamsPage from '@/features/cricket/TeamsPage';
+import TeamDetailPage from '@/features/cricket/TeamDetailPage';
+import PlayersPage from '@/features/cricket/PlayersPage';
+import MatchesPage from '@/features/cricket/MatchesPage';
+import NewMatchPage from '@/features/cricket/NewMatchPage';
+import MatchSetupPage from '@/features/cricket/MatchSetupPage';
+import ScorerPage from '@/features/cricket/scoring/ScorerPage';
+import PublicScorecardPage from '@/features/cricket/public/PublicScorecardPage';
+import PlayerStatsPage from '@/features/cricket/public/PlayerStatsPage';
+import LiveMatchesPage from '@/features/cricket/public/LiveMatchesPage';
+import AdminGroundOwnersPage from '@/features/admin/AdminGroundOwnersPage';
+import AdminVenuesPage from '@/features/admin/AdminVenuesPage';
+import AdminSportsPage from '@/features/admin/AdminSportsPage';
+import RefusedMessagesPage from '@/features/admin/RefusedMessagesPage';
 
 const router = createBrowserRouter([
   // Internal, business-facing area: its own layout (no storefront chrome). Access is enforced by the backend (ADMIN role) on every request.
@@ -57,6 +76,26 @@ const router = createBrowserRouter([
       { path: '/checkout', element: <CheckoutPage /> },
       { path: '/ai', element: <AiShopPage /> },
       { path: '/returns', element: <ReturnsPage /> },
+      { path: '/venues', element: <VenuesPage /> },
+      { path: '/venues/:id', element: <VenueDetailPage /> },
+      { path: '/bookings', element: <MyBookingsPage /> },
+      { path: '/bookings/:id/pay', element: <BookingPaymentPage /> },
+      { path: '/owner/venues', element: <OwnerVenuesPage /> },
+      { path: '/teams', element: <TeamsPage /> },
+      { path: '/teams/:id', element: <TeamDetailPage /> },
+      { path: '/players', element: <PlayersPage /> },
+      // Public, no sign-in: a started match's scorecard (the link people share) and the list of matches being played.
+      { path: '/m/:id', element: <PublicScorecardPage /> },
+      { path: '/live', element: <LiveMatchesPage /> },
+      { path: '/p/:id', element: <PlayerStatsPage /> },
+      { path: '/matches', element: <MatchesPage /> },
+      { path: '/matches/new', element: <NewMatchPage /> },
+      { path: '/matches/:id/setup', element: <MatchSetupPage /> },
+      { path: '/matches/:id/score', element: <ScorerPage /> },
+      { path: '/admin/ground-owners', element: <AdminGroundOwnersPage /> },
+      { path: '/admin/venues', element: <AdminVenuesPage /> },
+      { path: '/admin/sports', element: <AdminSportsPage /> },
+      { path: '/admin/refused-messages', element: <RefusedMessagesPage /> },
       { path: '/support/:ref?', element: <MyCasesPage /> },
       { path: '/orders', element: <OrdersPage /> },
       { path: '/orders/:id', element: <OrderDetailPage /> },

@@ -33,7 +33,7 @@ class GetSportsUseCaseTest {
         var sport1 = Sport.create(SportName.from("Cricket"), Slug.from("cricket"), null);
         var sport2 = Sport.create(SportName.from("Football"), Slug.from("football"), null);
 
-        when(sportRepository.findAllActive()).thenReturn(Flux.just(sport1, sport2));
+        when(sportRepository.findAllShoppable()).thenReturn(Flux.just(sport1, sport2));
 
         StepVerifier.create(useCase.execute())
                 .expectNextCount(2)
@@ -41,8 +41,19 @@ class GetSportsUseCaseTest {
     }
 
     @Test
+    void shouldListBookableSportsFromTheBookableQueryNotTheShopOne() {
+        var pickleball = Sport.reconstitute(com.dsports.catalog.domain.model.SportId.generate(), SportName.from("Pickleball"), Slug.from("pickleball"), null,
+                com.dsports.catalog.domain.model.Status.ACTIVE, java.time.Instant.now(), java.time.Instant.now(), 1, true);
+        when(sportRepository.findAllBookable()).thenReturn(Flux.just(pickleball));
+
+        StepVerifier.create(useCase.bookable())
+                .expectNextMatches(r -> r.slug().equals("pickleball") && r.bookable())
+                .verifyComplete();
+    }
+
+    @Test
     void shouldReturnEmptyWhenNoSports() {
-        when(sportRepository.findAllActive()).thenReturn(Flux.empty());
+        when(sportRepository.findAllShoppable()).thenReturn(Flux.empty());
 
         StepVerifier.create(useCase.execute())
                 .verifyComplete();

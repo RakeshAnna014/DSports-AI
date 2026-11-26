@@ -37,13 +37,17 @@ class Intent(StrEnum):
     CONFIRM_YES = "CONFIRM_YES"
     CONFIRM_NO = "CONFIRM_NO"
     SMALLTALK = "SMALLTALK"
+    BOOKING_INFO = "BOOKING_INFO"      # a venue / court / booking question: answered with a fixed pointer to the pages that do it
+    CRICKET_INFO = "CRICKET_INFO"      # a cricket rules / my-matches question: a reviewed glossary entry or a fixed pointer
+    BUSINESS_INFO = "BUSINESS_INFO"    # an admin's business question: a fixed pointer to the staff AI workspace
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     BLOCKED = "BLOCKED"
 
 
 # Intents a guest (not signed in) may use: public product data and public knowledge only.
 GUEST_INTENTS = {Intent.PRODUCT_SEARCH, Intent.REFINE_SEARCH, Intent.PRODUCT_ADVICE, Intent.COMPARE, Intent.PRODUCT_KNOWLEDGE,
-                 Intent.PRODUCT_DETAIL, Intent.PRODUCT_REVIEWS, Intent.RECOMMEND, Intent.KIT_BUILD, Intent.SUPPORT_POLICY, Intent.SMALLTALK, Intent.OUT_OF_SCOPE, Intent.BLOCKED}
+                 Intent.PRODUCT_DETAIL, Intent.PRODUCT_REVIEWS, Intent.RECOMMEND, Intent.KIT_BUILD, Intent.SUPPORT_POLICY, Intent.SMALLTALK, Intent.OUT_OF_SCOPE, Intent.BLOCKED,
+                 Intent.BOOKING_INFO, Intent.CRICKET_INFO}
 
 SHOPPING = {Intent.PRODUCT_SEARCH, Intent.REFINE_SEARCH, Intent.PRODUCT_ADVICE, Intent.COMPARE, Intent.PRODUCT_KNOWLEDGE,
             Intent.PRODUCT_DETAIL, Intent.PRODUCT_REVIEWS, Intent.RECOMMEND, Intent.KIT_BUILD}

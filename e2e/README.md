@@ -38,6 +38,15 @@ Each run registers, logs in, adds a product to the cart, checks out with a new a
 
 The script fails on any console error, page error or HTTP 5xx. In the timeout scenario the 504 is the expected outcome.
 
+## Cricket scoring on two devices (`cricket-ui.mjs`, emulated)
+
+```bash
+cd e2e && node cricket-ui.mjs [shotDir]                               # Vite on :3000, backend on :8080
+E2E_BASE=http://<laptop LAN address>:3000 node cricket-ui.mjs [shotDir]   # through the network address, over plain http (Vite started with --host)
+```
+
+An **emulated** run, not a real phone: a phone-sized Chrome context (touch, mobile user agent) scores a 2-over match as the organiser while a signed-out desktop Chrome context follows the public scorecard. It asserts each change on the laptop: the match not started, the innings starting, runs, a wicket with how the batter was out, a mistaken ball and its undo, and one ball sent while the phone is offline (`setOffline` stands in for airplane mode) arriving once (9 log rows). It also checks that the signed-out visitor sends no credentials, that the polling gets 304s, that the setup, scoring and "my matches" routes answer 401 without a token, the live list and its city filter, the share buttons and that the public page does not scroll sideways on a phone. The match is made through the API; the cleanup removes everything by exact id, and because the scoring log is append-only it uses `session_replication_role = replica` (superuser). **That switch turns the database's guards off for the whole session, so the script refuses to run (exit 2, nothing created) unless it is talking to the local test stack:** the API address must be loopback (`localhost`, `127.0.0.1` or `::1`), the database must be `dsports` in the local container `dsports-postgres`, reached over the container's own socket (not over the network), and, immediately before the cleanup, the match this run made must be found in that same database (so it cannot delete from a database the API did not write to). `E2E_BASE` may be a LAN address (it is only the web page), `E2E_API` may not.
+
 ## Customer AI (real stack)
 
 Needs the backend on `:8080`, Postgres with pgvector, Tika, the AI service on `:8090` and real Vertex credentials; see
@@ -122,3 +131,8 @@ bash e2e/validate-all.sh --with-holdout2  # also re-run the consumed holdout v2 
 Each step is PASS only if it exited 0 **and** printed its success marker; BLOCKED means a precondition (Docker, Gemini) is missing (an environment fact, not an application result); SKIP means not run.
 Docker tests are never skipped silently: Testcontainers needs `DOCKER_HOST=npipe:////./pipe/dockerDesktopLinuxEngine` (the script sets it) and the build uses `-Dapi.version=1.44`.
 Results: `e2e/validation-results/<timestamp>/` (one log per step, `summary.tsv`, `SUMMARY.md`). The real `dsports` database is never dropped or recreated (API E2E uses `dsports_e2e_val`).
+
+
+## idb-contract.mjs
+
+Runs the offline queue's storage contract (`frontend/src/features/cricket/offline/storageContract.ts`) against **real IndexedDB** in Chrome, with the page served over plain http from this machine's LAN address (so it is not a secure context, like a scorer's phone). No backend, database or sign-in is needed and nothing is written outside the browser's own throwaway databases. `node idb-contract.mjs` exits 0 when the contract is met.

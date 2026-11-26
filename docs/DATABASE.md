@@ -9,7 +9,7 @@ One PostgreSQL server (`pgvector/pgvector:pg16-trixie`, container `dsports-postg
 | `dsports_ai_test`, `dsports_ai_src_test`, `dsports_ai_pln_test` | Python integration tests | created by hand or by `validate-all.sh` | **throwaway**: tests drop and recreate their tables. Never point a `*_TEST_DATABASE_URL` at `dsports_ai` |
 | `dsports_e2e_val` | consolidated validation | `validate-all.sh` | disposable copy used for destructive checks |
 
-## 1. Java database `dsports` (Flyway, forward-only, V1 to V47)
+## 1. Java database `dsports` (Flyway, forward-only, V1 to V56)
 
 Migrations live in each module's `src/main/resources/db/migration` (one shared version sequence; `bootstrap` holds V33 and V43). Flyway runs when the backend starts; there is no down-migration. Never drop `dsports`; use a throwaway database for destructive experiments.
 
@@ -26,8 +26,16 @@ Migrations live in each module's `src/main/resources/db/migration` (one shared v
 | returns | `return_requests` (V40) | |
 | review | `reviews`, `review_helpful_votes` (V24) | one review per customer and product (V37) |
 | wishlist | `wishlists`, `wishlist_items` (V25) | |
-| notification | `notifications`, `notification_templates` (V26) | unique per user, type and reference (V38) |
+| notification | `notifications`, `notification_templates` (V26) | unique per user, type and reference (V38); type constraint widened for booking notifications (V49) |
+| cricket | `players`, `teams`, `team_members`, `player_claims` (V53) | phone unique per creator (`(created_by, phone)`), one linked player per customer, unique team name per creator (any case), one captain per team (partial unique index), one open claim per player and claimant; no foreign keys to other modules' tables (ADR-019) |
+| cricket (career statistics) | `player_match_stats` (V58) | a PROJECTION of the log, one row per (match, player) for COMPLETED matches, replaced in the same transaction as the event that changes the match and rebuildable by `POST /api/v1/admin/cricket/stats/rebuild`; deliberately not append-only; the career is summed in code (`CareerStats.total`), tennis and leather kept apart by `ball_type`; CHECKs on ball type and non-negative figures |
+| cricket (shot direction) | `ball_shots` (V59) | where a scoring ball went (x, y in thousandths of the field radius, CHECK inside the circle); own append-only table (UPDATE, DELETE, TRUNCATE refused); one shot per `(match_id, seq)`; no foreign key to `ball_events` (it would change the message of the TRUNCATE guard), an insert trigger checks the ball exists; display data only, never read by a rule, the snapshot or the fingerprint |
+| cricket (scoring) | `ball_events`, `match_snapshots` (V55, V56, V57) | the log is append-only (triggers refuse UPDATE, DELETE and, from V56, TRUNCATE); `tapped_at` (V57, nullable) is when a scorer says they tapped an offline ball, display only, never later than `created_at` (CHECK), never read by a rule; unique `(match_id, seq)` and `(match_id, client_event_id)`; type CHECK lists the event kinds; the snapshot's seq equals the log's highest seq (checked by tests) |
+| cricket (matches) | `matches`, `match_players` (the playing XIs, in batting order), `match_scorers` (V54) | two different teams; overs 1 to 100; toss winner and decision both set or both null; status CHECK lists the whole lifecycle; one match per venue booking (partial unique index, no foreign key to the ground module); a player in at most one side of a match and one batting position each |
+| catalog (sports) | `sports.bookable` (V50, default false); Pickleball added | which catalogue sports can be booked as courts; the shop lists a bookable sport only once it has an active product (ADR-018) |
+| identity (roles) | `role_audit_log` (V52) | append-only: who gave or removed a role, for whom and when, in the same transaction as the change; no foreign keys on purpose |
 | support | `support_cases`, `support_case_messages`, `support_case_events` (V44, V45) | |
+| ground | `venues`, `courts` (V51), `ground_blackouts`, `ground_bookings` and sequence `ground_booking_seq` (V48, reshaped by V51); the V48 `grounds` table is kept, unused | a venue has opening hours as `TIME` + a time zone; a court has `sport_ids UUID[]` (catalogue sports, no foreign key across modules, GIN index), its own slot length and prices; bookings and blackouts are UTC instants and carry `venue_id`, `court_id` and (bookings) `sport_id`; money is `NUMERIC(12,2)`; the `no_overlap_court` exclusion constraint (needs `btree_gist`) makes double booking of a court impossible whatever the sport; unique `(user_id, idempotency_key)` and unique court name per venue (any case); V51 turns each existing ground into a venue with one court (same ids); a booking is paid through `payments` with the booking id in `order_id` (ADR-017, ADR-018) |
 | bootstrap | `outbox_events` (V33) | transactional outbox: `status` PENDING / PROCESSING / DONE / FAILED, `attempts`, `last_error`, unique `(event_type, aggregate_id)`, partial index on due rows |
 
 Relationships in one line: customer → cart → checkout → order (+items) → payment (→ refunds) and → shipment (→ tracking) and → return_requests; order items hold product snapshots (name, sku, price) so history survives catalogue changes; `inventory_reservations` link an order to stock until fulfilment or release.

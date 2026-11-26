@@ -48,6 +48,8 @@ class Services:
     confirmations: ConfirmationService
     executor: ActionExecutor
     tier1: Tier1
+    refusals: Any = None                # the RefusalLog: refused messages for the staff view (no identity)
+    topic: Any = None                   # the TopicGate (None = disabled by AI_TOPIC_GATE=false)
     store: Store | None = None
     retriever: Retriever | None = None
     search: ProductSearch | None = None
@@ -101,6 +103,12 @@ async def build_services(settings: Settings, *, store: Store | None = None, http
     executor = ActionExecutor(registry, confirmations, state)
     svc = Services(settings, http, dsports, catalog, usage, llm, embedder, state, registry, confirmations, executor,
                    Tier1(llm, settings.cache_ttl_s), store=store, knowledge_cache=TTLCache(settings.cache_ttl_s, 512))
+    if settings.topic_gate_enabled:
+        from app.guard.topic_gate import TopicGate
+        from app.guard.topic_label import TopicLabeler
+        from app.guard.topic_log import RefusalLog
+        svc.refusals = RefusalLog(store.pool if store is not None else None)
+        svc.topic = TopicGate(TopicLabeler(llm, settings.cache_ttl_s, model_name=settings.intent_model))
     if retriever is not None or store is not None:
         svc.retriever = retriever or Retriever(store, embedder, settings.retrieval_candidates, settings.min_similarity)  # type: ignore[arg-type]
         svc.search = ProductSearch(svc.retriever, catalog)

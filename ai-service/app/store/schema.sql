@@ -75,3 +75,13 @@ CREATE TABLE IF NOT EXISTS pending_actions (
     outcome         TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_pending_customer ON pending_actions (customer_hash, created_at DESC);
+
+-- Messages the topic gate refused (off topic, or business questions from a non-admin): topic, role of the asker, redacted text, time. No customer, conversation or correlation id on purpose.
+CREATE TABLE IF NOT EXISTS topic_refusals (
+    id    BIGSERIAL PRIMARY KEY,
+    ts    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    topic TEXT        NOT NULL,
+    role  TEXT        NOT NULL,
+    text  TEXT        NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_topic_refusals_ts ON topic_refusals (ts DESC);
