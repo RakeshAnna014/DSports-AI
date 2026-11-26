@@ -66,7 +66,7 @@ await step('sign in through the normal login form', async () => {
 await step('R1 premium Home: hero, prominent "Ask DSports AI", full navigation, real sports tiles that filter the catalogue', async () => {
   await page.goto(BASE); await page.waitForLoadState('networkidle');
   await page.getByRole('heading', { name: /PLAY BETTER/i }).waitFor();
-  await page.getByTestId('ai-header-button').getByText('Ask DSports AI').waitFor();
+  await page.getByRole('button', { name: 'Ask DSports AI' }).waitFor();   // by accessible name: the visible label collapses to an icon at some widths
   for (const n of ['Home', 'Products', 'AI Shop', 'Orders', 'Track', 'Returns']) await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: n, exact: true }).waitFor();
   const sports = await javaPublic('/api/catalog/sports');
   const tiles = page.getByTestId('sports-categories').getByRole('button');
